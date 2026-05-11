@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="3C Goal Tracker — A private thinking space for fast minds. Set meaningful goals, organise priorities, capture ideas on the move." />
+  <title>3C Goal Tracker — Welcome</title>
+  <link rel="icon" type="image/png" href="assets/favicon.png" />
+  <link rel="stylesheet" href="css/style.css" />
+  <style>
+    .hero-title {
+      background: linear-gradient(135deg, #f1f0ff 0%, #a78bfa 50%, #7c3aed 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 14px;
+    }
+
+    .who-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .who-list li {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      font-size: 0.92rem;
+      color: var(--text-secondary);
+    }
+
+    .who-list li::before {
+      content: '→';
+      color: var(--purple-light);
+      font-weight: 700;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    .privacy-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      margin-bottom: 10px;
+      font-size: 0.88rem;
+      color: var(--text-secondary);
+    }
+
+    .privacy-row .icon {
+      flex-shrink: 0;
+      font-size: 1rem;
+      margin-top: 2px;
+    }
+
+    .data-note {
+      background: rgba(124, 58, 237, 0.08);
+      border: 1px solid rgba(124, 58, 237, 0.22);
+      border-radius: var(--radius-sm);
+      padding: 14px 16px;
+      font-size: 0.84rem;
+      color: var(--text-secondary);
+      line-height: 1.65;
+      margin-top: 14px;
+    }
+
+    .data-note strong { color: var(--purple-light); }
+
+    .step-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+      margin-bottom: 14px;
+    }
+
+    .step-num {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: var(--purple-subtle);
+      border: 1px solid var(--border-strong);
+      color: var(--purple-light);
+      font-size: 0.8rem;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+
+    .step-text {
+      font-size: 0.9rem;
+      color: var(--text-secondary);
+      line-height: 1.6;
+    }
+
+    .step-text strong { color: var(--text-primary); }
+  </style>
+</head>
+<body>
+
+  <!-- Nav -->
+  <nav class="nav">
+    <div class="nav__inner">
+      <div class="nav__logo">
+        <img src="assets/favicon.png" alt="3C" width="28" height="28" style="border-radius:6px;" onerror="this.style.display='none'" />
+        <span>3C</span> Goal Tracker
+      </div>
+      <a href="app.html" class="btn btn--ghost" style="padding: 8px 18px; font-size: 0.85rem;">
+        Open App →
+      </a>
+    </div>
+  </nav>
+
+  <!-- Onboarding content -->
+  <main style="padding-top: 70px;">
+    <div class="container">
+
+      <!-- Hero -->
+      <section class="onboard__hero" style="padding: 48px 0 36px;">
+        <img src="assets/favicon.png" alt="3C Goal Tracker" class="onboard__logo"
+          onerror="this.style.display='none'" />
+        <p class="onboard__tagline">3C Thread To Success™</p>
+        <h1 class="hero-title">3C Goal Tracker</h1>
+        <p class="onboard__desc">
+          A private thinking space for fast minds.<br />
+          Turn thoughts into direction — before they disappear.
+        </p>
+      </section>
+
+      <!-- What This App Is -->
+      <div class="card card--glass mb-24" style="margin-bottom: 16px;">
+        <div class="section__title">What This App Is</div>
+        <p style="margin-top: 10px; margin-bottom: 14px;">
+          3C Goal Tracker is a private, device-based tool designed to help you turn thoughts into direction.
+        </p>
+        <p style="margin-bottom: 14px;">
+          Built around the <strong style="color: var(--text-primary);">3C Goal Setting Framework</strong> and the
+          <strong style="color: var(--text-primary);">Eisenhower Decision Matrix</strong>, it helps you set meaningful goals,
+          organise priorities, and reflect with clarity — instead of overwhelm.
+        </p>
+        <p style="margin-bottom: 0;">
+          This is not a productivity app. <strong style="color: var(--purple-light);">It is a clarity app.</strong><br />
+          Designed for people who think fast, capture ideas in motion, and need a structured space to organise
+          what matters before it gets lost.
+        </p>
+      </div>
+
+      <!-- Features -->
+      <div class="onboard__features" style="margin-bottom: 16px;">
+        <div class="onboard__feature">
+          <div class="onboard__feature-icon">🎯</div>
+          <div class="onboard__feature-title">Goal Tracker</div>
+          <div class="onboard__feature-desc">Set 1–5 meaningful goals with a clear why, milestones, and weekly reflection</div>
+        </div>
+        <div class="onboard__feature">
+          <div class="onboard__feature-icon">🧠</div>
+          <div class="onboard__feature-title">Eisenhower Matrix</div>
+          <div class="onboard__feature-desc">Drag tasks into 4 quadrants — decide before you react, not after</div>
+        </div>
+        <div class="onboard__feature">
+          <div class="onboard__feature-icon">🎙️</div>
+          <div class="onboard__feature-title">Voice Notes</div>
+          <div class="onboard__feature-desc">Record a thought — transcribed automatically to readable text and saved</div>
+        </div>
+        <div class="onboard__feature">
+          <div class="onboard__feature-icon">📝</div>
+          <div class="onboard__feature-title">Brain Dump Pad</div>
+          <div class="onboard__feature-desc">Type fast, save instantly — your ideas captured before they fade</div>
+        </div>
+        <div class="onboard__feature">
+          <div class="onboard__feature-icon">📷</div>
+          <div class="onboard__feature-title">Camera Capture</div>
+          <div class="onboard__feature-desc">Photograph handwritten notes — image stays safely on your device</div>
+        </div>
+        <div class="onboard__feature">
+          <div class="onboard__feature-icon">📧</div>
+          <div class="onboard__feature-title">Email Backup</div>
+          <div class="onboard__feature-desc">Send your goals and notes to your own email — readable, not code</div>
+        </div>
+      </div>
+
+      <!-- Who It's For -->
+      <div class="card mb-24" style="margin-bottom: 16px;">
+        <div class="section__title">Who It's For</div>
+        <p style="margin-top: 8px; margin-bottom: 4px;">People who:</p>
+        <ul class="who-list">
+          <li>Think faster than they can organise</li>
+          <li>Want goals that reflect their real values — not a to-do list</li>
+          <li>Use voice to capture ideas before they disappear</li>
+          <li>Need a brainstorm space that feels human, not corporate</li>
+          <li>Take clarity seriously — the 3C Active Thinking Approach</li>
+        </ul>
+      </div>
+
+      <!-- Privacy -->
+      <div class="onboard__privacy" style="margin-bottom: 16px;">
+        <div class="section__title" style="margin-bottom: 14px;">Privacy by Design</div>
+
+        <div class="privacy-row">
+          <span class="icon">🔒</span>
+          <span><strong>No server. No database. No account.</strong><br />
+          Everything is stored locally in your browser using IndexedDB — private to your device and inaccessible to anyone else, including the app developers.</span>
+        </div>
+
+        <div class="privacy-row">
+          <span class="icon">🎙️</span>
+          <span>Voice recordings are converted into text using your browser's built-in speech recognition. The audio itself is never stored.</span>
+        </div>
+
+        <div class="privacy-row">
+          <span class="icon">📷</span>
+          <span>Images captured with your camera remain on your device and are not included in backups.</span>
+        </div>
+
+        <div class="privacy-row" style="margin-bottom: 0;">
+          <span class="icon">💾</span>
+          <span>Download a JSON backup or email your data to yourself anytime. <strong style="color: var(--purple-light);">Your data. Your responsibility. Your freedom.</strong></span>
+        </div>
+      </div>
+
+      <!-- How to keep your data safe -->
+      <div class="card" style="margin-bottom: 16px;">
+        <div class="section__title">Keeping Your Data Safe — Simple Steps</div>
+        <p style="margin: 10px 0 16px; font-size: 0.88rem;">
+          Since your data lives on your device, here is how to protect it. No tech knowledge needed.
+        </p>
+
+        <div class="step-row">
+          <div class="step-num">1</div>
+          <div class="step-text">
+            <strong>Use the app regularly on the same browser.</strong><br />
+            Your data is stored in that browser. Switching browsers or devices means starting fresh.
+          </div>
+        </div>
+
+        <div class="step-row">
+          <div class="step-num">2</div>
+          <div class="step-text">
+            <strong>Email yourself a backup after each important session.</strong><br />
+            One tap in the app — your goals and notes arrive in your inbox as readable text, ready to restore.
+          </div>
+        </div>
+
+        <div class="step-row">
+          <div class="step-num">3</div>
+          <div class="step-text">
+            <strong>Do not clear your browser storage without backing up first.</strong><br />
+            Clearing site data, cookies, or cache will delete your Goal Tracker data.
+          </div>
+        </div>
+
+        <div class="step-row" style="margin-bottom: 0;">
+          <div class="step-num">4</div>
+          <div class="step-text">
+            <strong>Download a JSON file as a second backup.</strong><br />
+            Save it to your phone, your computer, or your cloud storage. It is a complete snapshot of your data.
+          </div>
+        </div>
+
+        <div class="data-note">
+          💡 <strong>The goal tracker works best when used consistently on the same device.</strong>
+          Think of it like a private journal that lives in your pocket — organised, protected, and yours.
+        </div>
+      </div>
+
+      <!-- CTA -->
+      <div style="text-align: center; padding: 36px 0 16px;">
+        <a href="app.html" class="btn btn--primary" style="padding: 16px 48px; font-size: 1rem; border-radius: 30px;">
+          Start Thinking Clearly →
+        </a>
+        <p class="onboard__quote" style="margin-top: 18px;">
+          "Think it. Do it. Own it." — starts with clarity.<br />
+          <em>The Day Legends Became Leaders.</em>
+        </p>
+      </div>
+
+      <!-- Watermark -->
+      <div class="watermark">
+        Designed and Built with ❤️ by Claude (Anthropic) × Chef Anica · 3C Thread To Success™ ·
+        <a href="https://www.3c-innergrowth.com" target="_blank">www.3c-innergrowth.com</a>
+      </div>
+
+    </div>
+  </main>
+
+</body>
+</html>
