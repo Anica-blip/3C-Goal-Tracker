@@ -518,6 +518,14 @@
     }
     window.showToast = showToast;
   </script>
+  <!-- Service Worker registration — enables offline use -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('./sw.js').catch(err => {
+        console.warn('Service Worker registration failed:', err);
+      });
+    }
+  </script>
 
 </body>
 </html>
