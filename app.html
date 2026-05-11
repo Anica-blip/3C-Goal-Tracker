@@ -88,9 +88,82 @@
           style="border-radius:6px;" onerror="this.style.display='none'" />
         <span>Dash</span> Notes
       </div>
-      <button class="nav-settings" onclick="window.location.href='setup.html'" title="Preferences">⚙️</button>
+      <div style="display:flex; gap:8px; align-items:center;">
+        <button id="take-note-btn" style="
+          background:none; border:none; cursor:pointer;
+          font-size:0.78rem; font-weight:700; letter-spacing:0.06em;
+          text-transform:uppercase; color:var(--cyan);
+          padding:6px 10px; border-radius:6px;
+          transition:background var(--transition);"
+          onmouseover="this.style.background='var(--cyan-subtle)'"
+          onmouseout="this.style.background='none'">
+          Take Note
+        </button>
+        <button onclick="window.location.href='setup.html'" style="
+          background:none; border:none; cursor:pointer;
+          font-size:0.78rem; font-weight:700; letter-spacing:0.06em;
+          text-transform:uppercase; color:var(--text-muted);
+          padding:6px 10px; border-radius:6px;
+          transition:all var(--transition);"
+          onmouseover="this.style.color='var(--text-primary)'"
+          onmouseout="this.style.color='var(--text-muted)'">
+          Settings
+        </button>
+      </div>
     </div>
   </nav>
+
+  <!-- Take Note panel — orientation content -->
+  <div id="take-note-panel" style="
+    position:fixed; inset:0; z-index:150;
+    background:rgba(8,11,26,0.92); backdrop-filter:blur(12px);
+    display:none; align-items:flex-end; justify-content:center;
+    padding:20px;">
+    <div style="
+      width:100%; max-width:480px; max-height:82vh; overflow-y:auto;
+      background:rgba(255,255,255,0.04); border:1px solid var(--border-strong);
+      border-radius:var(--radius-lg); padding:28px;">
+
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+        <span style="font-size:0.78rem; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; color:var(--cyan);">
+          About Dash Notes
+        </span>
+        <button id="close-take-note" style="
+          background:none; border:none; cursor:pointer;
+          color:var(--text-muted); font-size:1.1rem; padding:4px 8px;
+          border-radius:4px; transition:color var(--transition);">
+          &#x2715;
+        </button>
+      </div>
+
+      <p style="font-size:0.95rem; font-weight:600; color:var(--text-primary); margin-bottom:10px; line-height:1.5;">
+        A private thinking space for fast minds.
+      </p>
+      <p style="font-size:0.88rem; color:var(--text-secondary); margin-bottom:18px; line-height:1.7;">
+        Built around the 3C Goal Setting Framework and the Eisenhower Decision Matrix —
+        this app helps you set meaningful goals, sort priorities, and capture thoughts before they disappear.
+      </p>
+
+      <div style="border-top:1px solid var(--border); padding-top:16px; margin-bottom:16px;">
+        <p style="font-size:0.82rem; font-weight:700; color:var(--text-secondary); margin-bottom:10px; text-transform:uppercase; letter-spacing:0.06em;">Works best for people who</p>
+        <p style="font-size:0.88rem; color:var(--text-secondary); line-height:1.8; margin:0;">
+          Think faster than they can organise &middot;
+          Want goals that reflect real values &middot;
+          Need to capture ideas on the move &middot;
+          Prefer clarity over noise
+        </p>
+      </div>
+
+      <div style="border-top:1px solid var(--border); padding-top:16px;">
+        <p style="font-size:0.82rem; font-weight:700; color:var(--cyan); margin-bottom:8px; text-transform:uppercase; letter-spacing:0.06em;">Privacy</p>
+        <p style="font-size:0.85rem; color:var(--text-muted); line-height:1.7; margin:0;">
+          No server. No account. No data leaves your device.
+          Everything is stored privately in your browser.
+          Use the Save section to back up your data regularly.
+        </p>
+      </div>
+    </div>
+  </div>
 
   <!-- ════════════════════════════════════════════════════
        MAIN CONTENT — all sections
@@ -351,30 +424,12 @@
        TAB BAR — bottom navigation
   ═══════════════════════════════════════════════════════ -->
   <nav class="tab-bar" role="navigation" aria-label="Main navigation">
-    <button class="tab-bar__item active" data-section="goals" aria-label="Goals">
-      <span class="icon">🎯</span>
-      <span>Goals</span>
-    </button>
-    <button class="tab-bar__item" data-section="matrix" aria-label="Eisenhower Matrix">
-      <span class="icon">🧠</span>
-      <span>Matrix</span>
-    </button>
-    <button class="tab-bar__item" data-section="voice" aria-label="Voice Notes">
-      <span class="icon">🎙️</span>
-      <span>Voice</span>
-    </button>
-    <button class="tab-bar__item" data-section="notes" aria-label="Notes">
-      <span class="icon">📝</span>
-      <span>Notes</span>
-    </button>
-    <button class="tab-bar__item" data-section="camera" aria-label="Camera">
-      <span class="icon">📷</span>
-      <span>Camera</span>
-    </button>
-    <button class="tab-bar__item" data-section="backup" aria-label="Backup">
-      <span class="icon">💾</span>
-      <span>Backup</span>
-    </button>
+    <button class="tab-bar__item active" data-section="goals">Goals</button>
+    <button class="tab-bar__item" data-section="matrix">Matrix</button>
+    <button class="tab-bar__item" data-section="voice">Voice</button>
+    <button class="tab-bar__item" data-section="notes">Notes</button>
+    <button class="tab-bar__item" data-section="camera">Camera</button>
+    <button class="tab-bar__item" data-section="backup">Save</button>
   </nav>
 
   <!-- ════════════════════════════════════════════════════
@@ -387,6 +442,23 @@
     import { initNotes }  from './js/notes.js';
     import { initCamera } from './js/camera.js';
     import { initBackup } from './js/backup.js';
+
+    // ── Take Note panel ────────────────────────────────
+    const panel      = document.getElementById('take-note-panel');
+    const openBtn    = document.getElementById('take-note-btn');
+    const closeBtn   = document.getElementById('close-take-note');
+
+    openBtn?.addEventListener('click', () => {
+      panel.style.display = 'flex';
+    });
+
+    closeBtn?.addEventListener('click', () => {
+      panel.style.display = 'none';
+    });
+
+    panel?.addEventListener('click', e => {
+      if (e.target === panel) panel.style.display = 'none';
+    });
 
     // ── Tab navigation ─────────────────────────────────
     const tabs     = document.querySelectorAll('.tab-bar__item');
