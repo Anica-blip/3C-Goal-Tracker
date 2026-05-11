@@ -1,4 +1,4 @@
-# 3C Goal Tracker 🎯
+# Dash Notes 🎯
 
 This project is part of the 3C Thread To Success™ ecosystem — a growing digital platform that combines creativity, structure, and real-world application.
 
@@ -17,7 +17,7 @@ Built on the 3C Active Thinking Approach (ATA) — goal setting, not reactive ta
 
 ## What This App Is
 
-3C Goal Tracker is a private, device-based goal tracking tool built around two frameworks:
+Dash Notes is a private, device-based thinking tool built around two frameworks:
 
 - **3C Goal Setting Framework** — Set 1–5 meaningful goals with a clear "why", milestones, and weekly reflection
 - **Eisenhower Decision Matrix** — Sort tasks by urgency vs importance before acting, not after
@@ -48,9 +48,8 @@ People who:
 | 🎙️ Voice Notes | Record a thought — transcribed automatically to readable text |
 | 📝 Written Notes | Quick brain dump pad — type fast, save instantly |
 | 📷 Camera Capture | Photograph handwritten notes — image stays on your device |
-| 📧 Email Backup | Send your goals and notes as readable text to your own email |
-| 💾 JSON Export | Download a full backup of your data at any time |
-| 🔗 Calendar Link | Open your external calendar directly from the app |
+| 📤 Share Notes | Send your notes to any app on your device — Apple Notes, WhatsApp, and more |
+| 💾 Backup & Restore | Download a full backup file and restore it anytime |
 
 ---
 
@@ -64,7 +63,7 @@ Voice recordings are transcribed to text using your browser's built-in speech re
 
 Images taken with your camera stay on your device and are not included in any backup.
 
-When you want to keep your data safe — **email it to yourself** or **download a JSON backup**. This is your responsibility and your freedom.
+When you want to keep your data safe — **share it to your notes app** or **download a backup file**. This is your responsibility and your freedom.
 
 ---
 
@@ -79,14 +78,13 @@ This app is built with **vanilla HTML, CSS, and JavaScript** — no framework, n
 | **IndexedDB** | Local storage of goals, notes, tasks |
 | **MediaRecorder API** | Voice note recording |
 | **Web Speech API** | Voice-to-text transcription |
+| **Web Share API** | Share notes to any app on the device |
 | **Drag and Drop API** | Eisenhower Matrix interaction |
-| **Camera API** (`getUserMedia`) | Photo capture from device camera |
+| **Camera API** | Photo capture from device camera |
 
 ### Third Party Services
 
-| Service | Purpose | Cost |
-|---|---|---|
-| **[EmailJS](https://www.emailjs.com)** | Send backup to user's own email | Free tier — 200 emails/month |
+None. This app runs entirely on browser-native APIs with no external dependencies.
 
 ---
 
