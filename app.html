@@ -288,41 +288,34 @@
 
       <!-- ── BACKUP ─────────────────────────────────── -->
       <section id="section-backup" class="app-section">
-        <div class="section__title" style="margin-bottom:4px;">Backup &amp; Restore</div>
+        <div class="section__title" style="margin-bottom:4px;">Save &amp; Restore</div>
         <p style="font-size:0.82rem; margin-bottom:20px;">
-          Your data lives on this device. Back it up regularly so nothing is lost.
+          Keep your thoughts safe. Share them to your favourite app or save a backup file.
         </p>
 
-        <!-- Email backup -->
+        <!-- Share — everyday users -->
         <div class="card" style="margin-bottom:14px;">
           <div style="font-size:0.88rem; font-weight:700; color:var(--text-primary); margin-bottom:6px;">
-            📧 Email Backup
+            📤 Share Your Notes
           </div>
-          <p style="font-size:0.82rem; color:var(--text-muted); margin-bottom:12px; line-height:1.6;">
-            Your goals, tasks, and notes are sent as readable text to your own inbox.
-            No code, no attachments — just your thoughts in plain language.
+          <p style="font-size:0.82rem; color:var(--text-muted); margin-bottom:14px; line-height:1.6;">
+            Send your goals and notes to Apple Notes, Google Keep, WhatsApp, or any app on your device. One tap — your device shows all your options.
           </p>
-          <div class="backup-row">
-            <input type="email" id="backup-email" placeholder="your@email.com"
-              autocomplete="email" inputmode="email" />
-            <button id="email-backup-btn" class="btn btn--primary">Send Backup</button>
-          </div>
-          <p style="font-size:0.72rem; color:var(--text-muted); margin:0;">
-            Requires EmailJS setup — see <a href="https://github.com" target="_blank">SETUP.md</a> for instructions.
-          </p>
+          <button id="share-all-btn" class="btn btn--primary btn--full">
+            Share My Notes
+          </button>
         </div>
 
-        <!-- JSON download -->
+        <!-- JSON download — developers / power users -->
         <div class="card" style="margin-bottom:14px;">
           <div style="font-size:0.88rem; font-weight:700; color:var(--text-primary); margin-bottom:6px;">
-            💾 Download JSON
+            💾 Download Backup File
           </div>
           <p style="font-size:0.82rem; color:var(--text-muted); margin-bottom:12px; line-height:1.6;">
-            A complete snapshot of all your data saved as a file to your device.
-            Store it in your cloud, your computer, or anywhere you keep important files.
+            Downloads a complete copy of your data to your device. Store it anywhere — your phone, computer, or cloud storage.
           </p>
           <button id="json-download-btn" class="btn btn--glass btn--full">
-            Download Full Backup
+            Download Backup
           </button>
         </div>
 
@@ -332,8 +325,7 @@
             🔁 Restore from Backup
           </div>
           <p style="font-size:0.82rem; color:var(--text-muted); margin-bottom:12px; line-height:1.6;">
-            Have a JSON backup file? Restore your data here.
-            Existing data will be kept — the backup merges in alongside it.
+            Previously downloaded a backup file? Tap below to restore your data.
           </p>
           <button id="restore-btn" class="btn btn--ghost btn--full">
             Choose Backup File
@@ -345,9 +337,9 @@
         <!-- Privacy reminder -->
         <div class="card" style="border-color:rgba(0,229,212,0.15);">
           <p style="font-size:0.8rem; color:var(--text-muted); line-height:1.65; margin:0;">
-            🔒 <strong style="color:var(--text-secondary);">Privacy reminder:</strong>
-            Clearing your browser's site data or cache will delete your Dash Notes data permanently.
-            Back up before you clear. <strong style="color:var(--cyan);">Your data. Your responsibility. Your freedom.</strong>
+            🔒 <strong style="color:var(--text-secondary);">Important:</strong>
+            Clearing your browser's site data will permanently delete your Dash Notes data.
+            Always share or download a backup first. <strong style="color:var(--cyan);">Your data. Your responsibility. Your freedom.</strong>
           </p>
         </div>
       </section>
