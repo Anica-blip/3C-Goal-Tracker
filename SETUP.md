@@ -1,4 +1,4 @@
-# 3C Goal Tracker — Setup Guide
+# Dash Notes — Setup Guide
 
 Everything you need to get this running. No coding experience required.
 
@@ -7,64 +7,22 @@ Everything you need to get this running. No coding experience required.
 ## What You Need
 
 - A free [GitHub](https://github.com) account
-- A free [EmailJS](https://www.emailjs.com) account
 - A browser (Chrome or Edge recommended for full voice support)
-- 15 minutes
+- 10 minutes
 
 ---
 
 ## Step 1 — Fork the Repository
 
-1. Go to the 3C Goal Tracker GitHub repository
+1. Go to the Dash Notes GitHub repository
 2. Click **Fork** (top right)
 3. This creates your own copy of the app
 
 ---
 
-## Step 2 — Set Up EmailJS (Your Email Backup)
+## Step 2 — Enable GitHub Pages
 
-EmailJS lets the app send your goals and notes to your own email — no server needed.
-
-1. Go to [emailjs.com](https://www.emailjs.com) and create a free account
-2. Click **Add New Service** → choose your email provider (Gmail, Outlook, etc.)
-3. Follow the connection steps — EmailJS will send a test email to confirm
-4. Note down your **Service ID** (looks like `service_xxxxxxx`)
-5. Click **Email Templates** → **Create New Template**
-6. Set the template up like this:
-
-```
-Subject: 3C Goal Tracker — My Backup {{date}}
-
-{{content}}
-
-Sent from my 3C Goal Tracker
-```
-
-7. Note down your **Template ID** (looks like `template_xxxxxxx`)
-8. Go to **Account** → note down your **Public Key**
-
----
-
-## Step 3 — Add Your EmailJS Keys
-
-1. In your forked repository, open the file `config.js`
-2. Replace the placeholder values:
-
-```javascript
-const EMAILJS_CONFIG = {
-  serviceId:  'service_xxxxxxx',   // ← your Service ID
-  templateId: 'template_xxxxxxx',  // ← your Template ID
-  publicKey:  'xxxxxxxxxxxx'        // ← your Public Key
-};
-```
-
-3. Save the file and commit the change
-
----
-
-## Step 4 — Enable GitHub Pages
-
-1. In your repository, click **Settings**
+1. In your forked repository, click **Settings**
 2. Click **Pages** in the left sidebar
 3. Under **Source**, select **main branch** → **/ (root)**
 4. Click **Save**
@@ -72,14 +30,14 @@ const EMAILJS_CONFIG = {
 
 Your app is now live at:
 ```
-https://yourusername.github.io/3c-goal-tracker/
+https://yourusername.github.io/dash-notes/
 ```
 
 Bookmark it on your phone. Add it to your home screen for the full app experience.
 
 ---
 
-## Adding to Your Phone Home Screen
+## Step 3 — Add to Your Phone Home Screen
 
 **Android (Chrome):**
 1. Open the app URL in Chrome
@@ -106,10 +64,10 @@ Everything you type, record, or save lives in your browser's local storage (Inde
 No. It is private to your device and your browser.
 
 **What if I clear my browser data?**
-Your goal tracker data will be deleted along with it. This is why the email backup exists — use it regularly.
+Your Dash Notes data will be deleted along with it. Use the Share or Download backup regularly to keep your data safe.
 
 **How often should I back up?**
-After any important session. One tap sends everything to your email as readable text.
+After any important session. One tap in the Backup section shares everything to your chosen app or downloads a file to your device.
 
 **What about my voice notes?**
 Voice notes are transcribed to text by your browser automatically. The text saves locally. The original audio recording is not stored.
@@ -128,19 +86,10 @@ Photos taken with your camera are used to capture handwritten notes. They are no
 | Voice Recording | ✅ | ✅ | ✅ | ✅ |
 | Voice Transcription | ✅ | ✅ | ⚠️ Limited | ⚠️ Limited |
 | Camera Capture | ✅ | ✅ | ✅ | ✅ |
-| Email Backup | ✅ | ✅ | ✅ | ✅ |
+| Share Notes | ✅ | ✅ | ✅ | ✅ |
+| Download Backup | ✅ | ✅ | ✅ | ✅ |
 
 **Recommended: Chrome or Edge** for the best voice transcription experience.
-
----
-
-## EmailJS Free Tier
-
-EmailJS free tier allows **200 emails per month**.
-
-For a personal backup tool this is more than enough — most users send one backup per week or less.
-
-If you need more, EmailJS paid plans start at a low monthly cost. This is your own EmailJS account — 3C Thread To Success has no involvement in or access to your emails.
 
 ---
 
@@ -150,14 +99,14 @@ If you need more, EmailJS paid plans start at a low monthly cost. This is your o
 - Make sure you are using Chrome or Edge
 - Check that microphone permission is allowed for the app in your browser settings
 
-**Email not arriving**
-- Check your spam folder
-- Confirm your EmailJS Service ID, Template ID, and Public Key are correct in `config.js`
-- Make sure your EmailJS email service is connected and verified
-
 **Data disappeared**
 - Browser storage may have been cleared
-- Restore from your email backup or JSON file
+- Restore from your downloaded backup file if you have one
+- Go to the Backup section → Choose Backup File
+
+**Share not working**
+- On desktop browsers, sharing copies to clipboard — paste into your chosen app
+- On mobile, the full native share sheet appears — choose your preferred app from there
 
 **App not loading after GitHub Pages setup**
 - Wait 2–3 minutes after enabling Pages
@@ -167,6 +116,6 @@ If you need more, EmailJS paid plans start at a low monthly cost. This is your o
 
 ## Credits
 
-Designed and Built with ❤️ by Claude (Anthropic) × Chef Anica  
+Designed and Built with ❤️ by Claude (Anthropic) × Chef Anica
 
 *Think it. Do it. Own it.*
