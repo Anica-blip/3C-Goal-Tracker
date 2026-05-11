@@ -1,34 +1,42 @@
 /* ============================================================
-   3C Goal Tracker — style.css
-   Dark blue-purple theme · Mobile first · Modern · Transparent
+   Dash Notes — style.css
+   Deep blue-purple theme · Cyan accents · Open Sans · Mobile first
    Designed and Built with ❤️ by Claude (Anthropic) × Chef Anica
    3C Thread To Success™ · www.3c-innergrowth.com
    ============================================================ */
 
+/* ── Google Fonts ─────────────────────────────────────────── */
+@import url('https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700;800&display=swap');
+
 /* ── Variables ───────────────────────────────────────────── */
 :root {
-  --bg-base:        #0d0e1a;
+  --bg-base:        #080b1a;
   --bg-card:        rgba(255, 255, 255, 0.04);
   --bg-card-hover:  rgba(255, 255, 255, 0.07);
-  --bg-glass:       rgba(138, 92, 246, 0.08);
-  --bg-glass-mid:   rgba(138, 92, 246, 0.14);
+  --bg-glass:       rgba(0, 229, 212, 0.06);
+  --bg-glass-mid:   rgba(0, 229, 212, 0.12);
 
-  --purple-deep:    #5b21b6;
-  --purple-mid:     #7c3aed;
-  --purple-light:   #a78bfa;
-  --purple-glow:    rgba(124, 58, 237, 0.35);
-  --purple-subtle:  rgba(124, 58, 237, 0.12);
+  --cyan:           #00e5d4;
+  --cyan-dim:       #00b8a9;
+  --cyan-glow:      rgba(0, 229, 212, 0.3);
+  --cyan-subtle:    rgba(0, 229, 212, 0.1);
 
-  --blue-deep:      #1e1b4b;
-  --blue-mid:       #312e81;
-  --blue-accent:    #6366f1;
+  --purple-deep:    #1a0533;
+  --purple-mid:     #4a1c8c;
+  --purple-light:   #7c3aed;
+  --purple-glow:    rgba(74, 28, 140, 0.4);
+  --purple-subtle:  rgba(74, 28, 140, 0.15);
 
-  --text-primary:   #f1f0ff;
-  --text-secondary: #a5a3c5;
-  --text-muted:     #6b6899;
+  --blue-deep:      #050c2e;
+  --blue-mid:       #0d1b5e;
+  --blue-accent:    #1a3a9e;
 
-  --border:         rgba(138, 92, 246, 0.18);
-  --border-strong:  rgba(138, 92, 246, 0.35);
+  --border:         rgba(0, 229, 212, 0.12);
+  --border-strong:  rgba(0, 229, 212, 0.28);
+
+  --text-primary:   #f0f4ff;
+  --text-secondary: #a8b8d8;
+  --text-muted:     #5a6a8a;
 
   --success:        #10b981;
   --warning:        #f59e0b;
@@ -39,11 +47,11 @@
   --radius-lg:      20px;
   --radius-xl:      28px;
 
-  --shadow-soft:    0 4px 24px rgba(13, 14, 26, 0.6);
-  --shadow-glow:    0 0 32px rgba(124, 58, 237, 0.25);
-  --shadow-card:    0 8px 32px rgba(13, 14, 26, 0.5);
+  --shadow-soft:    0 4px 24px rgba(8, 11, 26, 0.7);
+  --shadow-glow:    0 0 32px rgba(0, 229, 212, 0.18);
+  --shadow-card:    0 8px 32px rgba(8, 11, 26, 0.6);
 
-  --font:           'Segoe UI', system-ui, -apple-system, sans-serif;
+  --font:           'Open Sans', 'Segoe UI', system-ui, -apple-system, sans-serif;
   --transition:     0.22s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
@@ -64,8 +72,10 @@ body {
   font-family: var(--font);
   background-color: var(--bg-base);
   background-image:
-    radial-gradient(ellipse 80% 50% at 50% -10%, rgba(91, 33, 182, 0.3) 0%, transparent 70%),
-    radial-gradient(ellipse 50% 40% at 90% 80%, rgba(49, 46, 129, 0.25) 0%, transparent 60%);
+    radial-gradient(ellipse 120% 60% at 50% -5%, rgba(74, 28, 140, 0.55) 0%, transparent 65%),
+    radial-gradient(ellipse 80% 50% at 15% 40%, rgba(26, 5, 51, 0.6) 0%, transparent 55%),
+    radial-gradient(ellipse 70% 60% at 85% 70%, rgba(13, 27, 94, 0.7) 0%, transparent 55%),
+    radial-gradient(ellipse 100% 40% at 50% 100%, rgba(5, 12, 46, 0.8) 0%, transparent 60%);
   background-attachment: fixed;
   color: var(--text-primary);
   min-height: 100vh;
@@ -89,7 +99,7 @@ h4 { font-size: 1rem; }
 p  { color: var(--text-secondary); font-size: 0.95rem; line-height: 1.7; }
 
 a  {
-  color: var(--purple-light);
+  color: var(--cyan);
   text-decoration: none;
   transition: color var(--transition);
 }
@@ -169,14 +179,14 @@ a:hover { color: var(--text-primary); }
 /* Ghost — transparent with border */
 .btn--ghost {
   background: transparent;
-  color: var(--purple-light);
+  color: var(--cyan);
   border: 1px solid var(--border-strong);
   backdrop-filter: blur(8px);
 }
 .btn--ghost:hover {
   background: var(--purple-subtle);
   color: var(--text-primary);
-  border-color: var(--purple-light);
+  border-color: var(--cyan);
 }
 
 /* Glass — semi-transparent */
@@ -188,7 +198,7 @@ a:hover { color: var(--text-primary); }
 }
 .btn--glass:hover {
   background: rgba(124, 58, 237, 0.28);
-  border-color: var(--purple-light);
+  border-color: var(--cyan);
   transform: translateY(-1px);
 }
 
@@ -292,7 +302,7 @@ label {
 
 .badge--purple {
   background: var(--purple-subtle);
-  color: var(--purple-light);
+  color: var(--cyan);
   border: 1px solid rgba(124, 58, 237, 0.25);
 }
 
@@ -339,7 +349,7 @@ label {
 }
 
 .nav__logo span {
-  color: var(--purple-light);
+  color: var(--cyan);
 }
 
 /* ── Section ─────────────────────────────────────────────── */
@@ -354,7 +364,7 @@ label {
 .section__title {
   font-size: 1rem;
   font-weight: 700;
-  color: var(--purple-light);
+  color: var(--cyan);
   text-transform: uppercase;
   letter-spacing: 0.08em;
   margin-bottom: 4px;
@@ -373,7 +383,7 @@ label {
   bottom: 28px;
   left: 50%;
   transform: translateX(-50%) translateY(100px);
-  background: rgba(30, 27, 75, 0.95);
+  background: rgba(8, 11, 26, 0.95);
   border: 1px solid var(--border-strong);
   border-radius: var(--radius-md);
   padding: 14px 24px;
@@ -433,7 +443,7 @@ label {
 }
 
 .tab-bar__item.active {
-  color: var(--purple-light);
+  color: var(--cyan);
 }
 
 .tab-bar__item.active .icon {
@@ -462,7 +472,7 @@ label {
 
 .matrix-quadrant.drag-over {
   background: var(--bg-glass-mid);
-  border-color: var(--purple-light);
+  border-color: var(--cyan);
   box-shadow: inset 0 0 0 2px rgba(167, 139, 250, 0.3);
 }
 
@@ -531,7 +541,7 @@ label {
 
 .goal-card:hover {
   background: var(--bg-card-hover);
-  border-left-color: var(--purple-light);
+  border-left-color: var(--cyan);
 }
 
 .goal-card__title {
@@ -558,7 +568,7 @@ label {
 
 .goal-card__progress-bar {
   height: 100%;
-  background: linear-gradient(90deg, var(--purple-mid), var(--purple-light));
+  background: linear-gradient(90deg, var(--cyan-dim), var(--cyan));
   border-radius: 2px;
   transition: width 0.4s ease;
 }
@@ -608,7 +618,7 @@ label {
 .recorder__timer {
   font-size: 1.4rem;
   font-weight: 700;
-  color: var(--purple-light);
+  color: var(--cyan);
   font-variant-numeric: tabular-nums;
 }
 
@@ -715,7 +725,7 @@ label {
 
 .onboard__tagline {
   font-size: 0.9rem;
-  color: var(--purple-light);
+  color: var(--cyan);
   font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -770,7 +780,7 @@ label {
   line-height: 1.7;
 }
 
-.onboard__privacy strong { color: var(--purple-light); }
+.onboard__privacy strong { color: var(--cyan); }
 
 .onboard__cta {
   display: flex;
@@ -809,7 +819,7 @@ label {
 /* ── Utilities ───────────────────────────────────────────── */
 .text-center  { text-align: center; }
 .text-muted   { color: var(--text-muted); }
-.text-purple  { color: var(--purple-light); }
+.text-purple  { color: var(--cyan); }
 .text-success { color: var(--success); }
 .text-danger  { color: var(--danger); }
 .mt-4  { margin-top: 4px; }
