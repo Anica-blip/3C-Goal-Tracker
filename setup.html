@@ -96,116 +96,49 @@
 
       <!-- Header -->
       <div style="text-align:center; padding: 36px 0 28px;">
-        <div style="font-size:2rem; margin-bottom:12px;">⚙️</div>
-        <h2 style="color:var(--cyan); margin-bottom:8px;">Quick Setup</h2>
+        <h2 style="color:var(--cyan); margin-bottom:8px;">Settings</h2>
         <p style="font-size:0.9rem; color:var(--text-muted);">
-          This takes less than a minute. You can always update these later.
+          There's not much to configure — the app is designed to just work.
         </p>
       </div>
 
-      <!-- Email backup -->
+      <!-- How sharing works -->
       <div class="card" style="margin-bottom:16px;">
-        <div class="section__title" style="margin-bottom:12px;">Your Backup Email</div>
-        <p style="font-size:0.85rem; color:var(--text-muted); margin-bottom:14px;">
-          When you tap "Email Backup" in the app, your notes arrive here as readable text — not code.
-          This is your own email. Nothing goes to any server.
+        <div class="section__title" style="margin-bottom:12px;">Sharing Your Notes</div>
+        <p style="font-size:0.88rem; color:var(--text-secondary); line-height:1.7; margin-bottom:0;">
+          When you tap <strong style="color:var(--text-primary);">Share My Notes</strong> in the Save section,
+          your device opens its own share menu — the same one you use everywhere else on your phone.
+          Choose wherever you normally keep things: your notes app, a message to yourself, cloud storage,
+          or anything else that appears. No setup needed.
         </p>
-        <div class="form-group" style="margin-bottom:0;">
-          <label>Email address</label>
-          <input type="email" id="pref-email" placeholder="your@email.com"
-            autocomplete="email" inputmode="email" />
-        </div>
       </div>
 
-      <!-- Share destination -->
+      <!-- Backup reminder -->
       <div class="card" style="margin-bottom:16px;">
-        <div class="section__title" style="margin-bottom:6px;">Where Do You Keep Notes?</div>
-        <p style="font-size:0.85rem; color:var(--text-muted); margin-bottom:16px;">
-          Choose your preferred destination for sharing notes. The app will suggest this first
-          when you hit Share. You can always pick a different one in the moment.
-        </p>
-
-        <div data-share-dest="apple-notes" class="dest-option">
-          <div class="dest-option__dot"></div>
-          <div class="dest-option__icon">🍎</div>
-          <div>
-            <div class="dest-option__label">Apple Notes</div>
-            <div class="dest-option__sub">iPhone / iPad / Mac</div>
-          </div>
-          <div class="connected-badge">● Preferred</div>
-        </div>
-
-        <div data-share-dest="google-keep" class="dest-option">
-          <div class="dest-option__dot"></div>
-          <div class="dest-option__icon">📌</div>
-          <div>
-            <div class="dest-option__label">Google Keep</div>
-            <div class="dest-option__sub">Android / Chrome</div>
-          </div>
-          <div class="connected-badge">● Preferred</div>
-        </div>
-
-        <div data-share-dest="notion" class="dest-option">
-          <div class="dest-option__dot"></div>
-          <div class="dest-option__icon">◻️</div>
-          <div>
-            <div class="dest-option__label">Notion</div>
-            <div class="dest-option__sub">All platforms</div>
-          </div>
-          <div class="connected-badge">● Preferred</div>
-        </div>
-
-        <div data-share-dest="onenote" class="dest-option">
-          <div class="dest-option__dot"></div>
-          <div class="dest-option__icon">📓</div>
-          <div>
-            <div class="dest-option__label">OneNote</div>
-            <div class="dest-option__sub">Microsoft / Windows</div>
-          </div>
-          <div class="connected-badge">● Preferred</div>
-        </div>
-
-        <div data-share-dest="whatsapp" class="dest-option">
-          <div class="dest-option__dot"></div>
-          <div class="dest-option__icon">💬</div>
-          <div>
-            <div class="dest-option__label">WhatsApp / Telegram</div>
-            <div class="dest-option__sub">Message yourself</div>
-          </div>
-          <div class="connected-badge">● Preferred</div>
-        </div>
-
-        <div data-share-dest="other" class="dest-option">
-          <div class="dest-option__dot"></div>
-          <div class="dest-option__icon">📱</div>
-          <div>
-            <div class="dest-option__label">Let me choose each time</div>
-            <div class="dest-option__sub">Native share sheet</div>
-          </div>
-          <div class="connected-badge">● Preferred</div>
-        </div>
-      </div>
-
-      <!-- Info note -->
-      <div class="card" style="margin-bottom:28px; border-color:rgba(0,229,212,0.15);">
-        <p style="font-size:0.82rem; color:var(--text-muted); line-height:1.65; margin:0;">
-          💡 <strong style="color:var(--text-secondary);">How sharing works:</strong>
-          When you tap Share on any note, your device's share sheet opens —
-          showing all apps available on your phone. Your preferred destination appears first.
-          No logins, no API keys, no accounts needed.
+        <div class="section__title" style="margin-bottom:12px;">Keeping Your Data Safe</div>
+        <p style="font-size:0.88rem; color:var(--text-secondary); line-height:1.7; margin-bottom:0;">
+          Your notes live on this device only. If you clear your browser storage, they're gone.
+          Use <strong style="color:var(--text-primary);">Save → Share</strong> or
+          <strong style="color:var(--text-primary);">Save → Download Backup</strong> regularly.
+          That's all you need to do.
         </p>
       </div>
 
-      <!-- Action buttons -->
-      <div style="display:flex; flex-direction:column; gap:12px;">
-        <button id="save-prefs-btn" class="btn btn--primary btn--full"
-          style="padding:16px; font-size:1rem; border-radius:30px;">
-          Save and Open App →
-        </button>
-        <button id="skip-setup-btn" class="btn btn--ghost btn--full"
-          style="font-size:0.88rem;">
-          Skip for now — I'll set this up later
-        </button>
+      <!-- Browser note -->
+      <div class="card" style="margin-bottom:28px; border-color:rgba(0,229,212,0.1);">
+        <div class="section__title" style="margin-bottom:12px;">Voice Notes</div>
+        <p style="font-size:0.88rem; color:var(--text-secondary); line-height:1.7; margin-bottom:0;">
+          Voice transcription works best in Chrome or Edge on Android.
+          On iPhone, use Safari. The recording is never stored — only the text that comes from it.
+        </p>
+      </div>
+
+      <!-- Action -->
+      <div style="padding-bottom:40px;">
+        <a href="app.html" class="btn btn--primary btn--full"
+          style="padding:16px; font-size:1rem; border-radius:30px; text-align:center; display:block;">
+          Go to the app &#x203A;
+        </a>
       </div>
 
       <!-- Watermark -->
@@ -216,11 +149,6 @@
 
     </div>
   </main>
-
-  <script type="module">
-    import { initPrefsUI } from './js/prefs.js';
-    initPrefsUI();
-  </script>
 
 </body>
 </html>
