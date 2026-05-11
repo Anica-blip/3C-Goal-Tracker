@@ -1,171 +1,119 @@
-// backup.js — Email backup via EmailJS + JSON export
+// backup.js — Share, download and restore
 // Dash Notes · 3C Thread To Success™
 
 import { exportAll, importAll } from './storage.js';
-import { EMAILJS_CONFIG } from '../config.js';
 
-// ── Load EmailJS SDK ───────────────────────────────────────
-function loadEmailJS() {
-  return new Promise((resolve, reject) => {
-    if (window.emailjs) { resolve(); return; }
-    const s    = document.createElement('script');
-    s.src      = 'https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js';
-    s.onload   = () => { window.emailjs.init(EMAILJS_CONFIG.publicKey); resolve(); };
-    s.onerror  = () => reject(new Error('Failed to load EmailJS'));
-    document.head.appendChild(s);
-  });
-}
-
-// ── Format data as readable text for email ─────────────────
-function formatForEmail(data) {
+// ── Format data as readable text ───────────────────────────
+function formatAsText(data) {
   const lines = [];
-  const ts    = new Date().toLocaleString('en-GB', {
+  const ts = new Date().toLocaleString('en-GB', {
     timeZone: 'Europe/London',
     day: 'numeric', month: 'long', year: 'numeric',
     hour: '2-digit', minute: '2-digit'
   });
 
-  lines.push(`Dash Notes Backup — ${ts} (London)`);
-  lines.push('='.repeat(48));
+  lines.push(`Dash Notes — ${ts}`);
+  lines.push('='.repeat(40));
 
-  // Goals
   if (data.goals?.length) {
     lines.push('');
-    lines.push('GOALS');
-    lines.push('-'.repeat(24));
+    lines.push('MY GOALS');
+    lines.push('-'.repeat(20));
     data.goals.forEach((g, i) => {
       lines.push(`${i + 1}. ${g.title}`);
-      if (g.why)        lines.push(`   Why: ${g.why}`);
+      if (g.why)             lines.push(`   Why: ${g.why}`);
       if (g.milestones?.length)
         g.milestones.forEach(m => lines.push(`   • ${m}`));
-      if (g.reflection) lines.push(`   Reflection: ${g.reflection}`);
+      if (g.reflection)      lines.push(`   Reflection: ${g.reflection}`);
       lines.push(`   Progress: ${g.progress || 0}%`);
       lines.push('');
     });
   }
 
-  // Tasks (Eisenhower)
   if (data.tasks?.length) {
-    const quadLabels = {
-      q1: 'Do First (Urgent + Important)',
-      q2: 'Schedule (Important, Not Urgent)',
-      q3: 'Delegate (Urgent, Not Important)',
-      q4: 'Drop (Not Urgent, Not Important)',
-    };
-    lines.push('EISENHOWER MATRIX — TASKS');
-    lines.push('-'.repeat(24));
-    Object.entries(quadLabels).forEach(([q, label]) => {
-      const qTasks = data.tasks.filter(t => t.quadrant === q);
-      if (qTasks.length) {
+    const labels = { q1: 'Do First', q2: 'Schedule', q3: 'Delegate', q4: 'Drop' };
+    lines.push('PRIORITY MATRIX');
+    lines.push('-'.repeat(20));
+    Object.entries(labels).forEach(([q, label]) => {
+      const qt = data.tasks.filter(t => t.quadrant === q);
+      if (qt.length) {
         lines.push(`\n${label}:`);
-        qTasks.forEach(t => lines.push(`  • ${t.text}`));
+        qt.forEach(t => lines.push(`  • ${t.text}`));
       }
     });
     lines.push('');
   }
 
-  // Notes
   if (data.notes?.length) {
     lines.push('NOTES');
-    lines.push('-'.repeat(24));
+    lines.push('-'.repeat(20));
     data.notes.forEach(n => {
-      const prefix = n.type === 'voice' ? '🎙️ Voice' : '📝 Note';
-      const date   = new Date(n.created).toLocaleString('en-GB', {
-        timeZone: 'Europe/London', day: 'numeric', month: 'short',
+      const prefix = n.type === 'voice' ? '🎙️' : '📝';
+      const date = new Date(n.created).toLocaleString('en-GB', {
+        timeZone: 'Europe/London',
+        day: 'numeric', month: 'short',
         hour: '2-digit', minute: '2-digit'
       });
-      lines.push(`[${prefix} — ${date}]`);
+      lines.push(`${prefix} ${date}`);
       lines.push(n.text);
       lines.push('');
     });
   }
 
-  lines.push('='.repeat(48));
-  lines.push('Sent from Dash Notes — 3C Thread To Success™');
-  lines.push('www.3c-innergrowth.com');
-
+  lines.push('='.repeat(40));
+  lines.push('Dash Notes · 3C Thread To Success™');
   return lines.join('\n');
 }
 
-// ── Send email backup ──────────────────────────────────────
-async function sendEmailBackup(userEmail) {
-  if (!userEmail?.trim()) {
-    showToast('Please enter your email address.', 'error');
-    return false;
-  }
-
-  if (!EMAILJS_CONFIG.serviceId || EMAILJS_CONFIG.serviceId.startsWith('YOUR_')) {
-    showToast('EmailJS not configured — see SETUP.md to connect your email.', 'error');
-    return false;
-  }
-
-  showToast('Preparing your backup…');
-
+// ── Share via Web Share API ────────────────────────────────
+async function shareAll() {
   try {
-    await loadEmailJS();
     const data    = await exportAll();
-    const content = formatForEmail(data);
-    const date    = new Date().toLocaleDateString('en-GB', {
-      timeZone: 'Europe/London', day: 'numeric', month: 'long', year: 'numeric'
-    });
-
-    await window.emailjs.send(
-      EMAILJS_CONFIG.serviceId,
-      EMAILJS_CONFIG.templateId,
-      {
-        to_email: userEmail.trim(),
-        subject:  `Dash Notes Backup — ${date}`,
-        content,
-        date,
-      }
-    );
-
-    showToast('Backup sent to your inbox ✅');
-    return true;
+    const content = formatAsText(data);
+    if (navigator.share) {
+      await navigator.share({ title: 'Dash Notes — My Backup', text: content });
+    } else {
+      await navigator.clipboard.writeText(content);
+      showToast('Copied — paste into your notes app ✅');
+    }
   } catch (err) {
-    console.error('Email backup failed:', err);
-    showToast('Email failed — check your config or try again.', 'error');
-    return false;
+    if (err.name !== 'AbortError') showToast('Could not share — try downloading instead.', 'error');
   }
 }
 
 // ── JSON download ──────────────────────────────────────────
 async function downloadJSON() {
   try {
-    const data     = await exportAll();
-    const json     = JSON.stringify(data, null, 2);
-    const blob     = new Blob([json], { type: 'application/json' });
-    const url      = URL.createObjectURL(blob);
-    const date     = new Date().toLocaleDateString('en-GB', {
+    const data = await exportAll();
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url  = URL.createObjectURL(blob);
+    const date = new Date().toLocaleDateString('en-GB', {
       timeZone: 'Europe/London', day: '2-digit', month: '2-digit', year: 'numeric'
     }).replace(/\//g, '-');
-    const a        = document.createElement('a');
-    a.href         = url;
-    a.download     = `dash-notes-backup-${date}.json`;
+    const a    = document.createElement('a');
+    a.href = url; a.download = `dash-notes-backup-${date}.json`;
     a.click();
     URL.revokeObjectURL(url);
-    showToast('JSON backup downloaded ✅');
+    showToast('Backup downloaded ✅');
   } catch {
     showToast('Download failed — try again.', 'error');
   }
 }
 
-// ── JSON import / restore ──────────────────────────────────
+// ── Restore from JSON ──────────────────────────────────────
 async function importJSON(file) {
   if (!file) return;
   try {
-    const text = await file.text();
-    const data = JSON.parse(text);
+    const data = JSON.parse(await file.text());
     if (!data.goals && !data.tasks && !data.notes) {
-      showToast('Invalid backup file — please use a Dash Notes backup.', 'error');
+      showToast('File not recognised — use a Dash Notes backup.', 'error');
       return;
     }
     await importAll(data);
-    showToast('Backup restored successfully ✅');
-    // Refresh all sections
+    showToast('Data restored ✅');
     window.dispatchEvent(new CustomEvent('dash-data-restored'));
   } catch {
-    showToast('Restore failed — file may be corrupted.', 'error');
+    showToast('Restore failed — file may be damaged.', 'error');
   }
 }
 
@@ -180,30 +128,13 @@ function showToast(msg, type = 'success') {
 
 // ── Init ───────────────────────────────────────────────────
 function initBackup() {
-  // Email backup
-  const emailBtn = document.getElementById('email-backup-btn');
-  const emailIn  = document.getElementById('backup-email');
-  if (emailBtn) {
-    emailBtn.addEventListener('click', () => {
-      const addr = emailIn?.value || localStorage.getItem('dash-backup-email') || '';
-      sendEmailBackup(addr);
-      if (addr && emailIn) localStorage.setItem('dash-backup-email', addr);
-    });
-  }
-
-  // Pre-fill saved email
-  if (emailIn) {
-    const saved = localStorage.getItem('dash-backup-email');
-    if (saved) emailIn.value = saved;
-  }
-
-  // JSON download
-  const jsonBtn = document.getElementById('json-download-btn');
-  if (jsonBtn) jsonBtn.addEventListener('click', downloadJSON);
-
-  // JSON restore
-  const restoreInput = document.getElementById('restore-input');
+  const shareBtn     = document.getElementById('share-all-btn');
+  const jsonBtn      = document.getElementById('json-download-btn');
   const restoreBtn   = document.getElementById('restore-btn');
+  const restoreInput = document.getElementById('restore-input');
+
+  if (shareBtn) shareBtn.addEventListener('click', shareAll);
+  if (jsonBtn)  jsonBtn.addEventListener('click', downloadJSON);
   if (restoreBtn && restoreInput) {
     restoreBtn.addEventListener('click', () => restoreInput.click());
     restoreInput.addEventListener('change', e => {
@@ -214,4 +145,4 @@ function initBackup() {
   }
 }
 
-export { initBackup, sendEmailBackup, downloadJSON, importJSON };
+export { initBackup, shareAll, downloadJSON, importJSON };
