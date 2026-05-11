@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Dash Notes — Your private thinking space. Goals, priorities, voice notes, brain dump." />
+  <meta name="theme-color" content="#080b1a" />
+  <title>Dash Notes</title>
+  <link rel="icon" type="image/png" href="assets/favicon.png" />
+  <link rel="apple-touch-icon" href="assets/favicon.png" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="stylesheet" href="css/style.css" />
+  <style>
+    /* ── Section visibility ───────────────────────────── */
+    .app-section { display: none; }
+    .app-section.active { display: block; }
+
+    /* ── Matrix axis labels ───────────────────────────── */
+    .matrix-axis {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 4px;
+    }
+
+    .matrix-axis-label {
+      text-align: center;
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-muted);
+      padding: 3px 0;
+    }
+
+    /* ── Goal counter pill ────────────────────────────── */
+    .goal-counter {
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: var(--cyan);
+      background: var(--cyan-subtle);
+      border: 1px solid rgba(0,229,212,0.2);
+      border-radius: 20px;
+      padding: 2px 10px;
+    }
+
+    /* ── Backup section ───────────────────────────────── */
+    .backup-row {
+      display: flex;
+      gap: 10px;
+      align-items: flex-end;
+      flex-wrap: wrap;
+      margin-bottom: 14px;
+    }
+
+    .backup-row input { flex: 1; min-width: 180px; }
+
+    /* ── Camera zone ──────────────────────────────────── */
+    #camera-zone {
+      cursor: pointer;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    /* ── Settings link in nav ─────────────────────────── */
+    .nav-settings {
+      font-size: 1.2rem;
+      cursor: pointer;
+      color: var(--text-muted);
+      background: none;
+      border: none;
+      padding: 4px;
+      transition: color var(--transition);
+    }
+    .nav-settings:hover { color: var(--cyan); }
+  </style>
+</head>
+<body>
+
+  <!-- Toast -->
+  <div id="toast" class="toast" role="alert" aria-live="polite"></div>
+
+  <!-- Nav -->
+  <nav class="nav">
+    <div class="nav__inner">
+      <div class="nav__logo">
+        <img src="assets/favicon.png" alt="Dash Notes" width="26" height="26"
+          style="border-radius:6px;" onerror="this.style.display='none'" />
+        <span>Dash</span> Notes
+      </div>
+      <button class="nav-settings" onclick="window.location.href='setup.html'" title="Preferences">⚙️</button>
+    </div>
+  </nav>
+
+  <!-- ════════════════════════════════════════════════════
+       MAIN CONTENT — all sections
+  ═══════════════════════════════════════════════════════ -->
+  <main class="page-content">
+    <div class="container">
+
+      <!-- ── GOALS ──────────────────────────────────── -->
+      <section id="section-goals" class="app-section active">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; flex-wrap:wrap; gap:10px;">
+          <div>
+            <div class="section__title">Goals</div>
+            <p style="font-size:0.82rem; margin-top:2px;">
+              Start with your <em>why</em> — not your to-do list.
+            </p>
+          </div>
+          <div style="display:flex; align-items:center; gap:10px;">
+            <span class="goal-counter"><span id="goals-counter">0 / 5</span></span>
+            <button id="add-goal-btn" class="btn btn--primary" style="padding:9px 18px; font-size:0.88rem;">
+              + Add Goal
+            </button>
+          </div>
+        </div>
+
+        <div id="goals-list"></div>
+
+        <!-- 3C tip -->
+        <div class="card" style="margin-top:20px; border-color:rgba(0,229,212,0.12);">
+          <p style="font-size:0.8rem; color:var(--text-muted); line-height:1.65; margin:0;">
+            💡 <strong style="color:var(--text-secondary);">3C Tip:</strong>
+            Choose 2 goals that feel big and exciting, 2 that feel easy and fun,
+            and 1 that feels deep and meaningful. Progress beats perfection every time.
+          </p>
+        </div>
+      </section>
+
+      <!-- ── MATRIX ─────────────────────────────────── -->
+      <section id="section-matrix" class="app-section">
+        <div class="section__title" style="margin-bottom:4px;">Eisenhower Matrix</div>
+        <p style="font-size:0.82rem; margin-bottom:16px;">
+          Decide before you react. Drag tasks between quadrants.
+        </p>
+
+        <!-- Add task form -->
+        <form id="task-form" style="display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap;">
+          <input type="text" id="task-input" placeholder="Add a task or decision…"
+            style="flex:1; min-width:160px;" maxlength="140" autocomplete="off" />
+          <select id="task-quadrant" style="max-width:140px;">
+            <option value="q1">🔴 Do First</option>
+            <option value="q2">🟢 Schedule</option>
+            <option value="q3">🟡 Delegate</option>
+            <option value="q4">⚫ Drop</option>
+          </select>
+          <button type="submit" class="btn btn--primary" style="padding:10px 16px;">Add</button>
+        </form>
+
+        <!-- Axis labels -->
+        <div class="matrix-axis">
+          <div class="matrix-axis-label">🔺 Urgent</div>
+          <div class="matrix-axis-label">🔺 Urgent</div>
+        </div>
+
+        <!-- Grid -->
+        <div class="matrix-grid">
+          <div class="matrix-quadrant matrix-quadrant--q1"
+              id="zone-q1" data-quadrant="q1">
+            <div class="matrix-quadrant__label">🔴 Do First</div>
+          </div>
+          <div class="matrix-quadrant matrix-quadrant--q2"
+              id="zone-q2" data-quadrant="q2">
+            <div class="matrix-quadrant__label">🟢 Schedule</div>
+          </div>
+          <div class="matrix-quadrant matrix-quadrant--q3"
+              id="zone-q3" data-quadrant="q3">
+            <div class="matrix-quadrant__label">🟡 Delegate</div>
+          </div>
+          <div class="matrix-quadrant matrix-quadrant--q4"
+              id="zone-q4" data-quadrant="q4">
+            <div class="matrix-quadrant__label">⚫ Drop</div>
+          </div>
+        </div>
+
+        <div style="display:flex; justify-content:space-between; margin-top:4px; padding:0 4px;">
+          <span style="font-size:0.68rem; color:var(--text-muted);">← Important</span>
+          <span style="font-size:0.68rem; color:var(--text-muted);">Not Important →</span>
+        </div>
+
+        <!-- Tip -->
+        <div class="card" style="margin-top:16px; border-color:rgba(0,229,212,0.12);">
+          <p style="font-size:0.8rem; color:var(--text-muted); line-height:1.65; margin:0;">
+            💡 <strong style="color:var(--text-secondary);">Eisenhower Method:</strong>
+            Urgent is loud. Important is quiet. The method works when Quadrant 2
+            (Schedule) becomes non-negotiable — not optional.
+          </p>
+        </div>
+      </section>
+
+      <!-- ── VOICE ──────────────────────────────────── -->
+      <section id="section-voice" class="app-section">
+        <div class="section__title" style="margin-bottom:4px;">Voice Notes</div>
+        <p style="font-size:0.82rem; margin-bottom:20px;">
+          Capture a thought before it disappears — transcribed to text automatically.
+        </p>
+
+        <!-- Recorder -->
+        <div class="card recorder" style="margin-bottom:16px;">
+          <button id="record-btn" class="recorder__btn" aria-label="Start recording">🎙️</button>
+          <div id="voice-timer" class="recorder__timer">00:00</div>
+          <p id="voice-status" class="recorder__status">Ready to record. Tap the mic to start.</p>
+        </div>
+
+        <!-- Live transcript -->
+        <div style="margin-bottom:16px;">
+          <label style="margin-bottom:6px;">Transcript</label>
+          <div id="voice-transcript" class="transcript" aria-live="polite">
+            Your spoken words will appear here as you record…
+          </div>
+        </div>
+
+        <!-- Browser note -->
+        <div class="card" style="margin-bottom:16px; border-color:rgba(0,229,212,0.1);">
+          <p style="font-size:0.78rem; color:var(--text-muted); margin:0; line-height:1.65;">
+            🎙️ Voice transcription works best in <strong style="color:var(--text-secondary);">Chrome or Edge</strong>.
+            Firefox and Safari have limited support. The audio itself is never stored — only the text.
+          </p>
+        </div>
+
+        <!-- Saved voice notes -->
+        <div class="section__title" style="margin-bottom:10px;">Saved Voice Notes</div>
+        <div id="voice-notes-list"></div>
+      </section>
+
+      <!-- ── NOTES ──────────────────────────────────── -->
+      <section id="section-notes" class="app-section">
+        <div class="section__title" style="margin-bottom:4px;">Brain Dump</div>
+        <p style="font-size:0.82rem; margin-bottom:14px;">
+          Type fast, think freely. Save and share in one tap.
+        </p>
+
+        <!-- Note pad -->
+        <textarea id="note-pad" class="note-pad"
+          placeholder="What's on your mind? Just start typing…"
+          aria-label="Write a note" maxlength="2000"></textarea>
+
+        <div style="display:flex; gap:8px; margin-top:10px; margin-bottom:20px;">
+          <button id="save-note-btn" class="btn btn--primary" style="flex:1;">
+            Save Note
+          </button>
+          <div style="font-size:0.72rem; color:var(--text-muted); align-self:center; white-space:nowrap;">
+            or Ctrl + Enter
+          </div>
+        </div>
+
+        <!-- Notes list -->
+        <div class="section__title" style="margin-bottom:10px;">Saved Notes</div>
+        <div id="notes-list"></div>
+      </section>
+
+      <!-- ── CAMERA ─────────────────────────────────── -->
+      <section id="section-camera" class="app-section">
+        <div class="section__title" style="margin-bottom:4px;">Camera Capture</div>
+        <p style="font-size:0.82rem; margin-bottom:16px;">
+          Photograph a handwritten note, whiteboard, or anything you want to remember.
+          The image stays on your device only.
+        </p>
+
+        <!-- Camera zone -->
+        <div class="camera-zone" id="camera-zone" role="button"
+            aria-label="Tap to open camera" tabindex="0"
+            onkeydown="if(event.key==='Enter')this.click()">
+          <div class="camera-zone__icon">📷</div>
+          <div class="camera-zone__label">
+            Tap to take a photo or choose an image from your library
+          </div>
+        </div>
+
+        <!-- Hidden input — capture=environment uses rear camera on mobile -->
+        <input type="file" id="camera-input" accept="image/*"
+          capture="environment" style="display:none;" aria-hidden="true" />
+
+        <!-- Preview area -->
+        <div id="camera-preview" style="margin-top:16px;">
+          <p style="text-align:center; color:var(--text-muted); font-size:0.85rem; padding:16px 0;">
+            No image captured yet. Tap the camera area above.
+          </p>
+        </div>
+
+        <div class="card" style="margin-top:16px; border-color:rgba(0,229,212,0.1);">
+          <p style="font-size:0.78rem; color:var(--text-muted); margin:0; line-height:1.65;">
+            💡 After capturing, tap <strong style="color:var(--text-secondary);">"Share / Save to your notes app"</strong>
+            to send the image directly to Apple Notes, Google Keep, or any app on your device.
+          </p>
+        </div>
+      </section>
+
+      <!-- ── BACKUP ─────────────────────────────────── -->
+      <section id="section-backup" class="app-section">
+        <div class="section__title" style="margin-bottom:4px;">Backup &amp; Restore</div>
+        <p style="font-size:0.82rem; margin-bottom:20px;">
+          Your data lives on this device. Back it up regularly so nothing is lost.
+        </p>
+
+        <!-- Email backup -->
+        <div class="card" style="margin-bottom:14px;">
+          <div style="font-size:0.88rem; font-weight:700; color:var(--text-primary); margin-bottom:6px;">
+            📧 Email Backup
+          </div>
+          <p style="font-size:0.82rem; color:var(--text-muted); margin-bottom:12px; line-height:1.6;">
+            Your goals, tasks, and notes are sent as readable text to your own inbox.
+            No code, no attachments — just your thoughts in plain language.
+          </p>
+          <div class="backup-row">
+            <input type="email" id="backup-email" placeholder="your@email.com"
+              autocomplete="email" inputmode="email" />
+            <button id="email-backup-btn" class="btn btn--primary">Send Backup</button>
+          </div>
+          <p style="font-size:0.72rem; color:var(--text-muted); margin:0;">
+            Requires EmailJS setup — see <a href="https://github.com" target="_blank">SETUP.md</a> for instructions.
+          </p>
+        </div>
+
+        <!-- JSON download -->
+        <div class="card" style="margin-bottom:14px;">
+          <div style="font-size:0.88rem; font-weight:700; color:var(--text-primary); margin-bottom:6px;">
+            💾 Download JSON
+          </div>
+          <p style="font-size:0.82rem; color:var(--text-muted); margin-bottom:12px; line-height:1.6;">
+            A complete snapshot of all your data saved as a file to your device.
+            Store it in your cloud, your computer, or anywhere you keep important files.
+          </p>
+          <button id="json-download-btn" class="btn btn--glass btn--full">
+            Download Full Backup
+          </button>
+        </div>
+
+        <!-- Restore -->
+        <div class="card" style="margin-bottom:14px;">
+          <div style="font-size:0.88rem; font-weight:700; color:var(--text-primary); margin-bottom:6px;">
+            🔁 Restore from Backup
+          </div>
+          <p style="font-size:0.82rem; color:var(--text-muted); margin-bottom:12px; line-height:1.6;">
+            Have a JSON backup file? Restore your data here.
+            Existing data will be kept — the backup merges in alongside it.
+          </p>
+          <button id="restore-btn" class="btn btn--ghost btn--full">
+            Choose Backup File
+          </button>
+          <input type="file" id="restore-input" accept=".json"
+            style="display:none;" aria-hidden="true" />
+        </div>
+
+        <!-- Privacy reminder -->
+        <div class="card" style="border-color:rgba(0,229,212,0.15);">
+          <p style="font-size:0.8rem; color:var(--text-muted); line-height:1.65; margin:0;">
+            🔒 <strong style="color:var(--text-secondary);">Privacy reminder:</strong>
+            Clearing your browser's site data or cache will delete your Dash Notes data permanently.
+            Back up before you clear. <strong style="color:var(--cyan);">Your data. Your responsibility. Your freedom.</strong>
+          </p>
+        </div>
+      </section>
+
+    </div><!-- /container -->
+  </main>
+
+  <!-- ════════════════════════════════════════════════════
+       TAB BAR — bottom navigation
+  ═══════════════════════════════════════════════════════ -->
+  <nav class="tab-bar" role="navigation" aria-label="Main navigation">
+    <button class="tab-bar__item active" data-section="goals" aria-label="Goals">
+      <span class="icon">🎯</span>
+      <span>Goals</span>
+    </button>
+    <button class="tab-bar__item" data-section="matrix" aria-label="Eisenhower Matrix">
+      <span class="icon">🧠</span>
+      <span>Matrix</span>
+    </button>
+    <button class="tab-bar__item" data-section="voice" aria-label="Voice Notes">
+      <span class="icon">🎙️</span>
+      <span>Voice</span>
+    </button>
+    <button class="tab-bar__item" data-section="notes" aria-label="Notes">
+      <span class="icon">📝</span>
+      <span>Notes</span>
+    </button>
+    <button class="tab-bar__item" data-section="camera" aria-label="Camera">
+      <span class="icon">📷</span>
+      <span>Camera</span>
+    </button>
+    <button class="tab-bar__item" data-section="backup" aria-label="Backup">
+      <span class="icon">💾</span>
+      <span>Backup</span>
+    </button>
+  </nav>
+
+  <!-- ════════════════════════════════════════════════════
+       SCRIPTS
+  ═══════════════════════════════════════════════════════ -->
+  <script type="module">
+    import { initGoals }  from './js/goals.js';
+    import { initMatrix } from './js/matrix.js';
+    import { initVoice }  from './js/voice.js';
+    import { initNotes }  from './js/notes.js';
+    import { initCamera } from './js/camera.js';
+    import { initBackup } from './js/backup.js';
+
+    // ── Tab navigation ─────────────────────────────────
+    const tabs     = document.querySelectorAll('.tab-bar__item');
+    const sections = document.querySelectorAll('.app-section');
+
+    tabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        const target = tab.dataset.section;
+
+        tabs.forEach(t => t.classList.remove('active'));
+        sections.forEach(s => s.classList.remove('active'));
+
+        tab.classList.add('active');
+        document.getElementById(`section-${target}`)?.classList.add('active');
+
+        // Scroll to top on section change
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      });
+    });
+
+    // ── Redirect first-time users to setup ─────────────
+    function checkSetup() {
+      const prefs = localStorage.getItem('dash-notes-prefs');
+      if (!prefs) {
+        // First visit — show onboarding, then setup
+        // (index.html links to setup.html which links to app.html)
+        // If user lands here directly, that's fine — app still works
+      }
+    }
+    checkSetup();
+
+    // ── Init all modules ───────────────────────────────
+    initGoals();
+    initMatrix();
+    initVoice();
+    initNotes();
+    initCamera();
+    initBackup();
+
+    // ── Re-render on data restore ──────────────────────
+    window.addEventListener('dash-data-restored', async () => {
+      const { renderGoals }      = await import('./js/goals.js');
+      const { renderMatrix }     = await import('./js/matrix.js');
+      const { renderVoiceNotes } = await import('./js/voice.js');
+      const { renderNotes }      = await import('./js/notes.js');
+      await Promise.all([renderGoals(), renderMatrix(), renderVoiceNotes(), renderNotes()]);
+      showToast('All data restored ✅');
+    });
+
+    // ── Toast utility (global fallback) ───────────────
+    function showToast(msg, type = 'success') {
+      const t = document.getElementById('toast');
+      if (!t) return;
+      t.textContent = msg;
+      t.className = `toast toast--${type} show`;
+      setTimeout(() => t.classList.remove('show'), 3000);
+    }
+    window.showToast = showToast;
+  </script>
+
+</body>
+</html>
