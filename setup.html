@@ -133,6 +133,90 @@
         </p>
       </div>
 
+      <!-- Q&A -->
+      <div style="text-align:center; margin-bottom:28px;">
+        <button id="qa-btn" class="btn btn--glass" style="padding:10px 24px; font-size:0.88rem;">
+          Q &amp; A
+        </button>
+      </div>
+
+      <!-- Q&A Panel -->
+      <div id="qa-panel" style="display:none; position:fixed; inset:0; z-index:200;
+        background:rgba(20,5,77,0.92); backdrop-filter:blur(12px);
+        align-items:flex-end; justify-content:center; padding:20px;">
+        <div style="width:100%; max-width:480px; max-height:85vh; overflow-y:auto;
+          background:rgba(255,255,255,0.04); border:1px solid var(--border-strong);
+          border-radius:var(--radius-lg); padding:28px;">
+
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
+            <span style="font-size:0.78rem; font-weight:700; letter-spacing:0.08em;
+              text-transform:uppercase; color:var(--cyan);">Questions &amp; Answers</span>
+            <button id="qa-close" style="background:none; border:none; cursor:pointer;
+              color:var(--text-muted); font-size:1.1rem; padding:4px 8px;">&#x2715;</button>
+          </div>
+
+          <div style="display:flex; flex-direction:column; gap:20px;">
+
+            <div>
+              <p style="font-size:0.85rem; font-weight:700; color:var(--text-primary); margin-bottom:4px;">Where is my data stored?</p>
+              <p style="font-size:0.84rem; color:var(--text-secondary); line-height:1.65; margin:0;">
+                Everything stays on your device in your browser's local storage. Nothing is sent to any server. No one else can see it — including the people who made this app.
+              </p>
+            </div>
+
+            <div>
+              <p style="font-size:0.85rem; font-weight:700; color:var(--text-primary); margin-bottom:4px;">What happens if I clear my browser data?</p>
+              <p style="font-size:0.84rem; color:var(--text-secondary); line-height:1.65; margin:0;">
+                Your notes will be deleted permanently. This is why backing up regularly matters. Use the Save section to share or download your data before clearing anything.
+              </p>
+            </div>
+
+            <div>
+              <p style="font-size:0.85rem; font-weight:700; color:var(--text-primary); margin-bottom:4px;">How do I save my notes across sections?</p>
+              <p style="font-size:0.84rem; color:var(--text-secondary); line-height:1.65; margin:0;">
+                Each section saves automatically as you add content — goals, tasks, notes and voice recordings are all stored independently. You do not need to save a session. Just add and move on.
+              </p>
+            </div>
+
+            <div>
+              <p style="font-size:0.85rem; font-weight:700; color:var(--text-primary); margin-bottom:4px;">How do I get this app on my phone home screen?</p>
+              <p style="font-size:0.84rem; color:var(--text-secondary); line-height:1.65; margin:0;">
+                On Android, open the app in Chrome, tap the three dots menu and select Add to Home Screen. On iPhone, open the app in Safari, tap the Share button and select Add to Home Screen. The app will then open like any other app on your phone.
+              </p>
+            </div>
+
+            <div>
+              <p style="font-size:0.85rem; font-weight:700; color:var(--text-primary); margin-bottom:4px;">Does it work without internet?</p>
+              <p style="font-size:0.84rem; color:var(--text-secondary); line-height:1.65; margin:0;">
+                Yes — once you have opened the app once, it works fully offline. All your data is on your device, so no connection is needed.
+              </p>
+            </div>
+
+            <div>
+              <p style="font-size:0.85rem; font-weight:700; color:var(--text-primary); margin-bottom:4px;">How does voice recording work?</p>
+              <p style="font-size:0.84rem; color:var(--text-secondary); line-height:1.65; margin:0;">
+                Tap the mic button in the Voice section, speak your thought, and tap again to stop. Your browser transcribes the speech into text automatically. The audio itself is never stored — only the words.
+              </p>
+            </div>
+
+            <div>
+              <p style="font-size:0.85rem; font-weight:700; color:var(--text-primary); margin-bottom:4px;">Which browser works best?</p>
+              <p style="font-size:0.84rem; color:var(--text-secondary); line-height:1.65; margin:0;">
+                Chrome or Edge on Android gives the best voice transcription. On iPhone, use Safari. All other features work across all modern browsers.
+              </p>
+            </div>
+
+            <div>
+              <p style="font-size:0.85rem; font-weight:700; color:var(--text-primary); margin-bottom:4px;">How do I restore from a backup?</p>
+              <p style="font-size:0.84rem; color:var(--text-secondary); line-height:1.65; margin:0;">
+                Go to the Save section in the app, tap Choose Backup File, and select the backup file you downloaded previously. Your data will be restored alongside anything already saved.
+              </p>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
       <!-- Action -->
       <div style="text-align:center; padding-bottom:40px;">
         <a href="app.html" class="btn btn--ghost"
@@ -149,6 +233,18 @@
 
     </div>
   </main>
+  <script>
+    const qaPanel = document.getElementById('qa-panel');
+    document.getElementById('qa-btn')?.addEventListener('click', () => {
+      qaPanel.style.display = 'flex';
+    });
+    document.getElementById('qa-close')?.addEventListener('click', () => {
+      qaPanel.style.display = 'none';
+    });
+    qaPanel?.addEventListener('click', e => {
+      if (e.target === qaPanel) qaPanel.style.display = 'none';
+    });
+  </script>
 
 </body>
 </html>
