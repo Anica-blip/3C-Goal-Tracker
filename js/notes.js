@@ -44,8 +44,14 @@ async function renderNotes(filterType = null) {
     const cfg     = NOTE_TYPES[n.type] || NOTE_TYPES.text;
     const subject = n.subject ? `<div style="font-size:0.72rem; font-weight:700; color:var(--cyan); text-transform:uppercase; letter-spacing:0.06em; margin-bottom:4px;">${escHtml(n.subject)}</div>` : '';
     return `
-      <div class="note-item" id="note-${n.id}">
-        <div style="flex:1; min-width:0;">
+      <div class="note-item" id="note-${n.id}" style="cursor:default;">
+        <div class="item-actions">
+          <button class="item-action-btn" data-edit-note="${n.id}" title="Edit">&#x270E;</button>
+          <button class="item-action-btn save" data-save-note="${n.id}" title="Save edit" style="display:none;">&#x2713;</button>
+          <button class="item-action-btn" data-share-note="${n.id}" title="Store">&#x2197; Store</button>
+          <button class="item-action-btn delete" data-del-note="${n.id}" title="Delete">&#x2715;</button>
+        </div>
+        <div style="flex:1; min-width:0; padding-right:8px;">
           <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px; flex-wrap:wrap;">
             <span style="font-size:0.68rem; font-weight:700; text-transform:uppercase; letter-spacing:0.06em;
               color:var(--text-muted); border:1px solid var(--border); border-radius:4px; padding:1px 7px;">
@@ -54,35 +60,72 @@ async function renderNotes(filterType = null) {
             <span style="font-size:0.72rem; color:var(--text-muted);">${formatDate(n.created)}</span>
           </div>
           ${subject}
-          <div class="note-item__text">${escHtml(n.text)}</div>
-        </div>
-        <div style="display:flex; flex-direction:column; gap:6px; flex-shrink:0; margin-left:10px;">
-          <button class="btn btn--glass" style="padding:4px 10px; font-size:0.72rem;"
-            data-share-note="${n.id}">Share</button>
-          <button class="btn btn--danger" style="padding:4px 10px; font-size:0.72rem;"
-            data-del-note="${n.id}">&#x2715;</button>
+          <div class="note-item__text" id="note-text-${n.id}">${escHtml(n.text)}</div>
         </div>
       </div>`;
   }).join('');
 
+  // Tap to reveal actions on mobile
+  container.querySelectorAll('.note-item').forEach(item => {
+    item.addEventListener('click', e => {
+      if (e.target.closest('.item-action-btn')) return;
+      item.classList.toggle('reveal');
+    });
+  });
+
+  // Edit — swap text for textarea
+  container.querySelectorAll('[data-edit-note]').forEach(btn => {
+    btn.addEventListener('click', async e => {
+      e.stopPropagation();
+      const id      = btn.dataset.editNote;
+      const textDiv = document.getElementById(`note-text-${id}`);
+      if (!textDiv) return;
+      const current = textDiv.textContent;
+      textDiv.innerHTML = `<textarea class="item-edit-area" id="edit-area-${id}">${escHtml(current)}</textarea>`;
+      document.getElementById(`edit-area-${id}`)?.focus();
+      btn.style.display = 'none';
+      const saveBtn = container.querySelector(`[data-save-note="${id}"]`);
+      if (saveBtn) saveBtn.style.display = 'flex';
+    });
+  });
+
+  // Save edit
+  container.querySelectorAll('[data-save-note]').forEach(btn => {
+    btn.addEventListener('click', async e => {
+      e.stopPropagation();
+      const id       = btn.dataset.saveNote;
+      const area     = document.getElementById(`edit-area-${id}`);
+      if (!area) return;
+      const newText  = area.value.trim();
+      if (!newText) return;
+      const all      = await getNotes();
+      const note     = all.find(n => n.id === id);
+      if (!note) return;
+      note.text = newText;
+      await saveNote(note);
+      await renderNotes();
+      showToast('Updated ✓');
+    });
+  });
+
   // Delete
   container.querySelectorAll('[data-del-note]').forEach(btn => {
-    btn.addEventListener('click', async () => {
+    btn.addEventListener('click', async e => {
+      e.stopPropagation();
       await deleteNote(btn.dataset.delNote);
       document.getElementById(`note-${btn.dataset.delNote}`)?.remove();
-      const remaining = container.querySelectorAll('.note-item');
-      if (remaining.length === 0) renderNotes();
+      if (!container.querySelectorAll('.note-item').length) renderNotes();
     });
   });
 
   // Share
   container.querySelectorAll('[data-share-note]').forEach(btn => {
-    btn.addEventListener('click', async () => {
+    btn.addEventListener('click', async e => {
+      e.stopPropagation();
       const all  = await getNotes();
       const note = all.find(n => n.id === btn.dataset.shareNote);
       if (!note) return;
-      const text = note.subject ? `${note.subject}\n\n${note.text}` : note.text;
-      shareText(text);
+      shareText(note.subject ? `${note.subject}\n\n${note.text}` : note.text);
     });
   });
 }
