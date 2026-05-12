@@ -638,7 +638,94 @@ label {
   text-align: center;
 }
 
-/* Transcript output */
+/* ── Floating action buttons on note/task items ──────────── */
+.item-actions {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: flex;
+  gap: 4px;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  z-index: 5;
+}
+
+.note-item,
+.task-chip,
+.goal-card {
+  position: relative;
+}
+
+/* Desktop — show on hover */
+.note-item:hover .item-actions,
+.task-chip:hover .item-actions,
+.goal-card:hover .item-actions {
+  opacity: 1;
+}
+
+/* Mobile — show when tapped (.reveal class toggled by JS) */
+.note-item.reveal .item-actions,
+.task-chip.reveal .item-actions,
+.goal-card.reveal .item-actions {
+  opacity: 1;
+}
+
+.item-action-btn {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(20, 5, 77, 0.7);
+  backdrop-filter: blur(6px);
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.18s ease;
+  line-height: 1;
+  padding: 0;
+}
+
+.item-action-btn:hover {
+  background: rgba(147, 51, 234, 0.45);
+  color: var(--text-primary);
+  border-color: rgba(147, 51, 234, 0.6);
+}
+
+.item-action-btn.save {
+  color: var(--cyan);
+  border-color: rgba(0, 229, 212, 0.3);
+}
+
+.item-action-btn.delete {
+  color: rgba(239, 68, 68, 0.7);
+  border-color: rgba(239, 68, 68, 0.25);
+}
+
+.item-action-btn.delete:hover {
+  background: rgba(239, 68, 68, 0.25);
+  color: #fca5a5;
+}
+
+/* Inline edit textarea */
+.item-edit-area {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--cyan);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-family: var(--font);
+  font-size: 0.9rem;
+  line-height: 1.6;
+  padding: 8px 10px;
+  resize: vertical;
+  min-height: 70px;
+  outline: none;
+  box-sizing: border-box;
+  margin-top: 6px;
+}
 .transcript {
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid var(--border);
