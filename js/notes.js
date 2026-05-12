@@ -47,7 +47,6 @@ async function renderNotes(filterType = null) {
       <div class="note-item" id="note-${n.id}" style="cursor:default;">
         <div class="item-actions">
           <button class="item-action-btn" data-edit-note="${n.id}" title="Edit">&#x270E;</button>
-          <button class="item-action-btn save" data-save-note="${n.id}" title="Save edit" style="display:none;">&#x2713;</button>
           <button class="item-action-btn" data-share-note="${n.id}" title="Store">&#x2197; Store</button>
           <button class="item-action-btn delete" data-del-note="${n.id}" title="Delete">&#x2715;</button>
         </div>
@@ -73,38 +72,38 @@ async function renderNotes(filterType = null) {
     });
   });
 
-  // Edit — swap text for textarea
+  // Edit — load note back into the form at top
   container.querySelectorAll('[data-edit-note]').forEach(btn => {
     btn.addEventListener('click', async e => {
       e.stopPropagation();
-      const id      = btn.dataset.editNote;
-      const textDiv = document.getElementById(`note-text-${id}`);
-      if (!textDiv) return;
-      const current = textDiv.textContent;
-      textDiv.innerHTML = `<textarea class="item-edit-area" id="edit-area-${id}">${escHtml(current)}</textarea>`;
-      document.getElementById(`edit-area-${id}`)?.focus();
-      btn.style.display = 'none';
-      const saveBtn = container.querySelector(`[data-save-note="${id}"]`);
-      if (saveBtn) saveBtn.style.display = 'flex';
-    });
-  });
-
-  // Save edit
-  container.querySelectorAll('[data-save-note]').forEach(btn => {
-    btn.addEventListener('click', async e => {
-      e.stopPropagation();
-      const id       = btn.dataset.saveNote;
-      const area     = document.getElementById(`edit-area-${id}`);
-      if (!area) return;
-      const newText  = area.value.trim();
-      if (!newText) return;
-      const all      = await getNotes();
-      const note     = all.find(n => n.id === id);
+      const id    = btn.dataset.editNote;
+      const all   = await getNotes();
+      const note  = all.find(n => n.id === id);
       if (!note) return;
-      note.text = newText;
-      await saveNote(note);
-      await renderNotes();
-      showToast('Updated ✓');
+
+      const pad    = document.getElementById('note-pad');
+      const subRef = document.getElementById('note-subject');
+      const saveBtn = document.getElementById('save-note-btn');
+      if (!pad || !saveBtn) return;
+
+      // Populate form fields
+      pad.value    = note.text;
+      if (subRef) subRef.value = note.subject || '';
+
+      // Switch to correct type tab
+      const tab = document.querySelector(`[data-note-type="${note.type || 'text'}"]`);
+      if (tab) tab.click();
+
+      // Mark save button as update mode
+      saveBtn.textContent          = 'Update';
+      saveBtn.dataset.editingId    = id;
+      saveBtn.style.background     = 'var(--cyan-dim)';
+
+      // Scroll to top of section
+      pad.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      pad.focus();
+
+      showToast('Edit loaded — make changes and tap Update');
     });
   });
 
@@ -201,11 +200,31 @@ function initNotes() {
     if (!text) return;
     const type    = pad.getAttribute('data-active-type') || 'text';
     const subject = subRef?.value.trim() || '';
-    await saveNewNote(text, subject, type);
+    const editId  = saveBtn.dataset.editingId;
+
+    if (editId) {
+      // Update mode — save with same ID
+      const all  = await getNotes();
+      const note = all.find(n => n.id === editId);
+      if (note) {
+        note.text    = text;
+        note.subject = subject;
+        note.type    = type;
+        await saveNote(note);
+      }
+      // Reset button
+      delete saveBtn.dataset.editingId;
+      saveBtn.textContent  = 'Save';
+      saveBtn.style.background = '';
+      showToast('Updated ✅');
+    } else {
+      await saveNewNote(text, subject, type);
+      showToast('Saved ✅');
+    }
+
     pad.value = '';
     if (subRef) subRef.value = '';
     await renderNotes();
-    showToast('Saved ✅');
   };
 
   saveBtn.addEventListener('click', doSave);
