@@ -134,7 +134,8 @@ async function saveNote(note) {
   const record = {
     id:      note.id      || genId(),
     text:    note.text    || '',
-    type:    note.type    || 'text',   // 'text' | 'voice'
+    subject: note.subject || '',   // Sub/Ref label
+    type:    note.type    || 'text', // 'text' | 'voice' | 'quote' | 'wishlist'
     created: note.created || new Date().toISOString(),
   };
   await promisify(store.put(record));
