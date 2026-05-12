@@ -173,6 +173,7 @@
 
       <!-- ── GOALS ──────────────────────────────────── -->
       <section id="section-goals" class="app-section active">
+        <div id="ts-goals" style="font-size:0.68rem; font-weight:600; color:var(--text-muted); letter-spacing:0.07em; text-transform:uppercase; margin-bottom:8px;"></div>
         <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; flex-wrap:wrap; gap:10px;">
           <div>
             <div class="section__title">Goals</div>
@@ -190,10 +191,9 @@
 
         <div id="goals-list"></div>
 
-        <!-- 3C tip -->
         <div class="card" style="margin-top:20px; border-color:rgba(0,229,212,0.12);">
           <p style="font-size:0.8rem; color:var(--text-muted); line-height:1.65; margin:0;">
-            💡 <strong style="color:var(--text-secondary);">3C Tip:</strong>
+            <strong style="color:var(--text-secondary);">3C Tip:</strong>
             Choose 2 goals that feel big and exciting, 2 that feel easy and fun,
             and 1 that feels deep and meaningful. Progress beats perfection every time.
           </p>
@@ -202,47 +202,41 @@
 
       <!-- ── MATRIX ─────────────────────────────────── -->
       <section id="section-matrix" class="app-section">
+        <div id="ts-matrix" style="font-size:0.68rem; font-weight:600; color:var(--text-muted); letter-spacing:0.07em; text-transform:uppercase; margin-bottom:8px;"></div>
         <div class="section__title" style="margin-bottom:4px;">Eisenhower Matrix</div>
         <p style="font-size:0.82rem; margin-bottom:16px;">
           Decide before you react. Drag tasks between quadrants.
         </p>
 
-        <!-- Add task form -->
         <form id="task-form" style="display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap;">
           <input type="text" id="task-input" placeholder="Add a task or decision…"
             style="flex:1; min-width:160px;" maxlength="140" autocomplete="off" />
           <select id="task-quadrant" style="max-width:140px;">
-            <option value="q1">🔴 Do First</option>
-            <option value="q2">🟢 Schedule</option>
-            <option value="q3">🟡 Delegate</option>
-            <option value="q4">⚫ Drop</option>
+            <option value="q1">Do First</option>
+            <option value="q2">Schedule</option>
+            <option value="q3">Delegate</option>
+            <option value="q4">Drop</option>
           </select>
           <button type="submit" class="btn btn--primary" style="padding:10px 16px;">Add</button>
         </form>
 
-        <!-- Axis labels -->
         <div class="matrix-axis">
-          <div class="matrix-axis-label">🔺 Urgent</div>
-          <div class="matrix-axis-label">🔺 Urgent</div>
+          <div class="matrix-axis-label">Urgent</div>
+          <div class="matrix-axis-label">Urgent</div>
         </div>
 
-        <!-- Grid -->
         <div class="matrix-grid">
-          <div class="matrix-quadrant matrix-quadrant--q1"
-              id="zone-q1" data-quadrant="q1">
-            <div class="matrix-quadrant__label">🔴 Do First</div>
+          <div class="matrix-quadrant matrix-quadrant--q1" id="zone-q1" data-quadrant="q1">
+            <div class="matrix-quadrant__label">Do First</div>
           </div>
-          <div class="matrix-quadrant matrix-quadrant--q2"
-              id="zone-q2" data-quadrant="q2">
-            <div class="matrix-quadrant__label">🟢 Schedule</div>
+          <div class="matrix-quadrant matrix-quadrant--q2" id="zone-q2" data-quadrant="q2">
+            <div class="matrix-quadrant__label">Schedule</div>
           </div>
-          <div class="matrix-quadrant matrix-quadrant--q3"
-              id="zone-q3" data-quadrant="q3">
-            <div class="matrix-quadrant__label">🟡 Delegate</div>
+          <div class="matrix-quadrant matrix-quadrant--q3" id="zone-q3" data-quadrant="q3">
+            <div class="matrix-quadrant__label">Delegate</div>
           </div>
-          <div class="matrix-quadrant matrix-quadrant--q4"
-              id="zone-q4" data-quadrant="q4">
-            <div class="matrix-quadrant__label">⚫ Drop</div>
+          <div class="matrix-quadrant matrix-quadrant--q4" id="zone-q4" data-quadrant="q4">
+            <div class="matrix-quadrant__label">Drop</div>
           </div>
         </div>
 
@@ -251,18 +245,18 @@
           <span style="font-size:0.68rem; color:var(--text-muted);">Not Important →</span>
         </div>
 
-        <!-- Tip -->
         <div class="card" style="margin-top:16px; border-color:rgba(0,229,212,0.12);">
           <p style="font-size:0.8rem; color:var(--text-muted); line-height:1.65; margin:0;">
-            💡 <strong style="color:var(--text-secondary);">Eisenhower Method:</strong>
-            Urgent is loud. Important is quiet. The method works when Quadrant 2
-            (Schedule) becomes non-negotiable — not optional.
+            <strong style="color:var(--text-secondary);">Eisenhower Method:</strong>
+            Urgent is loud. Important is quiet. The method works when Schedule
+            becomes non-negotiable — not optional.
           </p>
         </div>
       </section>
 
       <!-- ── VOICE ──────────────────────────────────── -->
       <section id="section-voice" class="app-section">
+        <div id="ts-voice" style="font-size:0.68rem; font-weight:600; color:var(--text-muted); letter-spacing:0.07em; text-transform:uppercase; margin-bottom:8px;"></div>
         <div class="section__title" style="margin-bottom:4px;">Voice Notes</div>
         <p style="font-size:0.82rem; margin-bottom:20px;">
           Capture a thought before it disappears — transcribed to text automatically.
@@ -298,27 +292,54 @@
 
       <!-- ── NOTES ──────────────────────────────────── -->
       <section id="section-notes" class="app-section">
-        <div class="section__title" style="margin-bottom:4px;">Brain Dump</div>
-        <p style="font-size:0.82rem; margin-bottom:14px;">
-          Type fast, think freely. Save and share in one tap.
-        </p>
+        <div id="ts-notes" style="font-size:0.68rem; font-weight:600; color:var(--text-muted); letter-spacing:0.07em; text-transform:uppercase; margin-bottom:8px;"></div>
+        <div class="section__title" style="margin-bottom:12px;">Notes</div>
+
+        <!-- Type tabs -->
+        <div style="display:flex; gap:0; border-bottom:1px solid var(--border); margin-bottom:16px;">
+          <button data-note-type="text"
+            style="background:none; border:none; border-bottom:2px solid var(--cyan); color:var(--cyan);
+              font-family:var(--font); font-size:0.75rem; font-weight:700; text-transform:uppercase;
+              letter-spacing:0.06em; padding:8px 14px; cursor:pointer;">
+            Note
+          </button>
+          <button data-note-type="quote"
+            style="background:none; border:none; border-bottom:2px solid transparent; color:var(--text-muted);
+              font-family:var(--font); font-size:0.75rem; font-weight:700; text-transform:uppercase;
+              letter-spacing:0.06em; padding:8px 14px; cursor:pointer;">
+            Quote
+          </button>
+          <button data-note-type="wishlist"
+            style="background:none; border:none; border-bottom:2px solid transparent; color:var(--text-muted);
+              font-family:var(--font); font-size:0.75rem; font-weight:700; text-transform:uppercase;
+              letter-spacing:0.06em; padding:8px 14px; cursor:pointer;">
+            Wish List
+          </button>
+        </div>
+
+        <!-- Optional Sub/Ref label -->
+        <input type="text" id="note-subject"
+          placeholder="Subject or reference (optional)"
+          maxlength="80"
+          style="margin-bottom:10px; font-size:0.85rem;" />
 
         <!-- Note pad -->
         <textarea id="note-pad" class="note-pad"
           placeholder="What's on your mind? Just start typing…"
+          data-active-type="text"
           aria-label="Write a note" maxlength="2000"></textarea>
 
-        <div style="display:flex; gap:8px; margin-top:10px; margin-bottom:20px;">
+        <div style="display:flex; gap:8px; margin-top:10px; margin-bottom:20px; align-items:center;">
           <button id="save-note-btn" class="btn btn--primary" style="flex:1;">
-            Save Note
+            Save
           </button>
-          <div style="font-size:0.72rem; color:var(--text-muted); align-self:center; white-space:nowrap;">
+          <span style="font-size:0.72rem; color:var(--text-muted); white-space:nowrap;">
             or Ctrl + Enter
-          </div>
+          </span>
         </div>
 
-        <!-- Notes list -->
-        <div class="section__title" style="margin-bottom:10px;">Saved Notes</div>
+        <!-- Saved notes -->
+        <div class="section__title" style="margin-bottom:10px;">Saved</div>
         <div id="notes-list"></div>
       </section>
 
@@ -459,6 +480,21 @@
     panel?.addEventListener('click', e => {
       if (e.target === panel) panel.style.display = 'none';
     });
+
+    // ── Live timestamp clock ────────────────────────────
+    function updateTimestamps() {
+      const now = new Date().toLocaleString('en-GB', {
+        timeZone: 'Europe/London',
+        weekday: 'short', day: 'numeric', month: 'short',
+        hour: '2-digit', minute: '2-digit'
+      });
+      ['ts-goals', 'ts-matrix', 'ts-voice', 'ts-notes'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = now;
+      });
+    }
+    updateTimestamps();
+    setInterval(updateTimestamps, 60000);
 
     // ── Tab navigation ─────────────────────────────────
     const tabs     = document.querySelectorAll('.tab-bar__item');
