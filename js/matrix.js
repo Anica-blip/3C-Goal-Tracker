@@ -36,24 +36,61 @@ function buildChip(task) {
   chip.draggable  = true;
   chip.dataset.id = task.id;
   chip.innerHTML  = `
-    <span style="flex:1; word-break:break-word;">${escHtml(task.text)}</span>
-    <button data-del="${task.id}" style="background:none; border:none; color:var(--text-muted);
-      cursor:pointer; font-size:0.85rem; flex-shrink:0; padding:0 2px;"
-      title="Remove task">✕</button>`;
+    <div class="item-actions">
+      <button class="item-action-btn" data-edit-task="${task.id}" title="Edit">&#x270E;</button>
+      <button class="item-action-btn save" data-save-task="${task.id}" title="Save" style="display:none;">&#x2713;</button>
+      <button class="item-action-btn delete" data-del-task="${task.id}" title="Delete">&#x2715;</button>
+    </div>
+    <span id="chip-text-${task.id}" style="flex:1; word-break:break-word; padding-right:4px;">${escHtml(task.text)}</span>`;
 
-  // Drag events
+  // Tap to reveal on mobile
+  chip.addEventListener('click', e => {
+    if (e.target.closest('.item-action-btn')) return;
+    chip.classList.toggle('reveal');
+  });
+
+  // Drag events — only when not editing
   chip.addEventListener('dragstart', e => {
+    if (chip.querySelector('textarea')) { e.preventDefault(); return; }
     chip.classList.add('dragging');
     e.dataTransfer.setData('text/plain', task.id);
     e.dataTransfer.effectAllowed = 'move';
   });
 
-  chip.addEventListener('dragend', () => {
-    chip.classList.remove('dragging');
+  chip.addEventListener('dragend', () => chip.classList.remove('dragging'));
+
+  // Edit
+  chip.querySelector('[data-edit-task]').addEventListener('click', e => {
+    e.stopPropagation();
+    const textEl  = document.getElementById(`chip-text-${task.id}`);
+    if (!textEl) return;
+    const current = textEl.textContent;
+    textEl.innerHTML = `<textarea class="item-edit-area" id="chip-area-${task.id}" style="min-height:48px;">${escHtml(current)}</textarea>`;
+    chip.draggable = false;
+    e.target.style.display = 'none';
+    chip.querySelector(`[data-save-task="${task.id}"]`).style.display = 'flex';
+  });
+
+  // Save edit
+  chip.querySelector('[data-save-task]').addEventListener('click', async e => {
+    e.stopPropagation();
+    const area    = document.getElementById(`chip-area-${task.id}`);
+    if (!area) return;
+    const newText = area.value.trim();
+    if (!newText) return;
+    task.text = newText;
+    await saveTask(task);
+    chip.draggable = true;
+    const textEl = document.getElementById(`chip-text-${task.id}`);
+    if (textEl) textEl.innerHTML = escHtml(newText);
+    chip.querySelector(`[data-edit-task="${task.id}"]`).style.display = 'flex';
+    e.target.style.display = 'none';
+    chip.classList.remove('reveal');
   });
 
   // Delete
-  chip.querySelector('[data-del]').addEventListener('click', async () => {
+  chip.querySelector('[data-del-task]').addEventListener('click', async e => {
+    e.stopPropagation();
     await deleteTask(task.id);
     chip.remove();
   });
