@@ -73,6 +73,26 @@
       transition: color var(--transition);
     }
     .nav-settings:hover { color: var(--cyan); }
+
+    /* ── Language dropdown options ────────────────────── */
+    .lang-option {
+      display: block;
+      width: 100%;
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+      padding: 9px 14px;
+      text-align: left;
+      font-family: var(--font);
+      letter-spacing: 0.02em;
+      transition: background var(--transition);
+      white-space: nowrap;
+    }
+    .lang-option:hover  { background: var(--bg-glass); color: var(--text-primary); }
+    .lang-option.active { color: var(--cyan); background: var(--cyan-subtle); }
   </style>
 </head>
 <body>
@@ -89,26 +109,61 @@
         <span style="line-height:1;"><span class="logo-dash">Dash</span><span class="logo-notes">Notes</span></span>
       </div>
       <div style="display:flex; gap:8px; align-items:center;">
-        <button id="take-note-btn" style="
-          background:none; border:none; cursor:pointer;
-          font-size:0.78rem; font-weight:700; letter-spacing:0.06em;
-          text-transform:uppercase; color:var(--cyan);
-          padding:6px 10px; border-radius:6px;
-          transition:background var(--transition);"
+
+        <button id="take-note-btn"
+          data-i18n="nav.takeNote"
+          style="
+            background:none; border:none; cursor:pointer;
+            font-size:0.78rem; font-weight:700; letter-spacing:0.06em;
+            text-transform:uppercase; color:var(--cyan);
+            padding:6px 10px; border-radius:6px;
+            transition:background var(--transition);"
           onmouseover="this.style.background='var(--cyan-subtle)'"
           onmouseout="this.style.background='none'">
           Take Note
         </button>
-        <button onclick="window.location.href='setup.html'" style="
-          background:none; border:none; cursor:pointer;
-          font-size:0.78rem; font-weight:700; letter-spacing:0.06em;
-          text-transform:uppercase; color:var(--text-muted);
-          padding:6px 10px; border-radius:6px;
-          transition:all var(--transition);"
+
+        <!-- ── Language selector ───────────────────────── -->
+        <div id="lang-selector" style="position:relative;">
+          <button id="lang-btn" style="
+            background:none; border:1px solid rgba(255,255,255,0.12); cursor:pointer;
+            font-size:0.75rem; font-weight:700; letter-spacing:0.04em;
+            color:var(--text-muted); padding:5px 9px; border-radius:6px;
+            display:flex; align-items:center; gap:5px;
+            transition:all var(--transition);"
+            aria-label="Select language"
+            onmouseover="this.style.borderColor='rgba(0,229,212,0.7)'; this.style.color='var(--text-primary)'"
+            onmouseout="this.style.borderColor='rgba(255,255,255,0.12)'; this.style.color='var(--text-muted)'">
+            <span id="lang-flag">🇬🇧</span>
+            <span id="lang-code">EN</span>
+            <span style="font-size:0.55rem; opacity:0.55; margin-left:1px;">▾</span>
+          </button>
+          <div id="lang-dropdown" style="
+            display:none; position:absolute; right:0; top:calc(100% + 6px);
+            background:var(--bg-card); border:1px solid var(--border-strong);
+            border-radius:var(--radius-md); overflow:hidden; z-index:300;
+            box-shadow:0 8px 28px rgba(0,0,0,0.5); min-width:90px;">
+            <button class="lang-option" data-lang="en" data-flag="🇬🇧" data-code="EN">🇬🇧 EN</button>
+            <button class="lang-option" data-lang="fr" data-flag="🇫🇷" data-code="FR">🇫🇷 FR</button>
+            <button class="lang-option" data-lang="de" data-flag="🇩🇪" data-code="DE">🇩🇪 DE</button>
+            <button class="lang-option" data-lang="el" data-flag="🇬🇷" data-code="EL">🇬🇷 EL</button>
+            <button class="lang-option" data-lang="pt" data-flag="🇵🇹" data-code="PT">🇵🇹 PT</button>
+          </div>
+        </div>
+
+        <button onclick="window.location.href='setup.html'"
+          data-i18n="nav.startHere"
+          style="
+            background:none; border:none; cursor:pointer;
+            font-size:0.78rem; font-weight:700; letter-spacing:0.06em;
+            text-transform:uppercase; color:var(--text-muted);
+            padding:6px 10px; border-radius:6px;
+            transition:all var(--transition);"
           onmouseover="this.style.color='var(--text-primary)'"
           onmouseout="this.style.color='var(--text-muted)'">
           Start Here
         </button>
+
       </div>
     </div>
   </nav>
@@ -125,7 +180,7 @@
       border-radius:var(--radius-lg); padding:28px;">
 
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
-        <span style="font-size:0.78rem; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; color:var(--cyan);">
+        <span data-i18n="panel.title" style="font-size:0.78rem; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; color:var(--cyan);">
           About Dash Notes
         </span>
         <button id="close-take-note" style="
@@ -136,17 +191,17 @@
         </button>
       </div>
 
-      <p style="font-size:0.95rem; font-weight:600; color:var(--text-primary); margin-bottom:10px; line-height:1.5;">
+      <p data-i18n="panel.tagline" style="font-size:0.95rem; font-weight:600; color:var(--text-primary); margin-bottom:10px; line-height:1.5;">
         A private thinking space for fast minds.
       </p>
-      <p style="font-size:0.88rem; color:var(--text-secondary); margin-bottom:18px; line-height:1.7;">
+      <p data-i18n="panel.desc" style="font-size:0.88rem; color:var(--text-secondary); margin-bottom:18px; line-height:1.7;">
         Built around the 3C Goal Setting Framework and the Eisenhower Decision Matrix —
         this app helps you set meaningful goals, sort priorities, and capture thoughts before they disappear.
       </p>
 
       <div style="border-top:1px solid var(--border); padding-top:16px; margin-bottom:16px;">
-        <p style="font-size:0.82rem; font-weight:700; color:var(--text-secondary); margin-bottom:10px; text-transform:uppercase; letter-spacing:0.06em;">Works best for people who</p>
-        <p style="font-size:0.88rem; color:var(--text-secondary); line-height:1.8; margin:0;">
+        <p data-i18n="panel.worksFor" style="font-size:0.82rem; font-weight:700; color:var(--text-secondary); margin-bottom:10px; text-transform:uppercase; letter-spacing:0.06em;">Works best for people who</p>
+        <p data-i18n="panel.worksForList" style="font-size:0.88rem; color:var(--text-secondary); line-height:1.8; margin:0;">
           Think faster than they can organise &middot;
           Want goals that reflect real values &middot;
           Need to capture ideas on the move &middot;
@@ -155,8 +210,8 @@
       </div>
 
       <div style="border-top:1px solid var(--border); padding-top:16px;">
-        <p style="font-size:0.82rem; font-weight:700; color:var(--cyan); margin-bottom:8px; text-transform:uppercase; letter-spacing:0.06em;">Privacy</p>
-        <p style="font-size:0.85rem; color:var(--text-muted); line-height:1.7; margin:0;">
+        <p data-i18n="panel.privacyTitle" style="font-size:0.82rem; font-weight:700; color:var(--cyan); margin-bottom:8px; text-transform:uppercase; letter-spacing:0.06em;">Privacy</p>
+        <p data-i18n="panel.privacyText" style="font-size:0.85rem; color:var(--text-muted); line-height:1.7; margin:0;">
           No server. No account. No data leaves your device.
           Everything is stored privately in your browser.
           Use the Save section to back up your data regularly.
@@ -176,14 +231,14 @@
         <div id="ts-goals" style="font-size:0.68rem; font-weight:600; color:var(--text-muted); letter-spacing:0.07em; text-transform:uppercase; margin-bottom:8px;"></div>
         <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; flex-wrap:wrap; gap:10px;">
           <div>
-            <div class="section__title">Goals</div>
-            <p style="font-size:0.82rem; margin-top:2px;">
+            <div data-i18n="goals.title" class="section__title">Goals</div>
+            <p data-i18n-html="goals.subtitle" style="font-size:0.82rem; margin-top:2px;">
               Start with your <em>why</em> — not your to-do list.
             </p>
           </div>
           <div style="display:flex; align-items:center; gap:10px;">
             <span class="goal-counter"><span id="goals-counter">0 / 5</span></span>
-            <button id="add-goal-btn" class="btn btn--primary" style="padding:9px 18px; font-size:0.88rem;">
+            <button id="add-goal-btn" data-i18n="goals.addBtn" class="btn btn--primary" style="padding:9px 18px; font-size:0.88rem;">
               + Add Goal
             </button>
           </div>
@@ -192,7 +247,7 @@
         <div id="goals-list"></div>
 
         <div class="card" style="margin-top:20px; border-color:rgba(0,229,212,0.12);">
-          <p style="font-size:0.8rem; color:var(--text-muted); line-height:1.65; margin:0;">
+          <p data-i18n-html="goals.tipCard" style="font-size:0.8rem; color:var(--text-muted); line-height:1.65; margin:0;">
             <strong style="color:var(--text-secondary);">3C Tip:</strong>
             Choose 2 goals that feel big and exciting, 2 that feel easy and fun,
             and 1 that feels deep and meaningful. Progress beats perfection every time.
@@ -203,50 +258,52 @@
       <!-- ── MATRIX ─────────────────────────────────── -->
       <section id="section-matrix" class="app-section">
         <div id="ts-matrix" style="font-size:0.68rem; font-weight:600; color:var(--text-muted); letter-spacing:0.07em; text-transform:uppercase; margin-bottom:8px;"></div>
-        <div class="section__title" style="margin-bottom:4px;">Eisenhower Matrix</div>
-        <p style="font-size:0.82rem; margin-bottom:16px;">
+        <div data-i18n="matrix.title" class="section__title" style="margin-bottom:4px;">Eisenhower Matrix</div>
+        <p data-i18n="matrix.subtitle" style="font-size:0.82rem; margin-bottom:16px;">
           Decide before you react. Drag tasks between quadrants.
         </p>
 
         <form id="task-form" style="display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap;">
-          <input type="text" id="task-input" placeholder="Add a task or decision…"
+          <input type="text" id="task-input"
+            data-i18n-placeholder="matrix.placeholder"
+            placeholder="Add a task or decision…"
             style="flex:1; min-width:160px;" maxlength="140" autocomplete="off" />
           <select id="task-quadrant" style="max-width:140px;">
-            <option value="q1">Do First</option>
-            <option value="q2">Schedule</option>
-            <option value="q3">Delegate</option>
-            <option value="q4">Drop</option>
+            <option value="q1" data-i18n="matrix.q1">Do First</option>
+            <option value="q2" data-i18n="matrix.q2">Schedule</option>
+            <option value="q3" data-i18n="matrix.q3">Delegate</option>
+            <option value="q4" data-i18n="matrix.q4">Drop</option>
           </select>
-          <button type="submit" class="btn btn--primary" style="padding:10px 16px;">Add</button>
+          <button type="submit" data-i18n="matrix.addBtn" class="btn btn--primary" style="padding:10px 16px;">Add</button>
         </form>
 
         <div class="matrix-axis">
-          <div class="matrix-axis-label">Urgent</div>
-          <div class="matrix-axis-label">Urgent</div>
+          <div data-i18n="matrix.axisUrgent" class="matrix-axis-label">Urgent</div>
+          <div data-i18n="matrix.axisUrgent" class="matrix-axis-label">Urgent</div>
         </div>
 
         <div class="matrix-grid">
           <div class="matrix-quadrant matrix-quadrant--q1" id="zone-q1" data-quadrant="q1">
-            <div class="matrix-quadrant__label">Do First</div>
+            <div data-i18n="matrix.q1" class="matrix-quadrant__label">Do First</div>
           </div>
           <div class="matrix-quadrant matrix-quadrant--q2" id="zone-q2" data-quadrant="q2">
-            <div class="matrix-quadrant__label">Schedule</div>
+            <div data-i18n="matrix.q2" class="matrix-quadrant__label">Schedule</div>
           </div>
           <div class="matrix-quadrant matrix-quadrant--q3" id="zone-q3" data-quadrant="q3">
-            <div class="matrix-quadrant__label">Delegate</div>
+            <div data-i18n="matrix.q3" class="matrix-quadrant__label">Delegate</div>
           </div>
           <div class="matrix-quadrant matrix-quadrant--q4" id="zone-q4" data-quadrant="q4">
-            <div class="matrix-quadrant__label">Drop</div>
+            <div data-i18n="matrix.q4" class="matrix-quadrant__label">Drop</div>
           </div>
         </div>
 
         <div style="display:flex; justify-content:space-between; margin-top:4px; padding:0 4px;">
-          <span style="font-size:0.68rem; color:var(--text-muted);">← Important</span>
-          <span style="font-size:0.68rem; color:var(--text-muted);">Not Important →</span>
+          <span data-i18n="matrix.axisImportant" style="font-size:0.68rem; color:var(--text-muted);">← Important</span>
+          <span data-i18n="matrix.axisNotImportant" style="font-size:0.68rem; color:var(--text-muted);">Not Important →</span>
         </div>
 
         <div class="card" style="margin-top:16px; border-color:rgba(0,229,212,0.12);">
-          <p style="font-size:0.8rem; color:var(--text-muted); line-height:1.65; margin:0;">
+          <p data-i18n-html="matrix.tipCard" style="font-size:0.8rem; color:var(--text-muted); line-height:1.65; margin:0;">
             <strong style="color:var(--text-secondary);">Eisenhower Method:</strong>
             Urgent is loud. Important is quiet. The method works when Schedule
             becomes non-negotiable — not optional.
@@ -257,8 +314,8 @@
       <!-- ── VOICE ──────────────────────────────────── -->
       <section id="section-voice" class="app-section">
         <div id="ts-voice" style="font-size:0.68rem; font-weight:600; color:var(--text-muted); letter-spacing:0.07em; text-transform:uppercase; margin-bottom:8px;"></div>
-        <div class="section__title" style="margin-bottom:4px;">Voice Notes</div>
-        <p style="font-size:0.82rem; margin-bottom:20px;">
+        <div data-i18n="voice.title" class="section__title" style="margin-bottom:4px;">Voice Notes</div>
+        <p data-i18n="voice.subtitle" style="font-size:0.82rem; margin-bottom:20px;">
           Capture a thought before it disappears — transcribed to text automatically.
         </p>
 
@@ -266,50 +323,50 @@
         <div class="card recorder" style="margin-bottom:16px;">
           <button id="record-btn" class="recorder__btn" aria-label="Start recording">🎙️</button>
           <div id="voice-timer" class="recorder__timer">00:00</div>
-          <p id="voice-status" class="recorder__status">Ready to record. Tap the mic to start.</p>
+          <p data-i18n="voice.status" id="voice-status" class="recorder__status">Ready to record. Tap the mic to start.</p>
         </div>
 
         <!-- Live transcript -->
         <div style="margin-bottom:16px;">
-          <label style="margin-bottom:6px;">Transcript</label>
-          <div id="voice-transcript" class="transcript" aria-live="polite">
+          <label data-i18n="voice.transcriptLabel" style="margin-bottom:6px;">Transcript</label>
+          <div id="voice-transcript" data-i18n="voice.transcriptPlaceholder" class="transcript" aria-live="polite">
             Your spoken words will appear here as you record…
           </div>
         </div>
 
         <!-- Browser note -->
         <div class="card" style="margin-bottom:16px; border-color:rgba(0,229,212,0.1);">
-          <p style="font-size:0.78rem; color:var(--text-muted); margin:0; line-height:1.65;">
+          <p data-i18n-html="voice.browserNote" style="font-size:0.78rem; color:var(--text-muted); margin:0; line-height:1.65;">
             🎙️ Voice transcription works best in <strong style="color:var(--text-secondary);">Chrome or Edge</strong>.
             Firefox and Safari have limited support. The audio itself is never stored — only the text.
           </p>
         </div>
 
         <!-- Saved voice notes -->
-        <div class="section__title" style="margin-bottom:10px;">Saved Voice Notes</div>
+        <div data-i18n="voice.savedTitle" class="section__title" style="margin-bottom:10px;">Saved Voice Notes</div>
         <div id="voice-notes-list"></div>
       </section>
 
       <!-- ── NOTES ──────────────────────────────────── -->
       <section id="section-notes" class="app-section">
         <div id="ts-notes" style="font-size:0.68rem; font-weight:600; color:var(--text-muted); letter-spacing:0.07em; text-transform:uppercase; margin-bottom:8px;"></div>
-        <div class="section__title" style="margin-bottom:12px;">Notes</div>
+        <div data-i18n="notes.title" class="section__title" style="margin-bottom:12px;">Notes</div>
 
         <!-- Type tabs -->
         <div style="display:flex; gap:0; border-bottom:1px solid var(--border); margin-bottom:16px;">
-          <button data-note-type="text"
+          <button data-note-type="text" data-i18n="notes.tabNote"
             style="background:none; border:none; border-bottom:2px solid var(--cyan); color:var(--cyan);
               font-family:var(--font); font-size:0.75rem; font-weight:700; text-transform:uppercase;
               letter-spacing:0.06em; padding:8px 14px; cursor:pointer;">
             Note
           </button>
-          <button data-note-type="quote"
+          <button data-note-type="quote" data-i18n="notes.tabQuote"
             style="background:none; border:none; border-bottom:2px solid transparent; color:var(--text-muted);
               font-family:var(--font); font-size:0.75rem; font-weight:700; text-transform:uppercase;
               letter-spacing:0.06em; padding:8px 14px; cursor:pointer;">
             Quote
           </button>
-          <button data-note-type="wishlist"
+          <button data-note-type="wishlist" data-i18n="notes.tabWishlist"
             style="background:none; border:none; border-bottom:2px solid transparent; color:var(--text-muted);
               font-family:var(--font); font-size:0.75rem; font-weight:700; text-transform:uppercase;
               letter-spacing:0.06em; padding:8px 14px; cursor:pointer;">
@@ -319,34 +376,36 @@
 
         <!-- Optional Sub/Ref label -->
         <input type="text" id="note-subject"
+          data-i18n-placeholder="notes.subjectPlaceholder"
           placeholder="Subject or reference (optional)"
           maxlength="80"
           style="margin-bottom:10px; font-size:0.85rem;" />
 
         <!-- Note pad -->
         <textarea id="note-pad" class="note-pad"
+          data-i18n-placeholder="notes.padPlaceholder"
           placeholder="What's on your mind? Just start typing…"
           data-active-type="text"
           aria-label="Write a note" maxlength="2000"></textarea>
 
         <div style="display:flex; gap:8px; margin-top:10px; margin-bottom:20px; align-items:center;">
-          <button id="save-note-btn" class="btn btn--primary" style="flex:1;">
+          <button id="save-note-btn" data-i18n="notes.saveBtn" class="btn btn--primary" style="flex:1;">
             Save
           </button>
-          <span style="font-size:0.72rem; color:var(--text-muted); white-space:nowrap;">
+          <span data-i18n="notes.shortcut" style="font-size:0.72rem; color:var(--text-muted); white-space:nowrap;">
             or Ctrl + Enter
           </span>
         </div>
 
         <!-- Saved notes -->
-        <div class="section__title" style="margin-bottom:10px;">Saved</div>
+        <div data-i18n="notes.savedTitle" class="section__title" style="margin-bottom:10px;">Saved</div>
         <div id="notes-list"></div>
       </section>
 
       <!-- ── CAMERA ─────────────────────────────────── -->
       <section id="section-camera" class="app-section">
-        <div class="section__title" style="margin-bottom:4px;">Camera Capture</div>
-        <p style="font-size:0.82rem; margin-bottom:16px;">
+        <div data-i18n="camera.title" class="section__title" style="margin-bottom:4px;">Camera Capture</div>
+        <p data-i18n="camera.subtitle" style="font-size:0.82rem; margin-bottom:16px;">
           Photograph a handwritten note, whiteboard, or anything you want to remember.
           The image stays on your device only.
         </p>
@@ -356,7 +415,7 @@
             aria-label="Tap to open camera" tabindex="0"
             onkeydown="if(event.key==='Enter')this.click()">
           <div class="camera-zone__icon">📷</div>
-          <div class="camera-zone__label">
+          <div data-i18n="camera.zoneLabel" class="camera-zone__label">
             Tap to take a photo or choose an image from your library
           </div>
         </div>
@@ -367,13 +426,13 @@
 
         <!-- Preview area -->
         <div id="camera-preview" style="margin-top:16px;">
-          <p style="text-align:center; color:var(--text-muted); font-size:0.85rem; padding:16px 0;">
+          <p data-i18n="camera.noImage" style="text-align:center; color:var(--text-muted); font-size:0.85rem; padding:16px 0;">
             No image captured yet. Tap the camera area above.
           </p>
         </div>
 
         <div class="card" style="margin-top:16px; border-color:rgba(0,229,212,0.1);">
-          <p style="font-size:0.78rem; color:var(--text-muted); margin:0; line-height:1.65;">
+          <p data-i18n-html="camera.tip" style="font-size:0.78rem; color:var(--text-muted); margin:0; line-height:1.65;">
             💡 After capturing, tap <strong style="color:var(--text-secondary);">"Share / Save to your notes app"</strong>
             to send the image directly to Apple Notes, Google Keep, or any app on your device.
           </p>
@@ -382,46 +441,46 @@
 
       <!-- ── BACKUP ─────────────────────────────────── -->
       <section id="section-backup" class="app-section">
-        <div class="section__title" style="margin-bottom:4px;">Save &amp; Restore</div>
-        <p style="font-size:0.82rem; margin-bottom:20px;">
+        <div data-i18n="backup.title" class="section__title" style="margin-bottom:4px;">Save &amp; Restore</div>
+        <p data-i18n="backup.subtitle" style="font-size:0.82rem; margin-bottom:20px;">
           Keep your thoughts safe. Share them to your favourite app or save a backup file.
         </p>
 
         <!-- Share — everyday users -->
         <div class="card" style="margin-bottom:14px;">
-          <div style="font-size:0.88rem; font-weight:700; color:var(--text-primary); margin-bottom:6px;">
+          <div data-i18n="backup.storeTitle" style="font-size:0.88rem; font-weight:700; color:var(--text-primary); margin-bottom:6px;">
             Store Your Notes
           </div>
-          <p style="font-size:0.82rem; color:var(--text-muted); margin-bottom:14px; line-height:1.6;">
+          <p data-i18n="backup.storeDesc" style="font-size:0.82rem; color:var(--text-muted); margin-bottom:14px; line-height:1.6;">
             Send your goals and notes to any app on your device — your notes app, a message to yourself, or anywhere you keep things safe. One tap opens your device's own share menu.
           </p>
-          <button id="share-all-btn" class="btn btn--primary btn--full">
+          <button id="share-all-btn" data-i18n="backup.storeBtn" class="btn btn--primary btn--full">
             Share My Notes
           </button>
         </div>
 
         <!-- JSON download — developers / power users -->
         <div class="card" style="margin-bottom:14px;">
-          <div style="font-size:0.88rem; font-weight:700; color:var(--text-primary); margin-bottom:6px;">
+          <div data-i18n="backup.downloadTitle" style="font-size:0.88rem; font-weight:700; color:var(--text-primary); margin-bottom:6px;">
             💾 Download Backup File
           </div>
-          <p style="font-size:0.82rem; color:var(--text-muted); margin-bottom:12px; line-height:1.6;">
+          <p data-i18n="backup.downloadDesc" style="font-size:0.82rem; color:var(--text-muted); margin-bottom:12px; line-height:1.6;">
             Downloads a complete copy of your data to your device. Store it anywhere — your phone, computer, or cloud storage.
           </p>
-          <button id="json-download-btn" class="btn btn--glass btn--full">
+          <button id="json-download-btn" data-i18n="backup.downloadBtn" class="btn btn--glass btn--full">
             Download Backup
           </button>
         </div>
 
         <!-- Restore -->
         <div class="card" style="margin-bottom:14px;">
-          <div style="font-size:0.88rem; font-weight:700; color:var(--text-primary); margin-bottom:6px;">
+          <div data-i18n="backup.restoreTitle" style="font-size:0.88rem; font-weight:700; color:var(--text-primary); margin-bottom:6px;">
             🔁 Restore from Backup
           </div>
-          <p style="font-size:0.82rem; color:var(--text-muted); margin-bottom:12px; line-height:1.6;">
+          <p data-i18n="backup.restoreDesc" style="font-size:0.82rem; color:var(--text-muted); margin-bottom:12px; line-height:1.6;">
             Previously downloaded a backup file? Tap below to restore your data.
           </p>
-          <button id="restore-btn" class="btn btn--ghost btn--full">
+          <button id="restore-btn" data-i18n="backup.restoreBtn" class="btn btn--ghost btn--full">
             Choose Backup File
           </button>
           <input type="file" id="restore-input" accept=".json"
@@ -430,15 +489,15 @@
 
         <!-- Best Practice -->
         <div class="card" style="margin-bottom:14px; border-color:rgba(0,229,212,0.2);">
-          <div style="font-size:0.82rem; font-weight:700; color:var(--cyan); margin-bottom:8px; text-transform:uppercase; letter-spacing:0.06em;">Best Practice</div>
-          <p style="font-size:0.82rem; color:var(--text-secondary); line-height:1.7; margin:0;">
+          <div data-i18n="backup.bestPracticeTitle" style="font-size:0.82rem; font-weight:700; color:var(--cyan); margin-bottom:8px; text-transform:uppercase; letter-spacing:0.06em;">Best Practice</div>
+          <p data-i18n="backup.bestPracticeText" style="font-size:0.82rem; color:var(--text-secondary); line-height:1.7; margin:0;">
             For notes you want to keep long term, download a backup regularly and keep updating that same note over time. The JSON file becomes your running plan — always recoverable. Use Store for shorter notes that get acted on and discarded. Both work together.
           </p>
         </div>
 
         <!-- Privacy reminder -->
         <div class="card" style="border-color:rgba(0,229,212,0.15);">
-          <p style="font-size:0.8rem; color:var(--text-muted); line-height:1.65; margin:0;">
+          <p data-i18n-html="backup.privacyNote" style="font-size:0.8rem; color:var(--text-muted); line-height:1.65; margin:0;">
             🔒 <strong style="color:var(--text-secondary);">Important:</strong>
             Clearing your browser's site data will permanently delete your Dash Notes data.
             Always share or download a backup first. <strong style="color:var(--cyan);">Your data. Your responsibility. Your freedom.</strong>
@@ -453,12 +512,12 @@
        TAB BAR — bottom navigation
   ═══════════════════════════════════════════════════════ -->
   <nav class="tab-bar" role="navigation" aria-label="Main navigation">
-    <button class="tab-bar__item active" data-section="goals">Goals</button>
-    <button class="tab-bar__item" data-section="matrix">Matrix</button>
-    <button class="tab-bar__item" data-section="voice">Voice</button>
-    <button class="tab-bar__item" data-section="notes">Notes</button>
-    <button class="tab-bar__item" data-section="camera">Camera</button>
-    <button class="tab-bar__item" data-section="backup">Save</button>
+    <button data-i18n="tabs.goals"  class="tab-bar__item active" data-section="goals">Goals</button>
+    <button data-i18n="tabs.matrix" class="tab-bar__item" data-section="matrix">Matrix</button>
+    <button data-i18n="tabs.voice"  class="tab-bar__item" data-section="voice">Voice</button>
+    <button data-i18n="tabs.notes"  class="tab-bar__item" data-section="notes">Notes</button>
+    <button data-i18n="tabs.camera" class="tab-bar__item" data-section="camera">Camera</button>
+    <button data-i18n="tabs.backup" class="tab-bar__item" data-section="backup">Save</button>
   </nav>
 
   <!-- ════════════════════════════════════════════════════
@@ -471,6 +530,53 @@
     import { initNotes }  from './js/notes.js';
     import { initCamera } from './js/camera.js';
     import { initBackup } from './js/backup.js';
+    import {
+      initI18n,
+      setLanguage,
+      getCurrentLang,
+      getLangMeta,
+      getLocale,
+      LANG_META,
+    } from './js/i18n.js';
+
+    // ── Initialise translations ────────────────────────
+    initI18n();
+
+    // ── Language selector UI ───────────────────────────
+    const langBtn      = document.getElementById('lang-btn');
+    const langDropdown = document.getElementById('lang-dropdown');
+    const langFlagEl   = document.getElementById('lang-flag');
+    const langCodeEl   = document.getElementById('lang-code');
+
+    function updateLangBtn() {
+      const meta = getLangMeta();
+      langFlagEl.textContent = meta.flag;
+      langCodeEl.textContent = meta.code;
+      document.querySelectorAll('.lang-option').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.lang === getCurrentLang());
+      });
+    }
+    updateLangBtn();
+
+    langBtn?.addEventListener('click', e => {
+      e.stopPropagation();
+      const isOpen = langDropdown.style.display === 'block';
+      langDropdown.style.display = isOpen ? 'none' : 'block';
+    });
+
+    document.addEventListener('click', () => {
+      langDropdown.style.display = 'none';
+    });
+
+    langDropdown?.addEventListener('click', e => e.stopPropagation());
+
+    document.querySelectorAll('.lang-option').forEach(btn => {
+      btn.addEventListener('click', () => {
+        setLanguage(btn.dataset.lang);
+        langDropdown.style.display = 'none';
+        updateLangBtn();
+      });
+    });
 
     // ── Take Note panel ────────────────────────────────
     const panel      = document.getElementById('take-note-panel');
@@ -489,9 +595,9 @@
       if (e.target === panel) panel.style.display = 'none';
     });
 
-    // ── Live timestamp clock ────────────────────────────
+    // ── Live timestamp clock ───────────────────────────
     function updateTimestamps() {
-      const now = new Date().toLocaleString('en-GB', {
+      const now = new Date().toLocaleString(getLocale(), {
         timeZone: 'Europe/London',
         weekday: 'short', day: 'numeric', month: 'short',
         hour: '2-digit', minute: '2-digit'
@@ -503,6 +609,9 @@
     }
     updateTimestamps();
     setInterval(updateTimestamps, 60000);
+
+    // Re-run timestamps when language changes (locale switches)
+    window.addEventListener('dash-lang-changed', updateTimestamps);
 
     // ── Tab navigation ─────────────────────────────────
     const tabs     = document.querySelectorAll('.tab-bar__item');
