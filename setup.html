@@ -76,6 +76,26 @@
     }
 
     .dest-option.selected .connected-badge { display: block; }
+
+    /* ── Language option buttons in nav ────────────────── */
+    .lang-option {
+      display: block;
+      width: 100%;
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--text-secondary);
+      padding: 9px 14px;
+      text-align: left;
+      font-family: var(--font);
+      letter-spacing: 0.02em;
+      transition: background var(--transition);
+      white-space: nowrap;
+    }
+    .lang-option:hover  { background: var(--bg-glass); color: var(--text-primary); }
+    .lang-option.active { color: var(--cyan); background: var(--cyan-subtle); }
   </style>
 </head>
 <body>
@@ -87,7 +107,45 @@
           style="border-radius:6px;" onerror="this.style.display='none'" />
         <span style="line-height:1;"><span class="logo-dash">Dash</span><span class="logo-notes">Notes</span></span>
       </div>
-      <a href="index.html" style="font-size:0.78rem; font-weight:700; letter-spacing:0.06em; text-transform:uppercase; color:var(--text-muted); text-decoration:none;">Leave</a>
+
+      <div style="display:flex; align-items:center; gap:8px;">
+
+        <!-- ── Language selector ───────────────────────── -->
+        <div id="lang-selector" style="position:relative;">
+          <button id="lang-btn" style="
+            background:none; border:1px solid rgba(255,255,255,0.12); cursor:pointer;
+            font-size:0.75rem; font-weight:700; letter-spacing:0.04em;
+            color:var(--text-muted); padding:5px 9px; border-radius:6px;
+            display:flex; align-items:center; gap:5px;
+            transition:all var(--transition);"
+            aria-label="Select language"
+            onmouseover="this.style.borderColor='rgba(0,229,212,0.7)'; this.style.color='var(--text-primary)'"
+            onmouseout="this.style.borderColor='rgba(255,255,255,0.12)'; this.style.color='var(--text-muted)'">
+            <span id="lang-flag">🇬🇧</span>
+            <span id="lang-code">EN</span>
+            <span style="font-size:0.55rem; opacity:0.55; margin-left:1px;">▾</span>
+          </button>
+          <div id="lang-dropdown" style="
+            display:none; position:absolute; right:0; top:calc(100% + 6px);
+            background:var(--bg-card); border:1px solid var(--border-strong);
+            border-radius:var(--radius-md); overflow:hidden; z-index:300;
+            box-shadow:0 8px 28px rgba(0,0,0,0.5); min-width:90px;">
+            <button class="lang-option" data-lang="en" data-flag="🇬🇧" data-code="EN">🇬🇧 EN</button>
+            <button class="lang-option" data-lang="fr" data-flag="🇫🇷" data-code="FR">🇫🇷 FR</button>
+            <button class="lang-option" data-lang="de" data-flag="🇩🇪" data-code="DE">🇩🇪 DE</button>
+            <button class="lang-option" data-lang="el" data-flag="🇬🇷" data-code="EL">🇬🇷 EL</button>
+            <button class="lang-option" data-lang="pt" data-flag="🇵🇹" data-code="PT">🇵🇹 PT</button>
+          </div>
+        </div>
+
+        <a href="index.html"
+          data-i18n="setup.leaveBtn"
+          style="font-size:0.78rem; font-weight:700; letter-spacing:0.06em;
+            text-transform:uppercase; color:var(--text-muted); text-decoration:none;">
+          Leave
+        </a>
+      </div>
+
     </div>
   </nav>
 
@@ -96,16 +154,17 @@
 
       <!-- Header -->
       <div style="text-align:center; padding: 36px 0 28px;">
-        <h2 style="color:var(--cyan); margin-bottom:8px;">Start Here</h2>
-        <p style="font-size:0.9rem; color:var(--text-muted);">
+        <h2 data-i18n="setup.title" style="color:var(--cyan); margin-bottom:8px;">Start Here</h2>
+        <p data-i18n="setup.subtitle" style="font-size:0.9rem; color:var(--text-muted);">
           There's not much to configure — the app is designed to just work.
         </p>
       </div>
 
-      <!-- How sharing works -->
+      <!-- Storing Your Notes -->
       <div class="card" style="margin-bottom:16px;">
-        <div class="section__title" style="margin-bottom:12px;">Storing Your Notes</div>
-        <p style="font-size:0.88rem; color:var(--text-secondary); line-height:1.7; margin-bottom:0;">
+        <div data-i18n="setup.storeTitle" class="section__title" style="margin-bottom:12px;">Storing Your Notes</div>
+        <p data-i18n-html="setup.storeText"
+          style="font-size:0.88rem; color:var(--text-secondary); line-height:1.7; margin-bottom:0;">
           When you tap <strong style="color:var(--text-primary);">Store My Notes</strong> in the Save section,
           your device opens its own share menu — the same one you use everywhere else on your phone.
           Choose wherever you normally keep things: your notes app, a message to yourself, cloud storage,
@@ -113,10 +172,11 @@
         </p>
       </div>
 
-      <!-- Backup reminder -->
+      <!-- Keeping Your Data Safe -->
       <div class="card" style="margin-bottom:16px;">
-        <div class="section__title" style="margin-bottom:12px;">Keeping Your Data Safe</div>
-        <p style="font-size:0.88rem; color:var(--text-secondary); line-height:1.7; margin-bottom:0;">
+        <div data-i18n="setup.safeTitle" class="section__title" style="margin-bottom:12px;">Keeping Your Data Safe</div>
+        <p data-i18n-html="setup.safeText"
+          style="font-size:0.88rem; color:var(--text-secondary); line-height:1.7; margin-bottom:0;">
           Your notes live on this device only. If you clear your browser storage, they're gone.
           Use <strong style="color:var(--text-primary);">Save → Share</strong> or
           <strong style="color:var(--text-primary);">Save → Download Backup</strong> regularly.
@@ -124,18 +184,19 @@
         </p>
       </div>
 
-      <!-- Browser note -->
+      <!-- Voice Notes -->
       <div class="card" style="margin-bottom:28px; border-color:rgba(0,229,212,0.1);">
-        <div class="section__title" style="margin-bottom:12px;">Voice Notes</div>
-        <p style="font-size:0.88rem; color:var(--text-secondary); line-height:1.7; margin-bottom:0;">
+        <div data-i18n="setup.voiceTitle" class="section__title" style="margin-bottom:12px;">Voice Notes</div>
+        <p data-i18n="setup.voiceText"
+          style="font-size:0.88rem; color:var(--text-secondary); line-height:1.7; margin-bottom:0;">
           Voice transcription works best in Chrome or Edge on Android.
           On iPhone, use Safari. The recording is never stored — only the text that comes from it.
         </p>
       </div>
 
-      <!-- Q&A -->
+      <!-- Q&A Button -->
       <div style="text-align:center; margin-bottom:28px;">
-        <button id="qa-btn" class="btn btn--glass" style="padding:10px 24px; font-size:0.88rem;">
+        <button id="qa-btn" data-i18n="setup.qaBtn" class="btn btn--glass" style="padding:10px 24px; font-size:0.88rem;">
           Q &amp; A
         </button>
       </div>
@@ -149,83 +210,21 @@
           border-radius:var(--radius-lg); padding:28px;">
 
           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
-            <span style="font-size:0.78rem; font-weight:700; letter-spacing:0.08em;
+            <span data-i18n="setup.qaTitle" style="font-size:0.78rem; font-weight:700; letter-spacing:0.08em;
               text-transform:uppercase; color:var(--cyan);">Questions &amp; Answers</span>
             <button id="qa-close" style="background:none; border:none; cursor:pointer;
               color:var(--text-muted); font-size:1.1rem; padding:4px 8px;">&#x2715;</button>
           </div>
 
-          <div style="display:flex; flex-direction:column; gap:20px;">
+          <!-- Dynamically rendered by i18n.js renderSetupQA() -->
+          <div id="qa-list" style="display:flex; flex-direction:column; gap:20px;"></div>
 
-            <div>
-              <p style="font-size:0.85rem; font-weight:700; color:var(--text-primary); margin-bottom:4px;">Where is my data stored?</p>
-              <p style="font-size:0.84rem; color:var(--text-secondary); line-height:1.65; margin:0;">
-                Everything stays on your device in your browser's local storage. Nothing is sent to any server. No one else can see it — including the people who made this app.
-              </p>
-            </div>
-
-            <div>
-              <p style="font-size:0.85rem; font-weight:700; color:var(--text-primary); margin-bottom:4px;">What happens if I clear my browser data?</p>
-              <p style="font-size:0.84rem; color:var(--text-secondary); line-height:1.65; margin:0;">
-                Your notes will be deleted permanently. This is why backing up regularly matters. Use the Save section to share or download your data before clearing anything.
-              </p>
-            </div>
-
-            <div>
-              <p style="font-size:0.85rem; font-weight:700; color:var(--text-primary); margin-bottom:4px;">How do I save my notes across sections?</p>
-              <p style="font-size:0.84rem; color:var(--text-secondary); line-height:1.65; margin:0;">
-                Each section saves automatically as you add content — goals, tasks, notes and voice recordings are all stored independently. You do not need to save a session. Just add and move on.
-              </p>
-            </div>
-
-            <div>
-              <p style="font-size:0.85rem; font-weight:700; color:var(--text-primary); margin-bottom:4px;">How do I get this app on my phone home screen?</p>
-              <p style="font-size:0.84rem; color:var(--text-secondary); line-height:1.65; margin:0;">
-                On Android, open the app in Chrome, tap the three dots menu and select Add to Home Screen. On iPhone, open the app in Safari, tap the Share button and select Add to Home Screen. The app will then open like any other app on your phone.
-              </p>
-            </div>
-
-            <div>
-              <p style="font-size:0.85rem; font-weight:700; color:var(--text-primary); margin-bottom:4px;">Does it work without internet?</p>
-              <p style="font-size:0.84rem; color:var(--text-secondary); line-height:1.65; margin:0;">
-                Yes — once you have opened the app once, it works fully offline. All your data is on your device, so no connection is needed.
-              </p>
-            </div>
-
-            <div>
-              <p style="font-size:0.85rem; font-weight:700; color:var(--text-primary); margin-bottom:4px;">How does voice recording work?</p>
-              <p style="font-size:0.84rem; color:var(--text-secondary); line-height:1.65; margin:0;">
-                Tap the mic button in the Voice section, speak your thought, and tap again to stop. Your browser transcribes the speech into text automatically. The audio itself is never stored — only the words.
-              </p>
-            </div>
-
-            <div>
-              <p style="font-size:0.85rem; font-weight:700; color:var(--text-primary); margin-bottom:4px;">Which browser works best?</p>
-              <p style="font-size:0.84rem; color:var(--text-secondary); line-height:1.65; margin:0;">
-                Chrome or Edge on Android gives the best voice transcription. On iPhone, use Safari. All other features work across all modern browsers.
-              </p>
-            </div>
-
-            <div style="background:rgba(0,229,212,0.06); border:1px solid rgba(0,229,212,0.2); border-radius:var(--radius-sm); padding:14px;">
-              <p style="font-size:0.85rem; font-weight:700; color:var(--cyan); margin-bottom:6px;">Best Practice — Keeping Your Notes Long Term</p>
-              <p style="font-size:0.84rem; color:var(--text-secondary); line-height:1.65; margin:0;">
-                For notes you want to keep long term — shopping lists, ongoing goals, plans that evolve — use the Download Backup regularly and keep updating that same note over time. This way your important content is always safe in the JSON file even if the app storage clears. For shorter notes that get acted on and discarded, use Store to send them to a device app. Both work together: the JSON carries your running plan, device apps hold your reusable reminders.
-              </p>
-            </div>
-
-
-              <p style="font-size:0.84rem; color:var(--text-secondary); line-height:1.65; margin:0;">
-                Go to the Save section in the app, tap Choose Backup File, and select the backup file you downloaded previously. Your data will be restored alongside anything already saved.
-              </p>
-            </div>
-
-          </div>
         </div>
       </div>
 
-      <!-- Action -->
+      <!-- Close / back to app -->
       <div style="text-align:center; padding-bottom:40px;">
-        <a href="app.html" class="btn btn--ghost"
+        <a href="app.html" data-i18n="setup.closeBtn" class="btn btn--ghost"
           style="padding:10px 28px; font-size:0.88rem; border-radius:20px; display:inline-block;">
           Close
         </a>
@@ -239,14 +238,69 @@
 
     </div>
   </main>
-  <script>
+
+  <script type="module">
+    import {
+      initI18n,
+      setLanguage,
+      getCurrentLang,
+      getLangMeta,
+      renderSetupQA,
+    } from './js/i18n.js';
+
+    // ── Apply saved language on load (also renders Q&A) ──
+    initI18n();
+
+    // ── Language selector UI ───────────────────────────
+    const langBtn      = document.getElementById('lang-btn');
+    const langDropdown = document.getElementById('lang-dropdown');
+    const langFlagEl   = document.getElementById('lang-flag');
+    const langCodeEl   = document.getElementById('lang-code');
+
+    function updateLangBtn() {
+      const meta = getLangMeta();
+      langFlagEl.textContent = meta.flag;
+      langCodeEl.textContent = meta.code;
+      document.querySelectorAll('.lang-option').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.lang === getCurrentLang());
+      });
+    }
+    updateLangBtn();
+
+    langBtn?.addEventListener('click', e => {
+      e.stopPropagation();
+      const isOpen = langDropdown.style.display === 'block';
+      langDropdown.style.display = isOpen ? 'none' : 'block';
+    });
+
+    document.addEventListener('click', () => {
+      langDropdown.style.display = 'none';
+    });
+
+    langDropdown?.addEventListener('click', e => e.stopPropagation());
+
+    document.querySelectorAll('.lang-option').forEach(btn => {
+      btn.addEventListener('click', () => {
+        setLanguage(btn.dataset.lang);
+        langDropdown.style.display = 'none';
+        updateLangBtn();
+        // Re-render Q&A after language switch if panel is open
+        renderSetupQA('qa-list');
+      });
+    });
+
+    // ── Q&A panel open / close ─────────────────────────
     const qaPanel = document.getElementById('qa-panel');
+
     document.getElementById('qa-btn')?.addEventListener('click', () => {
       qaPanel.style.display = 'flex';
+      renderSetupQA('qa-list');
     });
+
     document.getElementById('qa-close')?.addEventListener('click', () => {
       qaPanel.style.display = 'none';
     });
+
     qaPanel?.addEventListener('click', e => {
       if (e.target === qaPanel) qaPanel.style.display = 'none';
     });
