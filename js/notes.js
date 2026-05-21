@@ -2,13 +2,27 @@
 // Dash Notes · 3C Thread To Success™
 
 import { saveNote, getNotes, deleteNote, genId } from './storage.js';
+import { t, getLocale } from './i18n.js';
 
-// ── Type config ────────────────────────────────────────────
-const NOTE_TYPES = {
-  text:     { label: 'Note',      placeholder: 'What\'s on your mind? Just start typing…' },
-  quote:    { label: 'Quote',     placeholder: 'A thought, a quote, something worth keeping…' },
-  wishlist: { label: 'Wish List', placeholder: 'Something you want, need, or are working towards…' },
-};
+// ── Note type label lookup ─────────────────────────────────
+function getNoteTypeLabel(type) {
+  const map = {
+    text:     () => t('notes.tabNote'),
+    quote:    () => t('notes.tabQuote'),
+    wishlist: () => t('notes.tabWishlist'),
+  };
+  return (map[type] || map.text)();
+}
+
+// ── Note type placeholder lookup ───────────────────────────
+function getNoteTypePlaceholder(type) {
+  const map = {
+    text:     () => t('notes.padPlaceholder'),
+    quote:    () => t('notes.phQuote'),
+    wishlist: () => t('notes.phWishlist'),
+  };
+  return (map[type] || map.text)();
+}
 
 // ── Save a note ────────────────────────────────────────────
 async function saveNewNote(text, subject = '', type = 'text') {
@@ -35,26 +49,28 @@ async function renderNotes(filterType = null) {
   if (notes.length === 0) {
     container.innerHTML = `
       <p style="text-align:center; color:var(--text-muted); font-size:0.85rem; padding:20px 0;">
-        Nothing saved yet in this section.
+        ${t('notes.emptyState')}
       </p>`;
     return;
   }
 
   container.innerHTML = notes.map(n => {
-    const cfg     = NOTE_TYPES[n.type] || NOTE_TYPES.text;
-    const subject = n.subject ? `<div style="font-size:0.72rem; font-weight:700; color:var(--cyan); text-transform:uppercase; letter-spacing:0.06em; margin-bottom:4px;">${escHtml(n.subject)}</div>` : '';
+    const label   = getNoteTypeLabel(n.type);
+    const subject = n.subject
+      ? `<div style="font-size:0.72rem; font-weight:700; color:var(--cyan); text-transform:uppercase; letter-spacing:0.06em; margin-bottom:4px;">${escHtml(n.subject)}</div>`
+      : '';
     return `
       <div class="note-item" id="note-${n.id}" style="cursor:default;">
         <div class="item-actions">
           <button class="item-action-btn" data-edit-note="${n.id}" title="Edit">&#x270E;</button>
-          <button class="item-action-btn" data-share-note="${n.id}" title="Store">&#x2197; Store</button>
+          <button class="item-action-btn" data-share-note="${n.id}" title="Store">${t('notes.storeBtn')}</button>
           <button class="item-action-btn delete" data-del-note="${n.id}" title="Delete">&#x2715;</button>
         </div>
         <div style="flex:1; min-width:0; padding-right:8px;">
           <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px; flex-wrap:wrap;">
             <span style="font-size:0.68rem; font-weight:700; text-transform:uppercase; letter-spacing:0.06em;
               color:var(--text-muted); border:1px solid var(--border); border-radius:4px; padding:1px 7px;">
-              ${cfg.label}
+              ${label}
             </span>
             <span style="font-size:0.72rem; color:var(--text-muted);">${formatDate(n.created)}</span>
           </div>
@@ -72,7 +88,7 @@ async function renderNotes(filterType = null) {
     });
   });
 
-  // Edit — load note back into the form at top
+  // Edit
   container.querySelectorAll('[data-edit-note]').forEach(btn => {
     btn.addEventListener('click', async e => {
       e.stopPropagation();
@@ -81,29 +97,25 @@ async function renderNotes(filterType = null) {
       const note  = all.find(n => n.id === id);
       if (!note) return;
 
-      const pad    = document.getElementById('note-pad');
-      const subRef = document.getElementById('note-subject');
+      const pad     = document.getElementById('note-pad');
+      const subRef  = document.getElementById('note-subject');
       const saveBtn = document.getElementById('save-note-btn');
       if (!pad || !saveBtn) return;
 
-      // Populate form fields
-      pad.value    = note.text;
+      pad.value = note.text;
       if (subRef) subRef.value = note.subject || '';
 
-      // Switch to correct type tab
       const tab = document.querySelector(`[data-note-type="${note.type || 'text'}"]`);
       if (tab) tab.click();
 
-      // Mark save button as update mode
-      saveBtn.textContent          = 'Update';
-      saveBtn.dataset.editingId    = id;
-      saveBtn.style.background     = 'var(--cyan-dim)';
+      saveBtn.textContent       = t('notes.updateBtn');
+      saveBtn.dataset.editingId = id;
+      saveBtn.style.background  = 'var(--cyan-dim)';
 
-      // Scroll to top of section
       pad.scrollIntoView({ behavior: 'smooth', block: 'center' });
       pad.focus();
 
-      showToast('Edit loaded — make changes and tap Update');
+      showToast(t('notes.editLoaded'));
     });
   });
 
@@ -134,7 +146,7 @@ function shareText(text) {
   if (navigator.share) {
     navigator.share({ title: 'Dash Notes', text }).catch(() => {});
   } else {
-    navigator.clipboard.writeText(text).then(() => showToast('Copied to clipboard ✅'));
+    navigator.clipboard.writeText(text).then(() => showToast(t('notes.copied')));
   }
 }
 
@@ -147,7 +159,7 @@ function escHtml(str) {
 
 function formatDate(iso) {
   if (!iso) return '';
-  return new Date(iso).toLocaleString('en-GB', {
+  return new Date(iso).toLocaleString(getLocale(), {
     timeZone: 'Europe/London',
     day: 'numeric', month: 'short', year: 'numeric',
     hour: '2-digit', minute: '2-digit'
@@ -155,11 +167,11 @@ function formatDate(iso) {
 }
 
 function showToast(msg, type = 'success') {
-  const t = document.getElementById('toast');
-  if (!t) return;
-  t.textContent = msg;
-  t.className = `toast toast--${type} show`;
-  setTimeout(() => t.classList.remove('show'), 3000);
+  const el = document.getElementById('toast');
+  if (!el) return;
+  el.textContent = msg;
+  el.className = `toast toast--${type} show`;
+  setTimeout(() => el.classList.remove('show'), 3000);
 }
 
 // ── Init ───────────────────────────────────────────────────
@@ -171,7 +183,6 @@ function initNotes() {
     tab.addEventListener('click', () => {
       const type = tab.dataset.noteType;
 
-      // Update active tab
       document.querySelectorAll('[data-note-type]').forEach(t => {
         t.style.color        = 'var(--text-muted)';
         t.style.borderBottom = '2px solid transparent';
@@ -179,12 +190,10 @@ function initNotes() {
       tab.style.color        = 'var(--cyan)';
       tab.style.borderBottom = '2px solid var(--cyan)';
 
-      // Update placeholder
       const pad = document.getElementById('note-pad');
-      if (pad) pad.placeholder = NOTE_TYPES[type]?.placeholder || '';
+      if (pad) pad.placeholder = getNoteTypePlaceholder(type);
       pad?.setAttribute('data-active-type', type);
 
-      // Re-render filtered list
       renderNotes(type === 'text' ? null : type);
     });
   });
@@ -203,7 +212,6 @@ function initNotes() {
     const editId  = saveBtn.dataset.editingId;
 
     if (editId) {
-      // Update mode — save with same ID
       const all  = await getNotes();
       const note = all.find(n => n.id === editId);
       if (note) {
@@ -212,14 +220,13 @@ function initNotes() {
         note.type    = type;
         await saveNote(note);
       }
-      // Reset button
       delete saveBtn.dataset.editingId;
-      saveBtn.textContent  = 'Save';
+      saveBtn.textContent      = t('notes.saveBtn');
       saveBtn.style.background = '';
-      showToast('Updated ✅');
+      showToast(t('notes.toastUpdated'));
     } else {
       await saveNewNote(text, subject, type);
-      showToast('Saved ✅');
+      showToast(t('notes.toastSaved'));
     }
 
     pad.value = '';
