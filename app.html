@@ -93,6 +93,26 @@
     }
     .lang-option:hover  { background: var(--bg-glass); color: var(--text-primary); }
     .lang-option.active { color: var(--cyan); background: var(--cyan-subtle); }
+
+    /* ── Mobile nav — prevent overflow when translations are longer ── */
+    .nav-action-btn {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 90px;
+    }
+    @media (max-width: 420px) {
+      .nav-action-btn {
+        font-size: 0.68rem !important;
+        padding: 5px 6px !important;
+        letter-spacing: 0.02em !important;
+        max-width: 72px;
+      }
+      #lang-btn {
+        font-size: 0.7rem !important;
+        padding: 4px 7px !important;
+      }
+    }
   </style>
 </head>
 <body>
@@ -111,6 +131,7 @@
       <div style="display:flex; gap:8px; align-items:center;">
 
         <button id="take-note-btn"
+          class="nav-action-btn"
           data-i18n="nav.takeNote"
           style="
             background:none; border:none; cursor:pointer;
@@ -152,6 +173,7 @@
         </div>
 
         <button onclick="window.location.href='setup.html'"
+          class="nav-action-btn"
           data-i18n="nav.startHere"
           style="
             background:none; border:none; cursor:pointer;
