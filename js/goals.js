@@ -2,6 +2,7 @@
 // 3C Goal Tracker · 3C Thread To Success™
 
 import { saveGoal, getGoals, deleteGoal, genId } from './storage.js';
+import { t, getLocale } from './i18n.js';
 
 const MAX_GOALS = 5;
 
@@ -22,8 +23,8 @@ async function renderGoals() {
       <div class="text-center" style="padding: 40px 20px;">
         <div style="font-size: 2.4rem; margin-bottom: 12px;">🎯</div>
         <p style="color: var(--text-muted); font-size: 0.9rem;">
-          No goals yet. Add your first goal below.<br />
-          Start with your "why" — not your "what."
+          ${t('goals.emptyLine1')}<br />
+          ${t('goals.emptyLine2')}
         </p>
       </div>`;
     return;
@@ -34,10 +35,10 @@ async function renderGoals() {
   // Attach events
   container.querySelectorAll('[data-delete-goal]').forEach(btn => {
     btn.addEventListener('click', async () => {
-      if (!confirm('Delete this goal?')) return;
+      if (!confirm(t('goals.confirmDelete'))) return;
       await deleteGoal(btn.dataset.deleteGoal);
       await renderGoals();
-      showToast('Goal removed');
+      showToast(t('goals.toastRemoved'));
     });
   });
 
@@ -72,7 +73,7 @@ function goalCardHTML(goal) {
         <div class="goal-card__title">${escHtml(goal.title)}</div>
         <div style="display:flex; gap:6px; flex-shrink:0;">
           <button class="btn btn--ghost" style="padding:5px 10px; font-size:0.75rem;"
-            data-edit-goal="${goal.id}">Edit</button>
+            data-edit-goal="${goal.id}">${t('goals.editBtn')}</button>
           <button class="btn btn--danger" style="padding:5px 10px; font-size:0.75rem;"
             data-delete-goal="${goal.id}">✕</button>
         </div>
@@ -88,7 +89,7 @@ function goalCardHTML(goal) {
         </div>` : ''}
 
       <div style="display:flex; align-items:center; gap:10px; margin-top:12px;">
-        <span style="font-size:0.75rem; color:var(--text-muted); white-space:nowrap;">Progress</span>
+        <span style="font-size:0.75rem; color:var(--text-muted); white-space:nowrap;">${t('goals.progress')}</span>
         <input type="range" min="0" max="100" value="${goal.progress || 0}"
           data-progress="${goal.id}"
           style="flex:1; accent-color:var(--purple-mid); cursor:pointer;" />
@@ -101,7 +102,7 @@ function goalCardHTML(goal) {
       </div>
 
       <div style="font-size:0.7rem; color:var(--text-muted); margin-top:8px;">
-        Added ${formatDate(goal.created)}
+        ${t('goals.addedOn')} ${formatDate(goal.created)}
       </div>
     </div>`;
 }
@@ -111,13 +112,12 @@ async function openGoalModal(editId = null) {
   const goals = await getGoals();
 
   if (!editId && goals.length >= MAX_GOALS) {
-    showToast(`Maximum ${MAX_GOALS} goals. Complete or remove one first.`, 'error');
+    showToast(t('goals.maxReached'), 'error');
     return;
   }
 
   const existing = editId ? goals.find(g => g.id === editId) : null;
 
-  // Remove any existing modal
   document.getElementById('goal-modal')?.remove();
 
   const modal = document.createElement('div');
@@ -133,38 +133,38 @@ async function openGoalModal(editId = null) {
   modal.innerHTML = `
     <div class="card card--glass" style="width:100%; max-width:520px; max-height:88vh; overflow-y:auto;">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
-        <h3>${existing ? 'Edit Goal' : 'Add New Goal'}</h3>
+        <h3>${existing ? t('goals.modalEdit') : t('goals.modalAdd')}</h3>
         <button id="close-goal-modal" class="btn btn--ghost btn--icon">✕</button>
       </div>
 
       <div class="form-group">
-        <label>Goal Title *</label>
+        <label>${t('goals.labelTitle')}</label>
         <input type="text" id="gf-title" maxlength="120"
-          placeholder="e.g. Launch my 3C project"
+          placeholder="${t('goals.phTitle')}"
           value="${escHtml(existing?.title || '')}" />
       </div>
 
       <div class="form-group">
-        <label>Why does this matter to you?</label>
+        <label>${t('goals.labelWhy')}</label>
         <textarea id="gf-why" rows="2" maxlength="300"
-          placeholder="The deeper reason — not the task, the feeling...">${escHtml(existing?.why || '')}</textarea>
+          placeholder="${t('goals.phWhy')}">${escHtml(existing?.why || '')}</textarea>
       </div>
 
       <div class="form-group">
-        <label>3 Milestones (one per line)</label>
+        <label>${t('goals.labelMilestones')}</label>
         <textarea id="gf-milestones" rows="3" maxlength="400"
-          placeholder="Step 1&#10;Step 2&#10;Step 3">${(existing?.milestones || []).join('\n')}</textarea>
+          placeholder="${t('goals.phMilestones')}">${(existing?.milestones || []).join('\n')}</textarea>
       </div>
 
       <div class="form-group">
-        <label>Weekly Reflection</label>
+        <label>${t('goals.labelReflection')}</label>
         <textarea id="gf-reflection" rows="2" maxlength="400"
-          placeholder="What moved you forward this week?">${escHtml(existing?.reflection || '')}</textarea>
+          placeholder="${t('goals.phReflection')}">${escHtml(existing?.reflection || '')}</textarea>
       </div>
 
       <div style="display:flex; gap:10px; margin-top:8px;">
         <button id="save-goal-btn" class="btn btn--primary btn--full">
-          ${existing ? 'Update Goal' : 'Save Goal'}
+          ${existing ? t('goals.btnUpdate') : t('goals.btnSave')}
         </button>
       </div>
     </div>`;
@@ -176,7 +176,7 @@ async function openGoalModal(editId = null) {
 
   document.getElementById('save-goal-btn').addEventListener('click', async () => {
     const title = document.getElementById('gf-title').value.trim();
-    if (!title) { showToast('Please add a goal title', 'error'); return; }
+    if (!title) { showToast(t('goals.toastNoTitle'), 'error'); return; }
 
     const milestones = document.getElementById('gf-milestones').value
       .split('\n').map(s => s.trim()).filter(Boolean).slice(0, 3);
@@ -194,7 +194,7 @@ async function openGoalModal(editId = null) {
     await saveGoal(record);
     modal.remove();
     await renderGoals();
-    showToast(existing ? 'Goal updated ✅' : 'Goal saved ✅');
+    showToast(existing ? t('goals.toastUpdated') : t('goals.toastSaved'));
   });
 }
 
@@ -209,7 +209,9 @@ function escHtml(str) {
 
 function formatDate(iso) {
   if (!iso) return '';
-  return new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+  return new Date(iso).toLocaleDateString(getLocale(), {
+    day: 'numeric', month: 'short', year: 'numeric'
+  });
 }
 
 function showToast(msg, type = 'success') {
