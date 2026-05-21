@@ -522,12 +522,12 @@
        SCRIPTS
   ═══════════════════════════════════════════════════════ -->
   <script type="module">
-    import { initGoals }  from './js/goals.js';
-    import { initMatrix } from './js/matrix.js';
-    import { initVoice }  from './js/voice.js';
-    import { initNotes }  from './js/notes.js';
-    import { initCamera } from './js/camera.js';
-    import { initBackup } from './js/backup.js';
+    import { initGoals, renderGoals }        from './js/goals.js';
+    import { initMatrix }                    from './js/matrix.js';
+    import { initVoice, renderVoiceNotes }   from './js/voice.js';
+    import { initNotes, renderNotes }        from './js/notes.js';
+    import { initCamera }                    from './js/camera.js';
+    import { initBackup }                    from './js/backup.js';
     import {
       initI18n,
       setLanguage,
@@ -606,8 +606,13 @@
     updateTimestamps();
     setInterval(updateTimestamps, 60000);
 
-    // Re-run timestamps when language changes (locale switches)
-    window.addEventListener('dash-lang-changed', updateTimestamps);
+    // Re-render all dynamic content when language changes
+    window.addEventListener('dash-lang-changed', async () => {
+      updateTimestamps();
+      await renderGoals();
+      await renderVoiceNotes();
+      await renderNotes();
+    });
 
     // ── Tab navigation ─────────────────────────────────
     const tabs     = document.querySelectorAll('.tab-bar__item');
