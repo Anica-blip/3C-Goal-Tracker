@@ -96,6 +96,24 @@
     }
     .lang-option:hover  { background: var(--bg-glass); color: var(--text-primary); }
     .lang-option.active { color: var(--cyan); background: var(--cyan-subtle); }
+
+    /* ── Mobile nav — prevent overflow when translations are longer ── */
+    .nav-action-link {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 90px;
+    }
+    @media (max-width: 420px) {
+      .nav-action-link {
+        font-size: 0.68rem !important;
+        letter-spacing: 0.02em !important;
+      }
+      #lang-btn {
+        font-size: 0.7rem !important;
+        padding: 4px 7px !important;
+      }
+    }
   </style>
 </head>
 <body>
@@ -139,6 +157,7 @@
         </div>
 
         <a href="index.html"
+          class="nav-action-link"
           data-i18n="setup.leaveBtn"
           style="font-size:0.78rem; font-weight:700; letter-spacing:0.06em;
             text-transform:uppercase; color:var(--text-muted); text-decoration:none;">
