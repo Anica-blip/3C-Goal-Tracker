@@ -2,6 +2,7 @@
 // 3C Goal Tracker · 3C Thread To Success™
 
 import { saveNote, getNotes, deleteNote, genId } from './storage.js';
+import { t, getLocale } from './i18n.js';
 
 let mediaRecorder   = null;
 let isRecording     = false;
@@ -50,19 +51,18 @@ async function startRecording() {
   try {
     await navigator.mediaDevices.getUserMedia({ audio: true });
   } catch {
-    showToast('Microphone access denied — check browser permissions.', 'error');
+    showToast(t('voice.micDenied'), 'error');
     return;
   }
 
   liveTranscript = '';
   updateTranscriptUI('');
 
-  // Start speech recognition (transcription only — no audio stored)
   recognition = buildRecognition();
   if (recognition) {
     recognition.start();
   } else {
-    updateStatusUI('Voice-to-text not available in this browser — recording timer only.');
+    updateStatusUI(t('voice.noSpeechApi'));
   }
 
   isRecording    = true;
@@ -88,11 +88,10 @@ async function stopRecording() {
   const transcript = liveTranscript.trim();
 
   if (!transcript) {
-    updateStatusUI('No speech detected. Try again or check microphone.');
+    updateStatusUI(t('voice.noSpeech'));
     return;
   }
 
-  // Save transcript as a voice note
   const note = await saveNote({
     id:      genId(),
     text:    transcript,
@@ -100,7 +99,7 @@ async function stopRecording() {
     created: new Date().toISOString(),
   });
 
-  updateStatusUI('Voice note saved ✅');
+  updateStatusUI(t('voice.noteSaved'));
   await renderVoiceNotes();
   return note;
 }
@@ -111,7 +110,6 @@ function startTimer() {
   timerInterval = setInterval(() => {
     secondsElapsed++;
     if (el) el.textContent = formatTime(secondsElapsed);
-    // Auto-stop at 5 minutes
     if (secondsElapsed >= 300) stopRecording();
   }, 1000);
 }
@@ -168,7 +166,7 @@ async function renderVoiceNotes() {
   if (voices.length === 0) {
     container.innerHTML = `
       <p style="text-align:center; color:var(--text-muted); font-size:0.85rem; padding:20px 0;">
-        No voice notes yet. Record your first thought.
+        ${t('voice.emptyState')}
       </p>`;
     return;
   }
@@ -204,7 +202,7 @@ function shareNote(text) {
     navigator.share({ title: '3C Voice Note', text }).catch(() => {});
   } else {
     navigator.clipboard.writeText(text).then(() => {
-      showToast('Copied to clipboard ✅');
+      showToast(t('voice.copied'));
     });
   }
 }
@@ -218,18 +216,18 @@ function escHtml(str) {
 
 function formatDate(iso) {
   if (!iso) return '';
-  return new Date(iso).toLocaleDateString('en-GB', {
+  return new Date(iso).toLocaleDateString(getLocale(), {
     day: 'numeric', month: 'short', year: 'numeric',
     hour: '2-digit', minute: '2-digit'
   });
 }
 
 function showToast(msg, type = 'success') {
-  const t = document.getElementById('toast');
-  if (!t) return;
-  t.textContent = msg;
-  t.className = `toast toast--${type} show`;
-  setTimeout(() => t.classList.remove('show'), 3000);
+  const el = document.getElementById('toast');
+  if (!el) return;
+  el.textContent = msg;
+  el.className = `toast toast--${type} show`;
+  setTimeout(() => el.classList.remove('show'), 3000);
 }
 
 // ── Init ───────────────────────────────────────────────────
@@ -242,14 +240,13 @@ function initVoice() {
     });
   }
 
-  // Check support
   const SpeechRecognition =
     window.SpeechRecognition || window.webkitSpeechRecognition;
 
   if (!SpeechRecognition) {
-    updateStatusUI('⚠️ Voice transcription works best in Chrome or Edge.');
+    updateStatusUI(t('voice.notSupported'));
   } else {
-    updateStatusUI('Ready to record. Tap the mic to start.');
+    updateStatusUI(t('voice.status'));
   }
 
   renderVoiceNotes();
