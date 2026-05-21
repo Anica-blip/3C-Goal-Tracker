@@ -135,8 +135,8 @@ const translations = {
   // ── ENGLISH ───────────────────────────────────────────────────
   en: {
     nav: {
-      takeNote:  'Take Note',
-      startHere: 'Start Here',
+      takeNote:  '<span style="display:block;">Take</span><span style="display:block;">Note</span>',
+      startHere: '<span style="display:block;">Start</span><span style="display:block;">Here</span>',
     },
     panel: {
       title:       'About Dash Notes',
@@ -257,8 +257,8 @@ const translations = {
   // ── FRENCH ────────────────────────────────────────────────────
   fr: {
     nav: {
-      takeNote:  'Prendre note',
-      startHere: 'Commencer',
+      takeNote:  '<span style="display:block;">Prendre</span><span style="display:block;">Note</span>',
+      startHere: '<span style="display:block;">Commen-</span><span style="display:block;">cer</span>',
     },
     panel: {
       title:       'À propos de Dash Notes',
@@ -379,8 +379,8 @@ const translations = {
   // ── GERMAN ────────────────────────────────────────────────────
   de: {
     nav: {
-      takeNote:  'Notiz machen',
-      startHere: 'Hier starten',
+      takeNote:  '<span style="display:block;">Notiz</span><span style="display:block;">Machen</span>',
+      startHere: '<span style="display:block;">Hier</span><span style="display:block;">Starten</span>',
     },
     panel: {
       title:       'Über Dash Notes',
@@ -501,8 +501,8 @@ const translations = {
   // ── GREEK ─────────────────────────────────────────────────────
   el: {
     nav: {
-      takeNote:  'Σημείωσε',
-      startHere: 'Ξεκίνα εδώ',
+      takeNote:  '<span style="display:block;">Σημεί-</span><span style="display:block;">ωσε</span>',
+      startHere: '<span style="display:block;">Ξεκίνα</span><span style="display:block;">εδώ</span>',
     },
     panel: {
       title:       'Σχετικά με το Dash Notes',
@@ -623,8 +623,8 @@ const translations = {
   // ── PORTUGUESE ────────────────────────────────────────────────
   pt: {
     nav: {
-      takeNote:  'Tomar nota',
-      startHere: 'Começar aqui',
+      takeNote:  '<span style="display:block;">Tomar</span><span style="display:block;">Nota</span>',
+      startHere: '<span style="display:block;">Começar</span><span style="display:block;">Aqui</span>',
     },
     panel: {
       title:       'Sobre o Dash Notes',
