@@ -132,16 +132,14 @@
         <div id="lang-selector" style="position:relative;">
           <button id="lang-btn" style="
             background:none; border:1px solid rgba(255,255,255,0.12); cursor:pointer;
-            font-size:0.75rem; font-weight:700; letter-spacing:0.04em;
-            color:var(--text-muted); padding:5px 9px; border-radius:6px;
-            display:flex; align-items:center; gap:5px;
+            color:var(--text-muted); padding:4px 7px; border-radius:6px;
+            display:flex; align-items:center; gap:3px;
             transition:all var(--transition);"
             aria-label="Select language"
-            onmouseover="this.style.borderColor='rgba(0,229,212,0.7)'; this.style.color='var(--text-primary)'"
-            onmouseout="this.style.borderColor='rgba(255,255,255,0.12)'; this.style.color='var(--text-muted)'">
-            <span id="lang-flag">🇬🇧</span>
-            <span id="lang-code">EN</span>
-            <span style="font-size:0.55rem; opacity:0.55; margin-left:1px;">▾</span>
+            onmouseover="this.style.borderColor='rgba(0,229,212,0.7)'"
+            onmouseout="this.style.borderColor='rgba(255,255,255,0.12)'">
+            <span id="lang-flag" style="font-size:0.95rem; line-height:1;">🇬🇧</span>
+            <span style="font-size:0.5rem; opacity:0.5;">▾</span>
           </button>
           <div id="lang-dropdown" style="
             display:none; position:absolute; right:0; top:calc(100% + 6px);
@@ -274,12 +272,10 @@
     const langBtn      = document.getElementById('lang-btn');
     const langDropdown = document.getElementById('lang-dropdown');
     const langFlagEl   = document.getElementById('lang-flag');
-    const langCodeEl   = document.getElementById('lang-code');
 
     function updateLangBtn() {
       const meta = getLangMeta();
       langFlagEl.textContent = meta.flag;
-      langCodeEl.textContent = meta.code;
       document.querySelectorAll('.lang-option').forEach(btn => {
         btn.classList.toggle('active', btn.dataset.lang === getCurrentLang());
       });
