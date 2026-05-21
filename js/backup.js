@@ -2,11 +2,12 @@
 // Dash Notes · 3C Thread To Success™
 
 import { exportAll, importAll } from './storage.js';
+import { t, getLocale } from './i18n.js';
 
 // ── Format data as readable text ───────────────────────────
 function formatAsText(data) {
   const lines = [];
-  const ts = new Date().toLocaleString('en-GB', {
+  const ts = new Date().toLocaleString(getLocale(), {
     timeZone: 'Europe/London',
     day: 'numeric', month: 'long', year: 'numeric',
     hour: '2-digit', minute: '2-digit'
@@ -49,7 +50,7 @@ function formatAsText(data) {
     lines.push('-'.repeat(20));
     data.notes.forEach(n => {
       const prefix = n.type === 'voice' ? '🎙️' : '📝';
-      const date = new Date(n.created).toLocaleString('en-GB', {
+      const date = new Date(n.created).toLocaleString(getLocale(), {
         timeZone: 'Europe/London',
         day: 'numeric', month: 'short',
         hour: '2-digit', minute: '2-digit'
@@ -74,10 +75,10 @@ async function shareAll() {
       await navigator.share({ title: 'Dash Notes — My Backup', text: content });
     } else {
       await navigator.clipboard.writeText(content);
-      showToast('Copied — paste into your notes app ✅');
+      showToast(t('backup.toastCopied'));
     }
   } catch (err) {
-    if (err.name !== 'AbortError') showToast('Could not share — try downloading instead.', 'error');
+    if (err.name !== 'AbortError') showToast(t('backup.toastShareFailed'), 'error');
   }
 }
 
@@ -87,16 +88,16 @@ async function downloadJSON() {
     const data = await exportAll();
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
     const url  = URL.createObjectURL(blob);
-    const date = new Date().toLocaleDateString('en-GB', {
+    const date = new Date().toLocaleDateString(getLocale(), {
       timeZone: 'Europe/London', day: '2-digit', month: '2-digit', year: 'numeric'
     }).replace(/\//g, '-');
     const a    = document.createElement('a');
     a.href = url; a.download = `dash-notes-backup-${date}.json`;
     a.click();
     URL.revokeObjectURL(url);
-    showToast('Backup downloaded ✅');
+    showToast(t('backup.toastDownloaded'));
   } catch {
-    showToast('Download failed — try again.', 'error');
+    showToast(t('backup.toastDownloadFailed'), 'error');
   }
 }
 
@@ -106,24 +107,24 @@ async function importJSON(file) {
   try {
     const data = JSON.parse(await file.text());
     if (!data.goals && !data.tasks && !data.notes) {
-      showToast('File not recognised — use a Dash Notes backup.', 'error');
+      showToast(t('backup.toastBadFile'), 'error');
       return;
     }
     await importAll(data);
-    showToast('Data restored ✅');
+    showToast(t('backup.toastRestored'));
     window.dispatchEvent(new CustomEvent('dash-data-restored'));
   } catch {
-    showToast('Restore failed — file may be damaged.', 'error');
+    showToast(t('backup.toastRestoreFailed'), 'error');
   }
 }
 
 // ── Utility ────────────────────────────────────────────────
 function showToast(msg, type = 'success') {
-  const t = document.getElementById('toast');
-  if (!t) return;
-  t.textContent = msg;
-  t.className = `toast toast--${type} show`;
-  setTimeout(() => t.classList.remove('show'), 3500);
+  const el = document.getElementById('toast');
+  if (!el) return;
+  el.textContent = msg;
+  el.className = `toast toast--${type} show`;
+  setTimeout(() => el.classList.remove('show'), 3500);
 }
 
 // ── Init ───────────────────────────────────────────────────
