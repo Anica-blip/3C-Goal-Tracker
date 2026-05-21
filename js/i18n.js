@@ -229,6 +229,7 @@ const translations = {
       qaBtn:      'Q & A',
       qaTitle:    'Questions & Answers',
       closeBtn:   'Close',
+      leaveBtn:   'Leave',
       qa: [
         { q: 'Where is my data stored?',
           a: 'Everything stays on your device in your browser\'s local storage. Nothing is sent to any server. No one else can see it — including the people who made this app.' },
@@ -350,6 +351,7 @@ const translations = {
       qaBtn:      'Q & R',
       qaTitle:    'Questions et réponses',
       closeBtn:   'Fermer',
+      leaveBtn:   'Quitter',
       qa: [
         { q: 'Où sont stockées mes données ?',
           a: 'Tout reste sur votre appareil dans le stockage local du navigateur. Rien n\'est envoyé à un serveur. Personne d\'autre ne peut le voir — y compris les créateurs de cette application.' },
@@ -471,6 +473,7 @@ const translations = {
       qaBtn:      'F & A',
       qaTitle:    'Fragen & Antworten',
       closeBtn:   'Schließen',
+      leaveBtn:   'Verlassen',
       qa: [
         { q: 'Wo werden meine Daten gespeichert?',
           a: 'Alles bleibt auf deinem Gerät im lokalen Speicher des Browsers. Nichts wird an einen Server gesendet. Niemand sonst kann es sehen — auch nicht die Entwickler dieser App.' },
@@ -592,6 +595,7 @@ const translations = {
       qaBtn:      'Ε & Α',
       qaTitle:    'Ερωτήσεις & Απαντήσεις',
       closeBtn:   'Κλείσιμο',
+      leaveBtn:   'Έξοδος',
       qa: [
         { q: 'Πού αποθηκεύονται τα δεδομένα μου;',
           a: 'Όλα παραμένουν στη συσκευή σου στην τοπική αποθήκευση του browser. Τίποτα δεν αποστέλλεται σε διακομιστή. Κανείς άλλος δεν μπορεί να τα δει — ούτε οι δημιουργοί αυτής της εφαρμογής.' },
@@ -713,6 +717,7 @@ const translations = {
       qaBtn:      'P & R',
       qaTitle:    'Perguntas & Respostas',
       closeBtn:   'Fechar',
+      leaveBtn:   'Sair',
       qa: [
         { q: 'Onde são guardados os meus dados?',
           a: 'Tudo fica no teu dispositivo no armazenamento local do browser. Nada é enviado para nenhum servidor. Ninguém mais pode ver — incluindo os criadores desta app.' },
