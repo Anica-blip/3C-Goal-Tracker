@@ -332,7 +332,7 @@ const translations = {
       privacyNote:       '🔒 <strong style="color:var(--text-secondary);">Important :</strong> Vider les données du navigateur supprimera définitivement vos données Dash Notes. Partagez ou téléchargez une sauvegarde d\'abord. <strong style="color:var(--cyan);">Vos données. Votre responsabilité. Votre liberté.</strong>',
     },
     tabs: {
-      goals:  'Objectifs',
+      goals:  'Buts',
       matrix: 'Matrice',
       voice:  'Vocal',
       notes:  'Notes',
