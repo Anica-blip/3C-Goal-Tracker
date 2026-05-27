@@ -2,7 +2,7 @@
 // Cache-first strategy — app works fully offline after first load
 // 3C Thread To Success™
 
-const CACHE = 'dash-notes-v3';
+const CACHE = 'dash-notes-v4';
 
 const ASSETS = [
   './',
@@ -11,6 +11,7 @@ const ASSETS = [
   './setup.html',
   './manifest.json',
   './css/style.css',
+  './js/i18n.js',
   './js/storage.js',
   './js/goals.js',
   './js/matrix.js',
