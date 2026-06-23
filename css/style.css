@@ -271,6 +271,8 @@ select {
   color: var(--text-primary);
   font-family: var(--font);
   font-size: 0.95rem;
+  overflow-wrap: break-word;
+  word-break: break-word;
   transition: border-color var(--transition), background var(--transition);
   outline: none;
   -webkit-appearance: none;
@@ -559,6 +561,8 @@ label {
   font-weight: 700;
   margin-bottom: 6px;
   color: var(--text-primary);
+  overflow-wrap: break-word;
+  word-break: break-word;
 }
 
 .goal-card__why {
@@ -566,6 +570,8 @@ label {
   color: var(--text-secondary);
   margin-bottom: 12px;
   font-style: italic;
+  overflow-wrap: break-word;
+  word-break: break-word;
 }
 
 .goal-card__progress {
@@ -735,6 +741,8 @@ label {
   color: var(--text-secondary);
   min-height: 60px;
   line-height: 1.7;
+  overflow-wrap: break-word;
+  word-break: break-word;
 }
 
 /* ── Notes / Brain dump ──────────────────────────────────── */
@@ -774,7 +782,7 @@ label {
   gap: 12px;
 }
 
-.note-item__text { flex: 1; line-height: 1.6; }
+.note-item__text { flex: 1; line-height: 1.6; overflow-wrap: break-word; word-break: break-word; }
 .note-item__date {
   font-size: 0.72rem;
   color: var(--text-muted);
