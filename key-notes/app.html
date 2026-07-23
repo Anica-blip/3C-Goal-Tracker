@@ -1,0 +1,918 @@
+<!DOCTYPE html>
+<html lang="en" translate="no">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="KEY Notes — Your private, encrypted archive." />
+  <meta name="theme-color" content="#080b1a" />
+  <title>KEY Notes</title>
+  <link rel="icon" type="image/png" href="../assets/favicon.png" />
+  <link rel="apple-touch-icon" href="../assets/favicon.png" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="stylesheet" href="../css/style.css" />
+  <style>
+    .app-section { display: none; }
+    .app-section.active { display: block; }
+
+    .section-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 16px;
+    }
+    .record-count {
+      font-size: 0.78rem; font-weight: 700; color: var(--cyan);
+      background: var(--cyan-subtle); border: 1px solid rgba(0,229,212,0.2);
+      border-radius: 20px; padding: 2px 10px;
+    }
+
+    .toolbar-row { display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; }
+    .toolbar-row input { flex: 1; min-width: 160px; }
+
+    .record-row {
+      display: flex; align-items: center; justify-content: space-between;
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: var(--radius-sm); padding: 12px 14px; margin-bottom: 8px;
+      cursor: pointer; transition: all var(--transition);
+    }
+    .record-row:hover { background: var(--bg-card-hover); border-color: var(--border-strong); }
+    .record-row__main { flex: 1; min-width: 0; }
+    .record-row__title { font-size: 0.92rem; font-weight: 700; color: var(--text-primary); }
+    .record-row__sub { font-size: 0.78rem; color: var(--text-muted); margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+    .icon-btn {
+      width: 34px; height: 34px; border-radius: 50%;
+      background: rgba(255,255,255,0.04); border: 1px solid var(--border);
+      color: var(--text-secondary); cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.18s ease; flex-shrink: 0;
+    }
+    .icon-btn:hover { background: var(--cyan-subtle); border-color: var(--cyan); color: var(--cyan); }
+    .icon-btn svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+    .icon-btn.danger:hover { background: rgba(239,68,68,0.15); border-color: rgba(239,68,68,0.4); color: #fca5a5; }
+
+    .modal-overlay {
+      display: none; position: fixed; inset: 0; z-index: 200;
+      background: rgba(8,11,26,0.92); backdrop-filter: blur(12px);
+      align-items: flex-end; justify-content: center; padding: 16px;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal-card {
+      width: 100%; max-width: 500px; max-height: 88vh; overflow-y: auto;
+      background: rgba(255,255,255,0.04); border: 1px solid var(--border-strong);
+      border-radius: var(--radius-lg); padding: 24px;
+    }
+    .modal-header {
+      display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px;
+    }
+    .modal-actions { display: flex; gap: 8px; }
+
+    .field-view { margin-bottom: 14px; }
+    .field-view label { font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; display:block; margin-bottom: 3px; }
+    .field-view .val { font-size: 0.95rem; color: var(--text-primary); word-break: break-word; white-space: pre-wrap; }
+
+    .phone-row { display: flex; gap: 8px; margin-bottom: 8px; }
+    .phone-row input { flex: 1; }
+
+    .note-pad-flex {
+      background: rgba(255,255,255,0.03); border: 1px solid var(--border);
+      border-radius: var(--radius-md); padding: 16px; width: 100%;
+      color: var(--text-primary); font-family: var(--font); font-size: 0.95rem;
+      line-height: 1.7; min-height: 140px; resize: vertical;
+    }
+
+    .empty-row { text-align: center; padding: 30px 10px; color: var(--text-muted); font-size: 0.88rem; }
+
+    .settings-item {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 0; border-bottom: 1px solid var(--border);
+    }
+    .settings-item:last-child { border-bottom: none; }
+
+    .nav-icon-btn {
+      background: none; border: none; cursor: pointer; color: var(--text-muted);
+      padding: 4px; display: flex; transition: color var(--transition);
+    }
+    .nav-icon-btn:hover { color: var(--cyan); }
+    .nav-icon-btn svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+    .lang-option {
+      display: block; width: 100%; background: none; border: none; cursor: pointer;
+      font-size: 0.82rem; font-weight: 600; color: var(--text-secondary);
+      padding: 9px 14px; text-align: left; font-family: var(--font);
+      letter-spacing: 0.02em; transition: background var(--transition); white-space: nowrap;
+    }
+    .lang-option:hover  { background: var(--bg-glass); color: var(--text-primary); }
+    .lang-option.active { color: var(--cyan); background: var(--cyan-subtle); }
+  </style>
+</head>
+<body>
+
+  <div id="toast" class="toast" role="alert" aria-live="polite"></div>
+
+  <!-- Nav -->
+  <nav class="nav">
+    <div class="nav__inner">
+      <div class="nav__logo">
+        <img src="../assets/favicon.png" alt="KEY Notes" width="26" height="26"
+          style="border-radius:6px;" onerror="this.style.display='none'" />
+        <span style="line-height:1;"><span class="logo-dash">KEY</span><span class="logo-notes">Notes</span></span>
+      </div>
+      <div style="display:flex; gap:10px; align-items:center;">
+
+        <button class="nav-icon-btn" id="settings-btn" title="Settings">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        </button>
+
+        <div id="lang-selector" style="position:relative;">
+          <button id="lang-btn" style="
+            background:none; border:1px solid rgba(255,255,255,0.12); cursor:pointer;
+            color:var(--text-muted); padding:4px 7px; border-radius:6px;
+            display:flex; align-items:center; gap:3px; transition:all var(--transition);">
+            <span id="lang-flag" style="font-size:0.95rem; line-height:1;">🇬🇧</span>
+            <span style="font-size:0.5rem; opacity:0.5;">▾</span>
+          </button>
+          <div id="lang-dropdown" style="
+            display:none; position:absolute; right:0; top:calc(100% + 6px);
+            background:var(--bg-card); border:1px solid var(--border-strong);
+            border-radius:var(--radius-md); overflow:hidden; z-index:300;
+            box-shadow:0 8px 28px rgba(0,0,0,0.5); min-width:90px;">
+            <button class="lang-option" data-lang="en">🇬🇧 EN</button>
+            <button class="lang-option" data-lang="fr">🇫🇷 FR</button>
+            <button class="lang-option" data-lang="de">🇩🇪 DE</button>
+            <button class="lang-option" data-lang="el">🇬🇷 EL</button>
+            <button class="lang-option" data-lang="pt">🇵🇹 PT</button>
+          </div>
+        </div>
+
+        <button onclick="window.location.href='setup.html'" data-i18n-html="nav.startHere"
+          style="background:none; border:none; cursor:pointer; font-size:0.78rem; font-weight:700;
+            letter-spacing:0.06em; text-transform:uppercase; color:var(--text-muted); text-align:center;
+            line-height:1.2; padding:6px 8px; border-radius:6px;">
+          About<br/>&amp; FAQ
+        </button>
+
+        <button class="nav-icon-btn" id="lock-btn" title="Lock">
+          <svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+        </button>
+      </div>
+    </div>
+  </nav>
+
+  <main class="page-content">
+    <div class="container">
+
+      <!-- ═════════════════ CONTACTS ═════════════════ -->
+      <section id="section-contacts" class="app-section active">
+        <div class="section-header">
+          <h2 data-i18n="contacts.title">Contacts</h2>
+          <span class="record-count" id="contacts-count">0</span>
+        </div>
+        <button class="btn btn--primary btn--full" id="contacts-add-btn" data-i18n="contacts.addBtn" style="margin-bottom:12px;">+ Add Contact</button>
+        <div class="toolbar-row">
+          <input type="text" id="contacts-search" data-i18n-placeholder="contacts.searchPh" placeholder="Search contacts…" />
+        </div>
+        <div id="contacts-list"></div>
+      </section>
+
+      <!-- ═════════════════ LINKS ═════════════════ -->
+      <section id="section-links" class="app-section">
+        <div class="section-header">
+          <h2 data-i18n="links.title">Links</h2>
+          <span class="record-count" id="links-count">0</span>
+        </div>
+        <button class="btn btn--primary btn--full" id="links-add-btn" data-i18n="links.addBtn" style="margin-bottom:12px;">+ Add Link</button>
+        <div class="toolbar-row">
+          <input type="text" id="links-search" data-i18n-placeholder="links.searchPh" placeholder="Search links…" />
+        </div>
+        <div id="links-list"></div>
+      </section>
+
+      <!-- ═════════════════ ARCHIVE ═════════════════ -->
+      <section id="section-archive" class="app-section">
+        <div class="section-header">
+          <h2 data-i18n="archive.title">Archive</h2>
+          <span class="record-count" id="archive-count">0</span>
+        </div>
+        <button class="btn btn--primary btn--full" id="archive-add-btn" data-i18n="archive.addBtn" style="margin-bottom:12px;">+ Add Note</button>
+        <div class="toolbar-row">
+          <input type="text" id="archive-search" data-i18n-placeholder="archive.searchPh" placeholder="Search archive…" />
+        </div>
+        <div id="archive-list"></div>
+      </section>
+
+      <!-- ═════════════════ KEYS ═════════════════ -->
+      <section id="section-keys" class="app-section">
+        <div class="section-header">
+          <h2 data-i18n="vaultKeys.title">Keys</h2>
+          <span class="record-count" id="keys-count">0</span>
+        </div>
+        <button class="btn btn--primary btn--full" id="keys-add-btn" data-i18n="vaultKeys.addBtn" style="margin-bottom:12px;">+ Add Key</button>
+        <div class="toolbar-row">
+          <input type="text" id="keys-search" data-i18n-placeholder="vaultKeys.searchPh" placeholder="Search keys…" />
+        </div>
+        <div id="keys-list"></div>
+      </section>
+
+    </div>
+  </main>
+
+  <!-- ═════════════════ TAB BAR ═════════════════ -->
+  <nav class="tab-bar" role="navigation" aria-label="Main navigation">
+    <button data-i18n="tabs.contacts" class="tab-bar__item active" data-section="contacts">Contacts</button>
+    <button data-i18n="tabs.links"    class="tab-bar__item" data-section="links">Links</button>
+    <button data-i18n="tabs.archive"  class="tab-bar__item" data-section="archive">Archive</button>
+    <button data-i18n="tabs.keys"     class="tab-bar__item" data-section="keys">Keys</button>
+  </nav>
+
+  <!-- ═════════════════ CONTACT MODAL ═════════════════ -->
+  <div class="modal-overlay" id="contact-modal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <span id="contact-modal-title" style="font-size:0.78rem; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; color:var(--cyan);"></span>
+        <div class="modal-actions" id="contact-modal-actions"></div>
+      </div>
+      <div id="contact-view-mode"></div>
+      <div id="contact-edit-mode" style="display:none;">
+        <div class="form-group"><label data-i18n="contacts.labelFirstName">First name *</label><input type="text" id="cf-firstName" /></div>
+        <div class="form-group"><label data-i18n="contacts.labelLastName">Last name</label><input type="text" id="cf-lastName" /></div>
+        <div class="form-group"><label data-i18n="contacts.labelBusiness">Business</label><input type="text" id="cf-business" /></div>
+        <div class="form-group">
+          <label data-i18n="contacts.labelPhones">Phone numbers</label>
+          <div id="cf-phones"></div>
+          <button type="button" class="btn btn--glass" id="cf-add-phone" data-i18n="contacts.addPhoneBtn" style="font-size:0.8rem; padding:8px 14px;">+ Add another number</button>
+        </div>
+        <div class="form-group"><label data-i18n="contacts.labelEmail">Email</label><input type="email" id="cf-email" /></div>
+        <div class="form-group"><label data-i18n="contacts.labelAddress">Address</label><textarea id="cf-address"></textarea></div>
+        <button class="btn btn--primary btn--full" id="cf-save-btn"></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═════════════════ LINK MODAL ═════════════════ -->
+  <div class="modal-overlay" id="link-modal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <span id="link-modal-title" style="font-size:0.78rem; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; color:var(--cyan);"></span>
+        <div class="modal-actions" id="link-modal-actions"></div>
+      </div>
+      <div id="link-view-mode"></div>
+      <div id="link-edit-mode" style="display:none;">
+        <div class="form-group"><label data-i18n="links.labelName">Name *</label><input type="text" id="lf-name" /></div>
+        <div class="form-group"><label data-i18n="links.labelUsername">Username</label><input type="text" id="lf-username" /></div>
+        <div class="form-group"><label data-i18n="links.labelUrl">URL</label><input type="text" id="lf-url" /></div>
+        <div class="form-group"><label data-i18n="links.labelPassword">Password</label><input type="text" id="lf-password" /></div>
+        <button class="btn btn--primary btn--full" id="lf-save-btn"></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═════════════════ ARCHIVE MODAL ═════════════════ -->
+  <div class="modal-overlay" id="archive-modal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <span id="archive-modal-title" style="font-size:0.78rem; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; color:var(--cyan);"></span>
+        <div class="modal-actions" id="archive-modal-actions"></div>
+      </div>
+      <div id="archive-view-mode"></div>
+      <div id="archive-edit-mode" style="display:none;">
+        <div class="form-group"><label data-i18n="archive.labelCategory">Category *</label><input type="text" id="af-category" /></div>
+        <div class="form-group"><label data-i18n="archive.labelTitle">Title *</label><input type="text" id="af-title" /></div>
+        <div class="form-group">
+          <label data-i18n="archive.labelNote">Note</label>
+          <textarea class="note-pad-flex" id="af-note" data-i18n-placeholder="archive.notePh" placeholder="Write freely…"></textarea>
+        </div>
+        <button class="btn btn--primary btn--full" id="af-save-btn"></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═════════════════ KEYS MODAL ═════════════════ -->
+  <div class="modal-overlay" id="keys-modal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <span id="keys-modal-title" style="font-size:0.78rem; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; color:var(--cyan);"></span>
+        <div class="modal-actions" id="keys-modal-actions"></div>
+      </div>
+      <div id="keys-view-mode"></div>
+      <div id="keys-edit-mode" style="display:none;">
+        <div class="form-group"><label data-i18n="vaultKeys.labelTitle">Title *</label><input type="text" id="kf-title" /></div>
+        <div class="form-group">
+          <label data-i18n="vaultKeys.labelNote">Note</label>
+          <textarea class="note-pad-flex" id="kf-note" data-i18n-placeholder="vaultKeys.notePh" placeholder="Key details…"></textarea>
+        </div>
+        <button class="btn btn--primary btn--full" id="kf-save-btn"></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═════════════════ SETTINGS MODAL ═════════════════ -->
+  <div class="modal-overlay" id="settings-modal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <span data-i18n="settings.title" style="font-size:0.78rem; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; color:var(--cyan);">Settings</span>
+        <button class="icon-btn" id="settings-close"><svg viewBox="0 0 24 24"><path d="M5 5l14 14M19 5L5 19"/></svg></button>
+      </div>
+
+      <div class="card" style="margin-bottom:14px;">
+        <div data-i18n="settings.backupTitle" style="font-weight:700; margin-bottom:6px;">Backup & Restore</div>
+        <p data-i18n="settings.backupDesc" style="font-size:0.82rem; margin-bottom:14px;">Your data stays encrypted in the exported file.</p>
+        <button class="btn btn--glass btn--full" id="settings-download" data-i18n="settings.downloadBtn" style="margin-bottom:8px;">Download encrypted backup</button>
+        <button class="btn btn--ghost btn--full" id="settings-restore-trigger" data-i18n="settings.restoreBtn">Restore from backup</button>
+        <input type="file" id="settings-restore-input" accept="application/json" style="display:none;" />
+      </div>
+
+      <div class="card">
+        <div data-i18n="settings.securityTitle" style="font-weight:700; margin-bottom:10px;">Security</div>
+        <div class="settings-item">
+          <span data-i18n="settings.changePinBtn" style="font-size:0.88rem;">Change PIN</span>
+          <button class="btn btn--glass" id="settings-change-pin" style="padding:6px 14px; font-size:0.8rem;">→</button>
+        </div>
+        <div class="settings-item">
+          <span data-i18n="settings.changePassphraseBtn" style="font-size:0.88rem;">Change passphrase</span>
+          <button class="btn btn--glass" id="settings-change-pass" style="padding:6px 14px; font-size:0.8rem;">→</button>
+        </div>
+        <div class="settings-item">
+          <span data-i18n="settings.viewRecoveryBtn" style="font-size:0.88rem;">New recovery key</span>
+          <button class="btn btn--glass" id="settings-new-recovery" style="padding:6px 14px; font-size:0.8rem;">→</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Simple prompt modal for change-pin / change-passphrase / new-recovery flows -->
+  <div class="modal-overlay" id="prompt-modal">
+    <div class="modal-card" style="max-width:400px;">
+      <div class="modal-header">
+        <span id="prompt-title" style="font-size:0.78rem; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; color:var(--cyan);"></span>
+        <button class="icon-btn" id="prompt-close"><svg viewBox="0 0 24 24"><path d="M5 5l14 14M19 5L5 19"/></svg></button>
+      </div>
+      <div id="prompt-body"></div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { isUnlocked, lockVault, resetPIN, resetPassphrase, regenerateRecoveryKey } from './js/crypto.js';
+    import {
+      getContacts, saveContact, deleteContact,
+      getLinks, saveLink, deleteLink,
+      getArchiveNotes, saveArchiveNote, deleteArchiveNote,
+      getKeyRecords, saveKeyRecord, deleteKeyRecord,
+      exportEncrypted, importEncrypted,
+    } from './js/storage.js';
+    import { icon } from './js/icons.js';
+    import { initI18n, setLanguage, getCurrentLang, getLangMeta, t } from './js/i18n.js';
+
+    // ── Guard: must be unlocked ──────────────────────────────────
+    if (!isUnlocked()) {
+      window.location.href = 'index.html';
+    }
+
+    initI18n();
+
+    function showToast(msg, type = 'success') {
+      const el = document.getElementById('toast');
+      el.textContent = msg;
+      el.className = `toast toast--${type} show`;
+      setTimeout(() => el.classList.remove('show'), 2600);
+    }
+
+    // ── Language selector ─────────────────────────────────────────
+    const langBtn = document.getElementById('lang-btn');
+    const langDropdown = document.getElementById('lang-dropdown');
+    function updateLangBtn() {
+      document.getElementById('lang-flag').textContent = getLangMeta().flag;
+      document.querySelectorAll('.lang-option').forEach(b => b.classList.toggle('active', b.dataset.lang === getCurrentLang()));
+    }
+    updateLangBtn();
+    langBtn.addEventListener('click', e => {
+      e.stopPropagation();
+      langDropdown.style.display = langDropdown.style.display === 'block' ? 'none' : 'block';
+    });
+    document.addEventListener('click', () => langDropdown.style.display = 'none');
+    langDropdown.addEventListener('click', e => e.stopPropagation());
+    document.querySelectorAll('.lang-option').forEach(btn => {
+      btn.addEventListener('click', () => { setLanguage(btn.dataset.lang); langDropdown.style.display = 'none'; updateLangBtn(); refreshAll(); });
+    });
+
+    // ── Tab navigation ────────────────────────────────────────────
+    document.querySelectorAll('.tab-bar__item').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.tab-bar__item').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.app-section').forEach(s => s.classList.remove('active'));
+        tab.classList.add('active');
+        document.getElementById(`section-${tab.dataset.section}`).classList.add('active');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      });
+    });
+
+    // ── Lock button ───────────────────────────────────────────────
+    document.getElementById('lock-btn').addEventListener('click', () => {
+      lockVault();
+      window.location.href = 'index.html';
+    });
+
+    function esc(s) {
+      return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+    function iconBtnEl(name, cls = '') {
+      const b = document.createElement('button');
+      b.className = `icon-btn ${cls}`;
+      b.innerHTML = icon(name);
+      return b;
+    }
+
+    // ═══════════════════════ CONTACTS ═══════════════════════
+    let contactsCache = [];
+    let editingContactId = null;
+
+    async function loadContacts() {
+      contactsCache = await getContacts();
+      renderContactsList(contactsCache);
+    }
+    function renderContactsList(list) {
+      const el = document.getElementById('contacts-list');
+      document.getElementById('contacts-count').textContent = contactsCache.length;
+      if (!list.length) { el.innerHTML = `<div class="empty-row">${esc(t('contacts.emptyState'))}</div>`; return; }
+      el.innerHTML = '';
+      list.forEach(c => {
+        const row = document.createElement('div');
+        row.className = 'record-row';
+        const sub = c.business || (c.phones?.[0]?.number) || c.email || '';
+        row.innerHTML = `
+          <div class="record-row__main">
+            <div class="record-row__title">${esc(c.firstName)} ${esc(c.lastName)}</div>
+            <div class="record-row__sub">${esc(sub)}</div>
+          </div>`;
+        const viewBtn = iconBtnEl('view');
+        row.appendChild(viewBtn);
+        row.addEventListener('click', () => openContactView(c));
+        el.appendChild(row);
+      });
+    }
+    document.getElementById('contacts-search').addEventListener('input', e => {
+      const q = e.target.value.trim().toLowerCase();
+      if (!q) return renderContactsList(contactsCache);
+      const filtered = contactsCache.filter(c =>
+        [c.firstName, c.lastName, c.business, c.email, c.address, ...(c.phones||[]).map(p=>p.number)]
+          .some(v => (v||'').toLowerCase().includes(q))
+      );
+      renderContactsList(filtered);
+    });
+
+    function renderPhoneRows(phones) {
+      const wrap = document.getElementById('cf-phones');
+      wrap.innerHTML = '';
+      (phones.length ? phones : [{label:'', number:''}]).forEach((p, i) => addPhoneRow(p.label, p.number));
+    }
+    function addPhoneRow(label = '', number = '') {
+      const wrap = document.getElementById('cf-phones');
+      const row = document.createElement('div');
+      row.className = 'phone-row';
+      row.innerHTML = `
+        <input type="text" class="phone-label" placeholder="${esc(t('contacts.phoneLabelPh'))}" value="${esc(label)}" />
+        <input type="text" class="phone-number" placeholder="${esc(t('contacts.phoneNumberPh'))}" value="${esc(number)}" />
+        <button type="button" class="icon-btn danger phone-remove">${icon('delete')}</button>`;
+      row.querySelector('.phone-remove').addEventListener('click', () => row.remove());
+      wrap.appendChild(row);
+    }
+    document.getElementById('cf-add-phone').addEventListener('click', () => addPhoneRow());
+
+    function openContactView(c) {
+      editingContactId = c.id;
+      document.getElementById('contact-modal-title').textContent = `${c.firstName} ${c.lastName}`.trim();
+      const actions = document.getElementById('contact-modal-actions');
+      actions.innerHTML = '';
+      const editBtn = iconBtnEl('edit'); editBtn.addEventListener('click', () => openContactEdit(c));
+      const delBtn  = iconBtnEl('delete', 'danger'); delBtn.addEventListener('click', () => confirmDeleteContact(c.id));
+      const closeBtn = iconBtnEl('close'); closeBtn.addEventListener('click', closeContactModal);
+      actions.append(editBtn, delBtn, closeBtn);
+
+      const view = document.getElementById('contact-view-mode');
+      view.innerHTML = `
+        ${c.business ? `<div class="field-view"><label>${esc(t('contacts.labelBusiness'))}</label><div class="val">${esc(c.business)}</div></div>` : ''}
+        ${(c.phones||[]).map(p => `<div class="field-view"><label>${esc(p.label || t('contacts.labelPhones'))}</label><div class="val">${esc(p.number)}</div></div>`).join('')}
+        ${c.email ? `<div class="field-view"><label>${esc(t('contacts.labelEmail'))}</label><div class="val">${esc(c.email)}</div></div>` : ''}
+        ${c.address ? `<div class="field-view"><label>${esc(t('contacts.labelAddress'))}</label><div class="val">${esc(c.address)}</div></div>` : ''}
+      `;
+      document.getElementById('contact-view-mode').style.display = 'block';
+      document.getElementById('contact-edit-mode').style.display = 'none';
+      document.getElementById('contact-modal').classList.add('open');
+    }
+    function openContactEdit(c = null) {
+      editingContactId = c?.id || null;
+      document.getElementById('contact-modal-title').textContent = c ? t('contacts.updateBtn') : t('contacts.addBtn');
+      document.getElementById('contact-modal-actions').innerHTML = '';
+      const closeBtn = iconBtnEl('close'); closeBtn.addEventListener('click', closeContactModal);
+      document.getElementById('contact-modal-actions').appendChild(closeBtn);
+
+      document.getElementById('cf-firstName').value = c?.firstName || '';
+      document.getElementById('cf-lastName').value  = c?.lastName || '';
+      document.getElementById('cf-business').value  = c?.business || '';
+      document.getElementById('cf-email').value     = c?.email || '';
+      document.getElementById('cf-address').value   = c?.address || '';
+      renderPhoneRows(c?.phones || []);
+
+      const saveBtn = document.getElementById('cf-save-btn');
+      saveBtn.textContent = c ? t('contacts.updateBtn') : t('contacts.saveBtn');
+
+      document.getElementById('contact-view-mode').style.display = 'none';
+      document.getElementById('contact-edit-mode').style.display = 'block';
+      document.getElementById('contact-modal').classList.add('open');
+    }
+    document.getElementById('cf-save-btn').addEventListener('click', async () => {
+      const firstName = document.getElementById('cf-firstName').value.trim();
+      if (!firstName) { showToast(t('contacts.toastNoName'), 'error'); return; }
+      const phones = Array.from(document.querySelectorAll('#cf-phones .phone-row')).map(row => ({
+        label: row.querySelector('.phone-label').value.trim(),
+        number: row.querySelector('.phone-number').value.trim(),
+      })).filter(p => p.number);
+
+      const payload = {
+        id: editingContactId || undefined,
+        firstName,
+        lastName: document.getElementById('cf-lastName').value.trim(),
+        business: document.getElementById('cf-business').value.trim(),
+        phones,
+        email: document.getElementById('cf-email').value.trim(),
+        address: document.getElementById('cf-address').value.trim(),
+      };
+      await saveContact(payload);
+      showToast(editingContactId ? t('contacts.toastUpdated') : t('contacts.toastSaved'));
+      closeContactModal();
+      await loadContacts();
+    });
+    function confirmDeleteContact(id) {
+      if (!confirm(t('contacts.confirmDelete'))) return;
+      deleteContact(id).then(() => { showToast(t('contacts.toastDeleted')); closeContactModal(); loadContacts(); });
+    }
+    function closeContactModal() { document.getElementById('contact-modal').classList.remove('open'); }
+    document.getElementById('contact-modal').addEventListener('click', e => { if (e.target.id === 'contact-modal') closeContactModal(); });
+    document.getElementById('contacts-add-btn').addEventListener('click', () => openContactEdit(null));
+
+    // ═══════════════════════ LINKS ═══════════════════════
+    let linksCache = [];
+    let editingLinkId = null;
+
+    async function loadLinks() {
+      linksCache = await getLinks();
+      renderLinksList(linksCache);
+    }
+    function renderLinksList(list) {
+      const el = document.getElementById('links-list');
+      document.getElementById('links-count').textContent = linksCache.length;
+      if (!list.length) { el.innerHTML = `<div class="empty-row">${esc(t('links.emptyState'))}</div>`; return; }
+      el.innerHTML = '';
+      list.forEach(l => {
+        const row = document.createElement('div');
+        row.className = 'record-row';
+        row.innerHTML = `<div class="record-row__main"><div class="record-row__title">${esc(l.name)}</div><div class="record-row__sub">${esc(l.username || l.url || '')}</div></div>`;
+        row.appendChild(iconBtnEl('view'));
+        row.addEventListener('click', () => openLinkView(l));
+        el.appendChild(row);
+      });
+    }
+    document.getElementById('links-search').addEventListener('input', e => {
+      const q = e.target.value.trim().toLowerCase();
+      if (!q) return renderLinksList(linksCache);
+      renderLinksList(linksCache.filter(l => [l.name, l.username, l.url].some(v => (v||'').toLowerCase().includes(q))));
+    });
+
+    let passwordVisible = false;
+    function openLinkView(l) {
+      editingLinkId = l.id;
+      passwordVisible = false;
+      document.getElementById('link-modal-title').textContent = l.name;
+      const actions = document.getElementById('link-modal-actions');
+      actions.innerHTML = '';
+      const copyBtn = iconBtnEl('copy'); copyBtn.addEventListener('click', () => {
+        navigator.clipboard.writeText(l.password || '');
+        showToast(t('links.toastCopiedPassword'));
+      });
+      const editBtn = iconBtnEl('edit'); editBtn.addEventListener('click', () => openLinkEdit(l));
+      const delBtn  = iconBtnEl('delete', 'danger'); delBtn.addEventListener('click', () => confirmDeleteLink(l.id));
+      const closeBtn = iconBtnEl('close'); closeBtn.addEventListener('click', closeLinkModal);
+      actions.append(copyBtn, editBtn, delBtn, closeBtn);
+
+      const view = document.getElementById('link-view-mode');
+      view.innerHTML = `
+        ${l.username ? `<div class="field-view"><label>${esc(t('links.labelUsername'))}</label><div class="val">${esc(l.username)}</div></div>` : ''}
+        ${l.url ? `<div class="field-view"><label>${esc(t('links.labelUrl'))}</label><div class="val">${esc(l.url)}</div></div>` : ''}
+        <div class="field-view"><label>${esc(t('links.labelPassword'))}</label>
+          <div class="val" style="display:flex; align-items:center; gap:10px;">
+            <span id="link-password-display">••••••••</span>
+            <button type="button" class="btn btn--glass" id="link-toggle-pw" style="padding:4px 10px; font-size:0.75rem;">${esc(t('links.showPassword'))}</button>
+          </div>
+        </div>`;
+      document.getElementById('link-toggle-pw').addEventListener('click', () => {
+        passwordVisible = !passwordVisible;
+        document.getElementById('link-password-display').textContent = passwordVisible ? (l.password || '') : '••••••••';
+        document.getElementById('link-toggle-pw').textContent = passwordVisible ? t('links.hidePassword') : t('links.showPassword');
+      });
+      document.getElementById('link-view-mode').style.display = 'block';
+      document.getElementById('link-edit-mode').style.display = 'none';
+      document.getElementById('link-modal').classList.add('open');
+    }
+    function openLinkEdit(l = null) {
+      editingLinkId = l?.id || null;
+      document.getElementById('link-modal-title').textContent = l ? t('links.updateBtn') : t('links.addBtn');
+      document.getElementById('link-modal-actions').innerHTML = '';
+      const closeBtn = iconBtnEl('close'); closeBtn.addEventListener('click', closeLinkModal);
+      document.getElementById('link-modal-actions').appendChild(closeBtn);
+
+      document.getElementById('lf-name').value = l?.name || '';
+      document.getElementById('lf-username').value = l?.username || '';
+      document.getElementById('lf-url').value = l?.url || '';
+      document.getElementById('lf-password').value = l?.password || '';
+
+      document.getElementById('lf-save-btn').textContent = l ? t('links.updateBtn') : t('links.saveBtn');
+      document.getElementById('link-view-mode').style.display = 'none';
+      document.getElementById('link-edit-mode').style.display = 'block';
+      document.getElementById('link-modal').classList.add('open');
+    }
+    document.getElementById('lf-save-btn').addEventListener('click', async () => {
+      const name = document.getElementById('lf-name').value.trim();
+      if (!name) { showToast(t('links.toastNoName'), 'error'); return; }
+      await saveLink({
+        id: editingLinkId || undefined,
+        name,
+        username: document.getElementById('lf-username').value.trim(),
+        url: document.getElementById('lf-url').value.trim(),
+        password: document.getElementById('lf-password').value,
+      });
+      showToast(editingLinkId ? t('links.toastUpdated') : t('links.toastSaved'));
+      closeLinkModal();
+      await loadLinks();
+    });
+    function confirmDeleteLink(id) {
+      if (!confirm(t('links.confirmDelete'))) return;
+      deleteLink(id).then(() => { showToast(t('links.toastDeleted')); closeLinkModal(); loadLinks(); });
+    }
+    function closeLinkModal() { document.getElementById('link-modal').classList.remove('open'); }
+    document.getElementById('link-modal').addEventListener('click', e => { if (e.target.id === 'link-modal') closeLinkModal(); });
+    document.getElementById('links-add-btn').addEventListener('click', () => openLinkEdit(null));
+
+    // ═══════════════════════ ARCHIVE ═══════════════════════
+    let archiveCache = [];
+    let editingArchiveId = null;
+
+    async function loadArchive() {
+      archiveCache = await getArchiveNotes();
+      renderArchiveList(archiveCache);
+    }
+    function renderArchiveList(list) {
+      const el = document.getElementById('archive-list');
+      document.getElementById('archive-count').textContent = archiveCache.length;
+      if (!list.length) { el.innerHTML = `<div class="empty-row">${esc(t('archive.emptyState'))}</div>`; return; }
+      el.innerHTML = '';
+      list.forEach(a => {
+        const row = document.createElement('div');
+        row.className = 'record-row';
+        row.innerHTML = `<div class="record-row__main"><div class="record-row__title">${esc(a.title)}</div><div class="record-row__sub">${esc(a.category)}</div></div>`;
+        row.appendChild(iconBtnEl('view'));
+        row.addEventListener('click', () => openArchiveView(a));
+        el.appendChild(row);
+      });
+    }
+    document.getElementById('archive-search').addEventListener('input', e => {
+      const q = e.target.value.trim().toLowerCase();
+      if (!q) return renderArchiveList(archiveCache);
+      renderArchiveList(archiveCache.filter(a => [a.category, a.title, a.note].some(v => (v||'').toLowerCase().includes(q))));
+    });
+
+    function openArchiveView(a) {
+      editingArchiveId = a.id;
+      document.getElementById('archive-modal-title').textContent = a.title;
+      const actions = document.getElementById('archive-modal-actions');
+      actions.innerHTML = '';
+      const copyBtn = iconBtnEl('copy'); copyBtn.addEventListener('click', () => { navigator.clipboard.writeText(a.note || ''); showToast(t('common.copiedGeneric')); });
+      const editBtn = iconBtnEl('edit'); editBtn.addEventListener('click', () => openArchiveEdit(a));
+      const delBtn  = iconBtnEl('delete', 'danger'); delBtn.addEventListener('click', () => confirmDeleteArchive(a.id));
+      const closeBtn = iconBtnEl('close'); closeBtn.addEventListener('click', closeArchiveModal);
+      actions.append(copyBtn, editBtn, delBtn, closeBtn);
+
+      document.getElementById('archive-view-mode').innerHTML = `
+        <div class="field-view"><label>${esc(t('archive.labelCategory'))}</label><div class="val">${esc(a.category)}</div></div>
+        <div class="field-view"><label>${esc(t('archive.labelNote'))}</label><div class="val">${esc(a.note)}</div></div>`;
+      document.getElementById('archive-view-mode').style.display = 'block';
+      document.getElementById('archive-edit-mode').style.display = 'none';
+      document.getElementById('archive-modal').classList.add('open');
+    }
+    function openArchiveEdit(a = null) {
+      editingArchiveId = a?.id || null;
+      document.getElementById('archive-modal-title').textContent = a ? t('archive.updateBtn') : t('archive.addBtn');
+      document.getElementById('archive-modal-actions').innerHTML = '';
+      const closeBtn = iconBtnEl('close'); closeBtn.addEventListener('click', closeArchiveModal);
+      document.getElementById('archive-modal-actions').appendChild(closeBtn);
+
+      document.getElementById('af-category').value = a?.category || '';
+      document.getElementById('af-title').value = a?.title || '';
+      document.getElementById('af-note').value = a?.note || '';
+      document.getElementById('af-save-btn').textContent = a ? t('archive.updateBtn') : t('archive.saveBtn');
+
+      document.getElementById('archive-view-mode').style.display = 'none';
+      document.getElementById('archive-edit-mode').style.display = 'block';
+      document.getElementById('archive-modal').classList.add('open');
+    }
+    document.getElementById('af-save-btn').addEventListener('click', async () => {
+      const category = document.getElementById('af-category').value.trim();
+      const title = document.getElementById('af-title').value.trim();
+      if (!category || !title) { showToast(t('archive.toastNoTitle'), 'error'); return; }
+      await saveArchiveNote({
+        id: editingArchiveId || undefined,
+        category, title,
+        note: document.getElementById('af-note').value,
+      });
+      showToast(editingArchiveId ? t('archive.toastUpdated') : t('archive.toastSaved'));
+      closeArchiveModal();
+      await loadArchive();
+    });
+    function confirmDeleteArchive(id) {
+      if (!confirm(t('archive.confirmDelete'))) return;
+      deleteArchiveNote(id).then(() => { showToast(t('archive.toastDeleted')); closeArchiveModal(); loadArchive(); });
+    }
+    function closeArchiveModal() { document.getElementById('archive-modal').classList.remove('open'); }
+    document.getElementById('archive-modal').addEventListener('click', e => { if (e.target.id === 'archive-modal') closeArchiveModal(); });
+    document.getElementById('archive-add-btn').addEventListener('click', () => openArchiveEdit(null));
+
+    // ═══════════════════════ KEYS ═══════════════════════
+    let keysCache = [];
+    let editingKeyId = null;
+
+    async function loadKeys() {
+      keysCache = await getKeyRecords();
+      renderKeysList(keysCache);
+    }
+    function renderKeysList(list) {
+      const el = document.getElementById('keys-list');
+      document.getElementById('keys-count').textContent = keysCache.length;
+      if (!list.length) { el.innerHTML = `<div class="empty-row">${esc(t('vaultKeys.emptyState'))}</div>`; return; }
+      el.innerHTML = '';
+      list.forEach(k => {
+        const row = document.createElement('div');
+        row.className = 'record-row';
+        row.innerHTML = `<div class="record-row__main"><div class="record-row__title">${esc(k.title)}</div></div>`;
+        row.appendChild(iconBtnEl('view'));
+        row.addEventListener('click', () => openKeyView(k));
+        el.appendChild(row);
+      });
+    }
+    document.getElementById('keys-search').addEventListener('input', e => {
+      const q = e.target.value.trim().toLowerCase();
+      if (!q) return renderKeysList(keysCache);
+      renderKeysList(keysCache.filter(k => [k.title, k.note].some(v => (v||'').toLowerCase().includes(q))));
+    });
+
+    function openKeyView(k) {
+      editingKeyId = k.id;
+      document.getElementById('keys-modal-title').textContent = k.title;
+      const actions = document.getElementById('keys-modal-actions');
+      actions.innerHTML = '';
+      const copyBtn = iconBtnEl('copy'); copyBtn.addEventListener('click', () => { navigator.clipboard.writeText(k.note || ''); showToast(t('common.copiedGeneric')); });
+      const editBtn = iconBtnEl('edit'); editBtn.addEventListener('click', () => openKeyEdit(k));
+      const delBtn  = iconBtnEl('delete', 'danger'); delBtn.addEventListener('click', () => confirmDeleteKey(k.id));
+      const closeBtn = iconBtnEl('close'); closeBtn.addEventListener('click', closeKeysModal);
+      actions.append(copyBtn, editBtn, delBtn, closeBtn);
+
+      document.getElementById('keys-view-mode').innerHTML = `
+        <div class="field-view"><label>${esc(t('vaultKeys.labelNote'))}</label><div class="val">${esc(k.note)}</div></div>`;
+      document.getElementById('keys-view-mode').style.display = 'block';
+      document.getElementById('keys-edit-mode').style.display = 'none';
+      document.getElementById('keys-modal').classList.add('open');
+    }
+    function openKeyEdit(k = null) {
+      editingKeyId = k?.id || null;
+      document.getElementById('keys-modal-title').textContent = k ? t('vaultKeys.updateBtn') : t('vaultKeys.addBtn');
+      document.getElementById('keys-modal-actions').innerHTML = '';
+      const closeBtn = iconBtnEl('close'); closeBtn.addEventListener('click', closeKeysModal);
+      document.getElementById('keys-modal-actions').appendChild(closeBtn);
+
+      document.getElementById('kf-title').value = k?.title || '';
+      document.getElementById('kf-note').value = k?.note || '';
+      document.getElementById('kf-save-btn').textContent = k ? t('vaultKeys.updateBtn') : t('vaultKeys.saveBtn');
+
+      document.getElementById('keys-view-mode').style.display = 'none';
+      document.getElementById('keys-edit-mode').style.display = 'block';
+      document.getElementById('keys-modal').classList.add('open');
+    }
+    document.getElementById('kf-save-btn').addEventListener('click', async () => {
+      const title = document.getElementById('kf-title').value.trim();
+      if (!title) { showToast(t('vaultKeys.toastNoTitle'), 'error'); return; }
+      await saveKeyRecord({ id: editingKeyId || undefined, title, note: document.getElementById('kf-note').value });
+      showToast(editingKeyId ? t('vaultKeys.toastUpdated') : t('vaultKeys.toastSaved'));
+      closeKeysModal();
+      await loadKeys();
+    });
+    function confirmDeleteKey(id) {
+      if (!confirm(t('vaultKeys.confirmDelete'))) return;
+      deleteKeyRecord(id).then(() => { showToast(t('vaultKeys.toastDeleted')); closeKeysModal(); loadKeys(); });
+    }
+    function closeKeysModal() { document.getElementById('keys-modal').classList.remove('open'); }
+    document.getElementById('keys-modal').addEventListener('click', e => { if (e.target.id === 'keys-modal') closeKeysModal(); });
+    document.getElementById('keys-add-btn').addEventListener('click', () => openKeyEdit(null));
+
+    // ═══════════════════════ SETTINGS ═══════════════════════
+    document.getElementById('settings-btn').addEventListener('click', () => document.getElementById('settings-modal').classList.add('open'));
+    document.getElementById('settings-close').addEventListener('click', () => document.getElementById('settings-modal').classList.remove('open'));
+    document.getElementById('settings-modal').addEventListener('click', e => { if (e.target.id === 'settings-modal') e.currentTarget.classList.remove('open'); });
+
+    document.getElementById('settings-download').addEventListener('click', async () => {
+      const backup = await exportEncrypted();
+      const blob = new Blob([JSON.stringify(backup)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `key-notes-backup-${new Date().toISOString().slice(0,10)}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast(t('settings.toastDownloaded'));
+    });
+    document.getElementById('settings-restore-trigger').addEventListener('click', () => document.getElementById('settings-restore-input').click());
+    document.getElementById('settings-restore-input').addEventListener('change', async e => {
+      const file = e.target.files[0];
+      if (!file) return;
+      try {
+        const text = await file.text();
+        await importEncrypted(JSON.parse(text));
+        showToast(t('settings.toastRestored'));
+        await refreshAll();
+      } catch (err) {
+        console.error(err);
+        showToast(t('settings.toastRestoreFailed'), 'error');
+      }
+      e.target.value = '';
+    });
+
+    // ── Change PIN / Passphrase / Recovery key — simple prompt modal ──
+    function openPrompt(title, bodyHtml, onMount) {
+      document.getElementById('prompt-title').textContent = title;
+      document.getElementById('prompt-body').innerHTML = bodyHtml;
+      document.getElementById('prompt-modal').classList.add('open');
+      if (onMount) onMount();
+    }
+    function closePrompt() { document.getElementById('prompt-modal').classList.remove('open'); }
+    document.getElementById('prompt-close').addEventListener('click', closePrompt);
+    document.getElementById('prompt-modal').addEventListener('click', e => { if (e.target.id === 'prompt-modal') closePrompt(); });
+
+    document.getElementById('settings-change-pin').addEventListener('click', () => {
+      openPrompt(t('settings.changePinBtn'), `
+        <div class="form-group"><label>${esc(t('lock.setNewPin'))}</label><input type="text" inputmode="numeric" maxlength="6" id="np-pin1" /></div>
+        <div class="form-group"><label>${esc(t('lock.confirmNewPin'))}</label><input type="text" inputmode="numeric" maxlength="6" id="np-pin2" /></div>
+        <div class="lock-error" id="np-error" style="color:#fca5a5; font-size:0.82rem; margin-bottom:10px;"></div>
+        <button class="btn btn--primary btn--full" id="np-submit">${esc(t('common.save'))}</button>
+      `, () => {
+        document.getElementById('np-submit').addEventListener('click', async () => {
+          const p1 = document.getElementById('np-pin1').value.trim();
+          const p2 = document.getElementById('np-pin2').value.trim();
+          if (!(p1.length === 4 || p1.length === 6) || p1 !== p2) {
+            document.getElementById('np-error').textContent = t('onboard.pinMismatch');
+            return;
+          }
+          await resetPIN(p1);
+          showToast(t('lock.pinResetSuccess'));
+          closePrompt();
+        });
+      });
+    });
+
+    document.getElementById('settings-change-pass').addEventListener('click', () => {
+      openPrompt(t('settings.changePassphraseBtn'), `
+        <div class="form-group"><label>${esc(t('onboard.passphraseLabel'))}</label><input type="password" id="np-pass1" /></div>
+        <div class="form-group"><label>${esc(t('onboard.passphraseConfirm'))}</label><input type="password" id="np-pass2" /></div>
+        <div class="lock-error" id="np-pass-error" style="color:#fca5a5; font-size:0.82rem; margin-bottom:10px;"></div>
+        <button class="btn btn--primary btn--full" id="np-pass-submit">${esc(t('common.save'))}</button>
+      `, () => {
+        document.getElementById('np-pass-submit').addEventListener('click', async () => {
+          const p1 = document.getElementById('np-pass1').value;
+          const p2 = document.getElementById('np-pass2').value;
+          if (p1.length < 10) { document.getElementById('np-pass-error').textContent = t('onboard.passphraseTooShort'); return; }
+          if (p1 !== p2) { document.getElementById('np-pass-error').textContent = t('onboard.passphraseMismatch'); return; }
+          await resetPassphrase(p1);
+          showToast(t('lock.pinResetSuccess'));
+          closePrompt();
+        });
+      });
+    });
+
+    document.getElementById('settings-new-recovery').addEventListener('click', async () => {
+      const newKey = await regenerateRecoveryKey();
+      openPrompt(t('settings.viewRecoveryBtn'), `
+        <div class="recovery-box" style="background:var(--bg-glass); border:1px solid var(--border-strong); border-radius:var(--radius-md); padding:20px; text-align:center; font-family:'Courier New',monospace; font-size:1rem; color:var(--cyan); font-weight:700; word-break:break-all; margin-bottom:14px;">${esc(newKey)}</div>
+        <p style="font-size:0.82rem; color:#fca5a5;">${esc(t('settings.recoveryWarning'))}</p>
+      `);
+    });
+
+    // ── Re-render everything on language change ──────────────────
+    async function refreshAll() {
+      await Promise.all([loadContacts(), loadLinks(), loadArchive(), loadKeys()]);
+    }
+
+    // ── Init ──────────────────────────────────────────────────────
+    refreshAll();
+
+    // Service worker
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('./sw.js').catch(err => console.warn('SW registration failed:', err));
+    }
+  </script>
+
+</body>
+</html>
