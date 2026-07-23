@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="en" translate="no">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="KEY Notes — Your private, encrypted archive." />
+  <meta name="theme-color" content="#080b1a" />
+  <title>KEY Notes</title>
+  <link rel="icon" type="image/png" href="../assets/favicon.png" />
+  <link rel="apple-touch-icon" href="../assets/favicon.png" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="stylesheet" href="../css/style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+  <style>
+    html, body { min-height: 100%; }
+    body {
+      background-image:
+        linear-gradient(180deg, rgba(8,11,26,0.55) 0%, rgba(8,11,26,0.85) 60%, rgba(8,11,26,0.97) 100%),
+        url('../assets/key-notes.png');
+      background-size: cover;
+      background-position: center top;
+      background-attachment: fixed;
+    }
+
+    .lock-wrap {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 20px;
+    }
+
+    .lock-logo {
+      text-align: center;
+      margin-bottom: 34px;
+    }
+
+    .lock-logo img {
+      width: 56px; height: 56px; border-radius: 14px; margin-bottom: 12px;
+    }
+
+    .lock-subtitle {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      margin-top: 6px;
+    }
+
+    /* ── PIN pad ─────────────────────────────────────────── */
+    .pin-dots {
+      display: flex;
+      gap: 14px;
+      justify-content: center;
+      margin: 24px 0 34px;
+    }
+    .pin-dot {
+      width: 14px; height: 14px; border-radius: 50%;
+      border: 2px solid var(--border-strong);
+      transition: all 0.15s ease;
+    }
+    .pin-dot.filled {
+      background: var(--cyan);
+      border-color: var(--cyan);
+      box-shadow: 0 0 10px var(--cyan-glow);
+    }
+    .pin-dots.shake { animation: shake 0.4s; }
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      20%, 60% { transform: translateX(-8px); }
+      40%, 80% { transform: translateX(8px); }
+    }
+
+    .pin-pad {
+      display: grid;
+      grid-template-columns: repeat(3, 68px);
+      gap: 16px;
+      justify-content: center;
+    }
+    .pin-key {
+      width: 68px; height: 68px; border-radius: 50%;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      color: var(--text-primary);
+      font-size: 1.3rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .pin-key:hover { background: var(--bg-card-hover); border-color: var(--border-strong); }
+    .pin-key:active { transform: scale(0.94); background: var(--cyan-subtle); }
+    .pin-key.pin-key--ghost { background: none; border: none; cursor: default; }
+    .pin-key.pin-key--ghost:hover { background: none; }
+
+    .lock-error {
+      color: #fca5a5; font-size: 0.85rem; text-align: center;
+      min-height: 20px; margin-bottom: 8px;
+    }
+
+    .lock-links {
+      display: flex; flex-direction: column; gap: 8px;
+      align-items: center; margin-top: 24px;
+    }
+    .lock-links button {
+      background: none; border: none; cursor: pointer;
+      color: var(--text-muted); font-size: 0.82rem;
+      font-family: var(--font); text-decoration: underline;
+    }
+    .lock-links button:hover { color: var(--cyan); }
+
+    /* ── Alt unlock (passphrase / recovery) ─────────────── */
+    .alt-unlock { width: 100%; max-width: 340px; }
+    .alt-unlock input {
+      text-align: center; letter-spacing: 0.04em;
+    }
+
+    /* ── Onboarding steps ────────────────────────────────── */
+    .ob-card { width: 100%; max-width: 420px; }
+    .ob-step { display: none; }
+    .ob-step.active { display: block; }
+    .ob-dots { display: flex; gap: 6px; justify-content: center; margin-bottom: 22px; }
+    .ob-progress-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--border-strong); }
+    .ob-progress-dot.active { background: var(--cyan); width: 20px; border-radius: 4px; transition: all 0.2s; }
+
+    .recovery-box {
+      background: var(--bg-glass);
+      border: 1px solid var(--border-strong);
+      border-radius: var(--radius-md);
+      padding: 20px;
+      text-align: center;
+      font-family: 'Courier New', monospace;
+      font-size: 1.05rem;
+      letter-spacing: 0.03em;
+      color: var(--cyan);
+      font-weight: 700;
+      word-break: break-all;
+      margin-bottom: 16px;
+    }
+
+    .check-row {
+      display: flex; align-items: center; gap: 10px;
+      margin-bottom: 20px; cursor: pointer;
+    }
+    .check-row input { width: auto; }
+    .check-row span { font-size: 0.85rem; color: var(--text-secondary); }
+  </style>
+</head>
+<body>
+
+  <div class="lock-wrap">
+
+    <!-- ══════════════════ LOCK SCREEN (returning users) ══════════════════ -->
+    <div id="lock-screen" style="display:none; width:100%; align-items:center; flex-direction:column;">
+      <div class="lock-logo">
+        <img src="../assets/favicon.png" alt="KEY Notes" onerror="this.style.display='none'" />
+        <div><span class="logo-dash">KEY</span><span class="logo-notes">Notes</span></div>
+        <div class="lock-subtitle" data-i18n="lock.subtitle">Enter your PIN</div>
+      </div>
+
+      <div class="lock-error" id="pin-error"></div>
+      <div class="pin-dots" id="pin-dots"></div>
+
+      <div class="pin-pad" id="pin-pad">
+        <button class="pin-key" data-digit="1">1</button>
+        <button class="pin-key" data-digit="2">2</button>
+        <button class="pin-key" data-digit="3">3</button>
+        <button class="pin-key" data-digit="4">4</button>
+        <button class="pin-key" data-digit="5">5</button>
+        <button class="pin-key" data-digit="6">6</button>
+        <button class="pin-key" data-digit="7">7</button>
+        <button class="pin-key" data-digit="8">8</button>
+        <button class="pin-key" data-digit="9">9</button>
+        <div class="pin-key pin-key--ghost"></div>
+        <button class="pin-key" data-digit="0">0</button>
+        <button class="pin-key" id="pin-backspace">⌫</button>
+      </div>
+
+      <div class="lock-links">
+        <button id="forgot-pin-btn" data-i18n="lock.forgotPin">Forgot PIN?</button>
+      </div>
+    </div>
+
+    <!-- ══════════════════ ALT UNLOCK (passphrase / recovery) ══════════════════ -->
+    <div id="alt-unlock" style="display:none; width:100%; align-items:center; flex-direction:column;">
+      <div class="lock-logo">
+        <div><span class="logo-dash">KEY</span><span class="logo-notes">Notes</span></div>
+      </div>
+      <div class="card alt-unlock">
+        <div class="form-group">
+          <label id="alt-unlock-label" data-i18n="lock.passphraseLabel">Master passphrase</label>
+          <input type="password" id="alt-unlock-input" data-i18n-placeholder="lock.passphrasePh" placeholder="Enter your master passphrase" />
+        </div>
+        <div class="lock-error" id="alt-unlock-error"></div>
+        <button id="alt-unlock-submit" class="btn btn--primary btn--full" data-i18n="lock.unlockBtn" style="margin-bottom:10px;">Unlock</button>
+        <button id="alt-unlock-switch" class="btn btn--ghost btn--full" style="margin-bottom:10px;" data-i18n="lock.useRecovery">Use recovery key instead</button>
+        <button id="alt-unlock-back" class="btn btn--glass btn--full" data-i18n="lock.backToPin">Back to PIN</button>
+      </div>
+    </div>
+
+    <!-- ══════════════════ SET NEW PIN (after alt unlock) ══════════════════ -->
+    <div id="new-pin-screen" style="display:none; width:100%; align-items:center; flex-direction:column;">
+      <div class="lock-logo">
+        <div class="lock-subtitle" data-i18n="lock.setNewPin">Set a new PIN</div>
+      </div>
+      <div class="lock-error" id="new-pin-error"></div>
+      <div class="pin-dots" id="new-pin-dots"></div>
+      <div class="pin-pad" id="new-pin-pad">
+        <button class="pin-key" data-digit="1">1</button>
+        <button class="pin-key" data-digit="2">2</button>
+        <button class="pin-key" data-digit="3">3</button>
+        <button class="pin-key" data-digit="4">4</button>
+        <button class="pin-key" data-digit="5">5</button>
+        <button class="pin-key" data-digit="6">6</button>
+        <button class="pin-key" data-digit="7">7</button>
+        <button class="pin-key" data-digit="8">8</button>
+        <button class="pin-key" data-digit="9">9</button>
+        <div class="pin-key pin-key--ghost"></div>
+        <button class="pin-key" data-digit="0">0</button>
+        <button class="pin-key" id="new-pin-backspace">⌫</button>
+      </div>
+    </div>
+
+    <!-- ══════════════════ ONBOARDING (first run) ══════════════════ -->
+    <div id="onboarding" style="display:none; width:100%; align-items:center; flex-direction:column;">
+      <div class="ob-dots">
+        <div class="ob-progress-dot" data-step="0"></div>
+        <div class="ob-progress-dot" data-step="1"></div>
+        <div class="ob-progress-dot" data-step="2"></div>
+        <div class="ob-progress-dot" data-step="3"></div>
+      </div>
+
+      <div class="ob-card">
+
+        <!-- Step 0 — Welcome -->
+        <div class="ob-step active" data-step="0">
+          <div class="lock-logo">
+            <img src="../assets/favicon.png" alt="KEY Notes" onerror="this.style.display='none'" />
+            <div><span class="logo-dash">KEY</span><span class="logo-notes">Notes</span></div>
+          </div>
+          <p data-i18n="onboard.welcomeDesc" class="text-center" style="margin-bottom:28px;">
+            A private, encrypted archive for contacts, links, notes, and keys — locked with your own passphrase and PIN. Nothing leaves your device, and nothing is stored in a form anyone but you can read.
+          </p>
+          <button class="btn btn--primary btn--full ob-next" data-i18n="onboard.startBtn">Let's set it up</button>
+        </div>
+
+        <!-- Step 1 — Passphrase -->
+        <div class="ob-step card" data-step="1">
+          <h3 data-i18n="onboard.step1Title" style="margin-bottom:8px;">Create a master passphrase</h3>
+          <p data-i18n="onboard.step1Desc" style="font-size:0.85rem; margin-bottom:18px;">
+            This is the real key to your data. Choose something you will remember — there is no password reset. Write it down somewhere safe.
+          </p>
+          <div class="form-group">
+            <label data-i18n="onboard.passphraseLabel">Master passphrase</label>
+            <input type="password" id="ob-passphrase" />
+          </div>
+          <div class="form-group">
+            <label data-i18n="onboard.passphraseConfirm">Confirm passphrase</label>
+            <input type="password" id="ob-passphrase-confirm" />
+          </div>
+          <div class="lock-error" id="ob-passphrase-error"></div>
+          <button class="btn btn--primary btn--full ob-step1-next" data-i18n="onboard.continueBtn">Continue</button>
+        </div>
+
+        <!-- Step 2 — PIN -->
+        <div class="ob-step card" data-step="2">
+          <h3 id="ob-pin-title" data-i18n="onboard.step2Title" style="margin-bottom:8px;">Choose a PIN</h3>
+          <p id="ob-pin-desc" data-i18n="onboard.step2Desc" style="font-size:0.85rem; margin-bottom:18px;">
+            A quick way to unlock day to day.
+          </p>
+          <div class="lock-error" id="ob-pin-error"></div>
+          <div class="pin-dots" id="ob-pin-dots"></div>
+          <div class="pin-pad" id="ob-pin-pad">
+            <button class="pin-key" data-digit="1">1</button>
+            <button class="pin-key" data-digit="2">2</button>
+            <button class="pin-key" data-digit="3">3</button>
+            <button class="pin-key" data-digit="4">4</button>
+            <button class="pin-key" data-digit="5">5</button>
+            <button class="pin-key" data-digit="6">6</button>
+            <button class="pin-key" data-digit="7">7</button>
+            <button class="pin-key" data-digit="8">8</button>
+            <button class="pin-key" data-digit="9">9</button>
+            <div class="pin-key pin-key--ghost"></div>
+            <button class="pin-key" data-digit="0">0</button>
+            <button class="pin-key" id="ob-pin-backspace">⌫</button>
+          </div>
+        </div>
+
+        <!-- Step 3 — Recovery key -->
+        <div class="ob-step card" data-step="3">
+          <h3 data-i18n="onboard.step3Title" style="margin-bottom:8px;">Your recovery key</h3>
+          <p data-i18n="onboard.step3Desc" style="font-size:0.85rem; margin-bottom:16px;">
+            If you ever forget your PIN and your passphrase, this is the only way back in. Save it somewhere safe — a password manager, a printed copy, anywhere but memory.
+          </p>
+          <div class="recovery-box" id="ob-recovery-key">XXXX-XXXX-XXXX-XXXX-XXXX-XXXX</div>
+
+          <div class="form-group">
+            <label data-i18n="onboard.emailLabel">Email a copy (optional)</label>
+            <input type="email" id="ob-email" data-i18n-placeholder="onboard.emailPh" placeholder="you@example.com" />
+          </div>
+          <button class="btn btn--glass btn--full" id="ob-email-send" data-i18n="onboard.emailSendBtn" style="margin-bottom:16px;">Email me a copy</button>
+
+          <label class="check-row">
+            <input type="checkbox" id="ob-recovery-confirm" />
+            <span data-i18n="onboard.recoveryConfirm">I've saved my recovery key</span>
+          </label>
+
+          <button class="btn btn--primary btn--full" id="ob-finish" disabled data-i18n="onboard.finishBtn">Enter KEY Notes</button>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+
+  <script type="module">
+    import {
+      hasVault, initializeVault, unlockWithPIN, unlockWithPassphrase,
+      unlockWithRecoveryKey, getPinLength, resetPIN,
+    } from './js/crypto.js';
+    import { initI18n, t } from './js/i18n.js';
+    import { EMAILJS_CONFIG } from './config.js';
+
+    initI18n();
+
+    const lockScreen   = document.getElementById('lock-screen');
+    const altUnlock     = document.getElementById('alt-unlock');
+    const newPinScreen  = document.getElementById('new-pin-screen');
+    const onboarding    = document.getElementById('onboarding');
+
+    function showOnly(el) {
+      [lockScreen, altUnlock, newPinScreen, onboarding].forEach(e => {
+        e.style.display = e === el ? 'flex' : 'none';
+      });
+    }
+
+    // ── Route: first run vs returning user ──────────────────────
+    if (hasVault()) {
+      showOnly(lockScreen);
+      renderPinDots();
+    } else {
+      showOnly(onboarding);
+    }
+
+    // ═══════════════════ PIN PAD (lock screen) ═══════════════════
+    let pinBuffer = '';
+    function renderPinDots() {
+      const len = getPinLength();
+      const dotsEl = document.getElementById('pin-dots');
+      dotsEl.innerHTML = Array.from({ length: len })
+        .map((_, i) => `<div class="pin-dot ${i < pinBuffer.length ? 'filled' : ''}"></div>`)
+        .join('');
+    }
+
+    document.getElementById('pin-pad').addEventListener('click', async e => {
+      const btn = e.target.closest('.pin-key');
+      if (!btn || !btn.dataset.digit) return;
+      const len = getPinLength();
+      if (pinBuffer.length >= len) return;
+      pinBuffer += btn.dataset.digit;
+      renderPinDots();
+      if (pinBuffer.length === len) {
+        const ok = await unlockWithPIN(pinBuffer);
+        if (ok) {
+          window.location.href = 'app.html';
+        } else {
+          document.getElementById('pin-error').textContent = t('lock.wrongPin');
+          document.getElementById('pin-dots').classList.add('shake');
+          setTimeout(() => document.getElementById('pin-dots').classList.remove('shake'), 400);
+          pinBuffer = '';
+          renderPinDots();
+        }
+      }
+    });
+    document.getElementById('pin-backspace').addEventListener('click', () => {
+      pinBuffer = pinBuffer.slice(0, -1);
+      document.getElementById('pin-error').textContent = '';
+      renderPinDots();
+    });
+
+    // ═══════════════════ ALT UNLOCK (forgot PIN) ═══════════════════
+    let altMode = 'passphrase'; // or 'recovery'
+    document.getElementById('forgot-pin-btn').addEventListener('click', () => {
+      altMode = 'passphrase';
+      updateAltUnlockUI();
+      showOnly(altUnlock);
+    });
+    document.getElementById('alt-unlock-back').addEventListener('click', () => {
+      pinBuffer = '';
+      renderPinDots();
+      document.getElementById('pin-error').textContent = '';
+      showOnly(lockScreen);
+    });
+    document.getElementById('alt-unlock-switch').addEventListener('click', () => {
+      altMode = altMode === 'passphrase' ? 'recovery' : 'passphrase';
+      updateAltUnlockUI();
+    });
+    function updateAltUnlockUI() {
+      const label   = document.getElementById('alt-unlock-label');
+      const input   = document.getElementById('alt-unlock-input');
+      const switchBtn = document.getElementById('alt-unlock-switch');
+      document.getElementById('alt-unlock-error').textContent = '';
+      input.value = '';
+      if (altMode === 'passphrase') {
+        label.textContent = t('lock.passphraseLabel');
+        input.type = 'password';
+        input.placeholder = t('lock.passphrasePh');
+        switchBtn.textContent = t('lock.useRecovery');
+      } else {
+        label.textContent = t('lock.recoveryLabel');
+        input.type = 'text';
+        input.placeholder = t('lock.recoveryPh');
+        switchBtn.textContent = t('lock.usePassphrase');
+      }
+    }
+    document.getElementById('alt-unlock-submit').addEventListener('click', async () => {
+      const val = document.getElementById('alt-unlock-input').value.trim();
+      if (!val) return;
+      const ok = altMode === 'passphrase'
+        ? await unlockWithPassphrase(val)
+        : await unlockWithRecoveryKey(val);
+      if (ok) {
+        showOnly(newPinScreen);
+        newPinBuffer = '';
+        renderNewPinDots();
+      } else {
+        document.getElementById('alt-unlock-error').textContent =
+          altMode === 'passphrase' ? t('lock.wrongPassphrase') : t('lock.wrongRecovery');
+      }
+    });
+
+    // ═══════════════════ SET NEW PIN (after alt unlock) ═══════════════════
+    let newPinBuffer = '';
+    let newPinFirstEntry = null;
+    function renderNewPinDots() {
+      const dotsEl = document.getElementById('new-pin-dots');
+      const target = newPinFirstEntry ? newPinFirstEntry.length : 6;
+      dotsEl.innerHTML = Array.from({ length: target })
+        .map((_, i) => `<div class="pin-dot ${i < newPinBuffer.length ? 'filled' : ''}"></div>`)
+        .join('');
+    }
+    document.getElementById('new-pin-pad').addEventListener('click', async e => {
+      const btn = e.target.closest('.pin-key');
+      if (!btn || !btn.dataset.digit) return;
+      if (newPinBuffer.length >= 6) return;
+      newPinBuffer += btn.dataset.digit;
+      renderNewPinDots();
+      if (!newPinFirstEntry && newPinBuffer.length >= 4 && (newPinBuffer.length === 4 || newPinBuffer.length === 6)) {
+        // allow user to keep typing up to 6, but we detect "done" on backspace-free flow below
+      }
+    });
+    document.getElementById('new-pin-backspace').addEventListener('click', () => {
+      newPinBuffer = newPinBuffer.slice(0, -1);
+      renderNewPinDots();
+    });
+    // Confirm 4 or 6 digit PIN via a simple two-step buffer using Enter-like behavior:
+    // second full stop (4 or 6 digits) triggers compare against first entry.
+    document.getElementById('new-pin-pad').addEventListener('click', async () => {
+      const isDone = newPinBuffer.length === 4 || newPinBuffer.length === 6;
+      if (!isDone) return;
+      if (!newPinFirstEntry) {
+        newPinFirstEntry = newPinBuffer;
+        newPinBuffer = '';
+        document.getElementById('new-pin-error').textContent = '';
+        setTimeout(renderNewPinDots, 150);
+      } else {
+        if (newPinBuffer === newPinFirstEntry) {
+          await resetPIN(newPinBuffer);
+          document.getElementById('new-pin-error').style.color = '#6ee7b7';
+          document.getElementById('new-pin-error').textContent = t('lock.pinResetSuccess');
+          setTimeout(() => { window.location.href = 'app.html'; }, 900);
+        } else {
+          document.getElementById('new-pin-error').style.color = '#fca5a5';
+          document.getElementById('new-pin-error').textContent = t('onboard.pinMismatch');
+          newPinFirstEntry = null;
+          newPinBuffer = '';
+          renderNewPinDots();
+        }
+      }
+    });
+
+    // ═══════════════════ ONBOARDING ═══════════════════
+    let obStep = 0;
+    const obSteps = document.querySelectorAll('.ob-step');
+    const obDots  = document.querySelectorAll('.ob-progress-dot');
+    function goToStep(n) {
+      obStep = n;
+      obSteps.forEach(s => s.classList.toggle('active', Number(s.dataset.step) === n));
+      obDots.forEach(d => d.classList.toggle('active', Number(d.dataset.step) === n));
+    }
+    obDots[0].classList.add('active');
+
+    document.querySelector('.ob-next').addEventListener('click', () => goToStep(1));
+
+    document.querySelector('.ob-step1-next').addEventListener('click', () => {
+      const p1 = document.getElementById('ob-passphrase').value;
+      const p2 = document.getElementById('ob-passphrase-confirm').value;
+      const errEl = document.getElementById('ob-passphrase-error');
+      if (p1.length < 10) { errEl.textContent = t('onboard.passphraseTooShort'); return; }
+      if (p1 !== p2) { errEl.textContent = t('onboard.passphraseMismatch'); return; }
+      errEl.textContent = '';
+      window._obPassphrase = p1;
+      goToStep(2);
+    });
+
+    // Onboarding PIN entry (two-pass: create, then confirm)
+    let obPinBuffer = '';
+    let obPinFirstEntry = null;
+    function renderObPinDots() {
+      const dotsEl = document.getElementById('ob-pin-dots');
+      const target = obPinFirstEntry ? obPinFirstEntry.length : 6;
+      dotsEl.innerHTML = Array.from({ length: target })
+        .map((_, i) => `<div class="pin-dot ${i < obPinBuffer.length ? 'filled' : ''}"></div>`)
+        .join('');
+    }
+    document.getElementById('ob-pin-backspace').addEventListener('click', () => {
+      obPinBuffer = obPinBuffer.slice(0, -1);
+      renderObPinDots();
+    });
+    document.getElementById('ob-pin-pad').addEventListener('click', async e => {
+      const btn = e.target.closest('.pin-key');
+      if (!btn || !btn.dataset.digit) return;
+      if (obPinBuffer.length >= 6) return;
+      obPinBuffer += btn.dataset.digit;
+      renderObPinDots();
+
+      const isDone = obPinBuffer.length === 4 || obPinBuffer.length === 6;
+      if (!isDone) return;
+
+      if (!obPinFirstEntry) {
+        obPinFirstEntry = obPinBuffer;
+        obPinBuffer = '';
+        document.getElementById('ob-pin-error').textContent = '';
+        document.getElementById('ob-pin-title').textContent = t('onboard.pinConfirmTitle');
+        setTimeout(renderObPinDots, 150);
+      } else {
+        if (obPinBuffer === obPinFirstEntry) {
+          const recoveryKey = await initializeVault(obPinFirstEntry, window._obPassphrase);
+          document.getElementById('ob-recovery-key').textContent = recoveryKey;
+          window._obRecoveryKey = recoveryKey;
+          goToStep(3);
+        } else {
+          document.getElementById('ob-pin-error').textContent = t('onboard.pinMismatch');
+          obPinFirstEntry = null;
+          obPinBuffer = '';
+          document.getElementById('ob-pin-title').textContent = t('onboard.step2Title');
+          renderObPinDots();
+        }
+      }
+    });
+
+    // Recovery key confirm checkbox + finish
+    document.getElementById('ob-recovery-confirm').addEventListener('change', e => {
+      document.getElementById('ob-finish').disabled = !e.target.checked;
+    });
+    document.getElementById('ob-finish').addEventListener('click', () => {
+      window.location.href = 'app.html';
+    });
+
+    // Optional: email a copy of the recovery key via EmailJS
+    document.getElementById('ob-email-send').addEventListener('click', async () => {
+      const email = document.getElementById('ob-email').value.trim();
+      if (!email) return;
+      try {
+        emailjs.init(EMAILJS_CONFIG.publicKey);
+        await emailjs.send(EMAILJS_CONFIG.serviceId, EMAILJS_CONFIG.templateId, {
+          to_email: email,
+          recovery_key: window._obRecoveryKey,
+        });
+        showToast(t('onboard.emailSent'));
+      } catch (err) {
+        console.warn('EmailJS send failed:', err);
+        showToast(t('onboard.emailFailed'), 'danger');
+      }
+    });
+
+    function showToast(msg) {
+      // Minimal inline toast — index.html has no #toast element by default,
+      // so fall back to an alert-style banner if needed.
+      const el = document.createElement('div');
+      el.textContent = msg;
+      el.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--bg-card);border:1px solid var(--border-strong);padding:10px 18px;border-radius:20px;color:var(--text-primary);font-size:0.85rem;z-index:999;';
+      document.body.appendChild(el);
+      setTimeout(() => el.remove(), 3000);
+    }
+  </script>
+
+</body>
+</html>
