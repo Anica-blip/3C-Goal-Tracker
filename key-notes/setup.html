@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en" translate="no">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>KEY Notes — About &amp; FAQ</title>
+  <link rel="icon" type="image/png" href="../assets/favicon.png" />
+  <link rel="stylesheet" href="../css/style.css" />
+  <style>
+    .lang-option {
+      display: block; width: 100%; background: none; border: none; cursor: pointer;
+      font-size: 0.82rem; font-weight: 600; color: var(--text-secondary);
+      padding: 9px 14px; text-align: left; font-family: var(--font);
+      letter-spacing: 0.02em; transition: background var(--transition); white-space: nowrap;
+    }
+    .lang-option:hover  { background: var(--bg-glass); color: var(--text-primary); }
+    .lang-option.active { color: var(--cyan); background: var(--cyan-subtle); }
+    .nav-action-link {
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 90px;
+    }
+    @media (max-width: 420px) {
+      .nav-action-link { font-size: 0.68rem !important; letter-spacing: 0.02em !important; }
+      #lang-btn { font-size: 0.7rem !important; padding: 4px 7px !important; }
+    }
+  </style>
+</head>
+<body>
+
+  <nav class="nav">
+    <div class="nav__inner">
+      <div class="nav__logo">
+        <img src="../assets/favicon.png" alt="KEY Notes" width="28" height="28"
+          style="border-radius:6px;" onerror="this.style.display='none'" />
+        <span style="line-height:1;"><span class="logo-dash">KEY</span><span class="logo-notes">Notes</span></span>
+      </div>
+
+      <div style="display:flex; align-items:center; gap:8px;">
+        <div id="lang-selector" style="position:relative;">
+          <button id="lang-btn" style="
+            background:none; border:1px solid rgba(255,255,255,0.12); cursor:pointer;
+            color:var(--text-muted); padding:4px 7px; border-radius:6px;
+            display:flex; align-items:center; gap:3px; transition:all var(--transition);">
+            <span id="lang-flag" style="font-size:0.95rem; line-height:1;">🇬🇧</span>
+            <span style="font-size:0.5rem; opacity:0.5;">▾</span>
+          </button>
+          <div id="lang-dropdown" style="
+            display:none; position:absolute; right:0; top:calc(100% + 6px);
+            background:var(--bg-card); border:1px solid var(--border-strong);
+            border-radius:var(--radius-md); overflow:hidden; z-index:300;
+            box-shadow:0 8px 28px rgba(0,0,0,0.5); min-width:90px;">
+            <button class="lang-option" data-lang="en">🇬🇧 EN</button>
+            <button class="lang-option" data-lang="fr">🇫🇷 FR</button>
+            <button class="lang-option" data-lang="de">🇩🇪 DE</button>
+            <button class="lang-option" data-lang="el">🇬🇷 EL</button>
+            <button class="lang-option" data-lang="pt">🇵🇹 PT</button>
+          </div>
+        </div>
+
+        <a href="app.html" class="nav-action-link" data-i18n="setup.leaveBtn"
+          style="font-size:0.78rem; font-weight:700; letter-spacing:0.06em;
+            text-transform:uppercase; color:var(--text-muted); text-decoration:none;">
+          Leave
+        </a>
+      </div>
+    </div>
+  </nav>
+
+  <main style="padding-top:70px; padding-bottom:40px;">
+    <div class="container" style="max-width:480px;">
+
+      <div style="text-align:center; padding: 36px 0 28px;">
+        <h2 data-i18n="setup.title" style="color:var(--cyan); margin-bottom:8px;">About &amp; FAQ</h2>
+        <p data-i18n="setup.subtitle" style="font-size:0.9rem; color:var(--text-muted);">
+          How KEY Notes keeps your archive private.
+        </p>
+      </div>
+
+      <div class="card" style="margin-bottom:16px;">
+        <div data-i18n="panel.privacyTitle" class="section__title" style="margin-bottom:12px;">Privacy</div>
+        <p data-i18n="panel.privacyText" style="font-size:0.88rem; color:var(--text-secondary); line-height:1.7; margin-bottom:0;">
+          No server. No account. Your data never leaves this device unless you export it yourself.
+        </p>
+      </div>
+
+      <div class="card" style="margin-bottom:28px; border-color:rgba(0,229,212,0.1);">
+        <div data-i18n="panel.title" class="section__title" style="margin-bottom:12px;">About KEY Notes</div>
+        <p data-i18n="panel.desc" style="font-size:0.88rem; color:var(--text-secondary); line-height:1.7; margin-bottom:0;">
+          Contacts, links, notes, and keys — stored locally, encrypted with your own passphrase. Nothing is readable without it, not even by the creators of this app.
+        </p>
+      </div>
+
+      <div style="text-align:center; margin-bottom:28px;">
+        <button id="qa-btn" data-i18n="setup.qaBtn" class="btn btn--glass" style="padding:10px 24px; font-size:0.88rem;">Q &amp; A</button>
+      </div>
+
+      <div id="qa-panel" style="display:none; position:fixed; inset:0; z-index:200;
+        background:rgba(20,5,77,0.92); backdrop-filter:blur(12px);
+        align-items:flex-end; justify-content:center; padding:20px;">
+        <div style="width:100%; max-width:480px; max-height:85vh; overflow-y:auto;
+          background:rgba(255,255,255,0.04); border:1px solid var(--border-strong);
+          border-radius:var(--radius-lg); padding:28px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
+            <span data-i18n="setup.qaTitle" style="font-size:0.78rem; font-weight:700; letter-spacing:0.08em;
+              text-transform:uppercase; color:var(--cyan);">Questions &amp; Answers</span>
+            <button id="qa-close" style="background:none; border:none; cursor:pointer;
+              color:var(--text-muted); font-size:1.1rem; padding:4px 8px;">&#x2715;</button>
+          </div>
+          <div id="qa-list" style="display:flex; flex-direction:column; gap:20px;"></div>
+        </div>
+      </div>
+
+      <div style="text-align:center; padding-bottom:40px;">
+        <a href="app.html" data-i18n="setup.closeBtn" class="btn btn--ghost"
+          style="padding:10px 28px; font-size:0.88rem; border-radius:20px; display:inline-block;">
+          Close
+        </a>
+      </div>
+
+      <div class="watermark">
+        Designed and Built with ❤️ by Claude (Anthropic) × Chef Anica ·
+        3C Thread To Success™
+      </div>
+
+    </div>
+  </main>
+
+  <script type="module">
+    import { initI18n, setLanguage, getCurrentLang, getLangMeta, renderSetupQA } from './js/i18n.js';
+
+    initI18n();
+
+    const langBtn      = document.getElementById('lang-btn');
+    const langDropdown = document.getElementById('lang-dropdown');
+    const langFlagEl   = document.getElementById('lang-flag');
+
+    function updateLangBtn() {
+      langFlagEl.textContent = getLangMeta().flag;
+      document.querySelectorAll('.lang-option').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.lang === getCurrentLang());
+      });
+    }
+    updateLangBtn();
+
+    langBtn?.addEventListener('click', e => {
+      e.stopPropagation();
+      langDropdown.style.display = langDropdown.style.display === 'block' ? 'none' : 'block';
+    });
+    document.addEventListener('click', () => { langDropdown.style.display = 'none'; });
+    langDropdown?.addEventListener('click', e => e.stopPropagation());
+
+    document.querySelectorAll('.lang-option').forEach(btn => {
+      btn.addEventListener('click', () => {
+        setLanguage(btn.dataset.lang);
+        langDropdown.style.display = 'none';
+        updateLangBtn();
+        renderSetupQA('qa-list');
+      });
+    });
+
+    const qaPanel = document.getElementById('qa-panel');
+    document.getElementById('qa-btn')?.addEventListener('click', () => {
+      qaPanel.style.display = 'flex';
+      renderSetupQA('qa-list');
+    });
+    document.getElementById('qa-close')?.addEventListener('click', () => { qaPanel.style.display = 'none'; });
+    qaPanel?.addEventListener('click', e => { if (e.target === qaPanel) qaPanel.style.display = 'none'; });
+  </script>
+
+</body>
+</html>
