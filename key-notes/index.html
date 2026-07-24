@@ -404,7 +404,9 @@
           <p data-i18n="onboard.welcomeDesc" class="text-center" style="margin-bottom:18px; font-size:0.9rem;">
             A private, encrypted archive for contacts, links, notes, and keys — locked with your own passphrase and PIN. Nothing leaves your device, and nothing is stored in a form anyone but you can read.
           </p>
-          <button class="btn btn--primary btn--full ob-next" data-i18n="onboard.startBtn">Let's set it up</button>
+          <button class="btn btn--primary btn--full ob-next" data-i18n="onboard.startBtn" style="margin-bottom:10px;">Let's set it up</button>
+          <button class="btn btn--ghost btn--full" id="ob-restore-instead-btn" data-i18n="onboard.restoreInsteadBtn">Restore from a backup instead</button>
+          <input type="file" id="ob-restore-input" accept="application/json" style="display:none;" />
         </div>
 
         <!-- Step 1 — Passphrase -->
@@ -742,6 +744,7 @@
       hasVault, initializeVault, unlockWithPIN, unlockWithPassphrase,
       unlockWithRecoveryKey, getPinLength, resetPIN, destroyVault, lockVault,
       resetPassphrase, regenerateRecoveryKey, restoreSession,
+      exportVaultMeta, importVaultMeta,
     } from './js/crypto.js';
     import {
       getContacts, saveContact, deleteContact,
@@ -946,6 +949,34 @@
     obDots[0].classList.add('active');
 
     document.querySelector('.ob-next').addEventListener('click', () => goToStep(1));
+
+    // ── Restore from a backup instead — sets up THIS device using another
+    // device's vault + data, skipping onboarding entirely ──────────────
+    document.getElementById('ob-restore-instead-btn').addEventListener('click', () => {
+      document.getElementById('ob-restore-input').click();
+    });
+    document.getElementById('ob-restore-input').addEventListener('change', async e => {
+      const file = e.target.files[0];
+      if (!file) return;
+      try {
+        const text = await file.text();
+        const parsed = JSON.parse(text);
+        if (!parsed.vault) {
+          showToast(t('onboard.restoreNoVault'), 'error');
+          e.target.value = '';
+          return;
+        }
+        importVaultMeta(parsed.vault);
+        await importEncrypted(parsed.data || parsed);
+        showToast(t('settings.toastRestored'));
+        showOnly(lockScreen);
+        renderPinDots();
+      } catch (err) {
+        console.error(err);
+        showToast(t('settings.toastRestoreFailed'), 'error');
+      }
+      e.target.value = '';
+    });
 
     // ── Passphrase show/hide toggles ──────────────────────────────
     function setPwToggleLabel(btn, input) {
@@ -1525,8 +1556,19 @@
     document.getElementById('settings-close').addEventListener('click', () => document.getElementById('settings-modal').classList.remove('open'));
     document.getElementById('settings-modal').addEventListener('click', e => { if (e.target.id === 'settings-modal') e.currentTarget.classList.remove('open'); });
 
+    async function buildFullBackup() {
+      const dataBackup = await exportEncrypted();
+      return {
+        app: 'key-notes',
+        format: 'full-backup-v1',
+        exportedAt: new Date().toISOString(),
+        vault: exportVaultMeta(),
+        data: dataBackup,
+      };
+    }
+
     document.getElementById('settings-download').addEventListener('click', async () => {
-      const backup = await exportEncrypted();
+      const backup = await buildFullBackup();
       const blob = new Blob([JSON.stringify(backup)], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -1542,7 +1584,12 @@
       if (!file) return;
       try {
         const text = await file.text();
-        await importEncrypted(JSON.parse(text));
+        const parsed = JSON.parse(text);
+        // Accept both old data-only backups and new full-backup files —
+        // either way, only the data is applied here. This device's own vault
+        // (PIN/passphrase/recovery) is never touched by this restore path.
+        const dataPart = parsed.data || parsed;
+        await importEncrypted(dataPart);
         showToast(t('settings.toastRestored'));
         await refreshAll();
       } catch (err) {
