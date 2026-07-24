@@ -164,6 +164,7 @@ const translations = {
       finishBtn:           'Enter KEY Notes',
       continueBtn:         'Continue',
       backBtn:             'Back',
+      discardVaultConfirm: 'Going back now will discard the PIN and passphrase you just set, and generate a new recovery key next time. Continue?',
     },
     panel: {
       title:        'About KEY Notes',
@@ -352,6 +353,7 @@ const translations = {
       finishBtn:           'Entrer dans KEY Notes',
       continueBtn:         'Continuer',
       backBtn:             'Retour',
+      discardVaultConfirm: 'Revenir en arrière maintenant supprimera le PIN et la phrase secrète que vous venez de définir, et générera une nouvelle clé de récupération. Continuer ?',
     },
     panel: {
       title:        'À propos de KEY Notes',
@@ -540,6 +542,7 @@ const translations = {
       finishBtn:           'KEY Notes öffnen',
       continueBtn:         'Weiter',
       backBtn:             'Zurück',
+      discardVaultConfirm: 'Wenn Sie jetzt zurückgehen, werden der gerade festgelegte PIN und die Passphrase verworfen, und es wird beim nächsten Mal ein neuer Wiederherstellungsschlüssel erzeugt. Fortfahren?',
     },
     panel: {
       title:        'Über KEY Notes',
@@ -728,6 +731,7 @@ const translations = {
       finishBtn:           'Είσοδος στο KEY Notes',
       continueBtn:         'Συνέχεια',
       backBtn:             'Πίσω',
+      discardVaultConfirm: 'Αν επιστρέψετε τώρα, το PIN και η φράση-κλειδί που ορίσατε θα απορριφθούν και θα δημιουργηθεί νέο κλειδί ανάκτησης. Συνέχεια;',
     },
     panel: {
       title:        'Σχετικά με το KEY Notes',
@@ -916,6 +920,7 @@ const translations = {
       finishBtn:           'Entrar no KEY Notes',
       continueBtn:         'Continuar',
       backBtn:             'Voltar',
+      discardVaultConfirm: 'Voltar agora vai descartar o PIN e a frase-passe que acabaste de definir, e gerar uma nova chave de recuperação da próxima vez. Continuar?',
     },
     panel: {
       title:        'Sobre o KEY Notes',
