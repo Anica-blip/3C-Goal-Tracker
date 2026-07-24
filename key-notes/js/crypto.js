@@ -1,18 +1,26 @@
 // ═══════════════════════════════════════════════════════════════
 //  js/crypto.js — KEY Notes Encryption Module
 //  Zero-knowledge, local-only. AES-256-GCM + PBKDF2.
-//  Master key is wrapped 3 independent ways: PIN, passphrase, recovery key.
-//  Nothing plaintext ever touches disk. Session key lives in memory only.
+//  Master key is wrapped 2 ways:
+//    1. "combined" — PIN + passphrase + strong password, ALL THREE
+//       required together. This is the everyday unlock. None of the
+//       three works alone — that's the point: a leaked PIN+passphrase
+//       pair still isn't enough without the third secret.
+//    2. "recovery" — a single random recovery key, the sole emergency
+//       override if PIN/passphrase/password are all forgotten.
+//  Nothing plaintext ever touches disk. Session key lives in memory
+//  (bridged through sessionStorage for same-tab refreshes only).
 //  3C Thread To Success™
 // ═══════════════════════════════════════════════════════════════
 
-const VAULT_KEY   = 'key-notes-vault';
-const PBKDF2_ITER  = 300000; // adjust down only if setup takes too long on target devices
-const CROCKFORD    = '0123456789ABCDEFGHJKMNPQRSTVWXYZ'; // no I/L/O/U — avoids visual ambiguity
+const VAULT_KEY    = 'key-notes-vault';
+const PBKDF2_ITER   = 300000; // adjust down only if setup takes too long on target devices
+const CROCKFORD     = '0123456789ABCDEFGHJKMNPQRSTVWXYZ'; // no I/L/O/U — avoids visual ambiguity
+const COMBINED_SEP  = '\u0001'; // control char — never realistically typed by a user
 
 // ── In-memory session state (never persisted to localStorage) ──
 // Also bridged through sessionStorage so an accidental page refresh doesn't
-// force re-entering the PIN — sessionStorage is tab-scoped and clears
+// force re-entering everything — sessionStorage is tab-scoped and clears
 // automatically when the tab closes, unlike localStorage.
 const SESSION_BRIDGE_KEY = 'key-notes-session';
 let _sessionKey = null; // CryptoKey (AES-GCM), set on unlock, cleared on lock
@@ -74,7 +82,20 @@ export function generateRecoveryKey() {
   return groups.join('-');
 }
 
-// ── PBKDF2: derive an AES-GCM key from a password/PIN + salt ────
+/** Combine PIN + passphrase + password into the one secret that wraps the
+ *  everyday unlock path. A fixed control-character separator is used —
+ *  this never needs to be split back apart, only reproduced identically
+ *  at unlock time, so no escaping is needed. Exported so the UI layer can
+ *  build the same string for browser credential save, and split it back
+ *  apart when retrieving a saved credential. */
+export function combineSecrets(pin, passphrase, password) {
+  return `${pin}${COMBINED_SEP}${passphrase}${COMBINED_SEP}${password}`;
+}
+export function splitCombined(str) {
+  return str.split(COMBINED_SEP);
+}
+
+// ── PBKDF2: derive an AES-GCM key from a secret + salt ────
 async function deriveKeyFromSecret(secret, saltBytes) {
   const enc = new TextEncoder();
   const baseKey = await crypto.subtle.importKey(
@@ -130,41 +151,38 @@ export function exportVaultMeta() {
 }
 /** Import a vault meta from a backup — used only when setting up a NEW device from
  *  another device's backup, before any vault of its own exists. Never call this on a
- *  device that already has an active vault; it would silently replace the PIN/passphrase. */
+ *  device that already has an active vault; it would silently replace its credentials. */
 export function importVaultMeta(meta) {
   if (!meta) throw new Error('Backup does not contain vault data');
   saveVaultMeta(meta);
 }
 
 // ── Setup: create a brand-new vault ───────────────────────────────
-// Generates a random master key, wraps it 3 independent ways, stores
-// the wrapped copies + salts. Returns the recovery key (show ONCE).
-export async function initializeVault(pin, passphrase) {
+// Generates a random master key, wraps it 2 ways (combined secret,
+// recovery key). Returns the recovery key (show ONCE).
+export async function initializeVault(pin, passphrase, password) {
   const masterKeyRaw = randomBytes(32); // 256-bit master key
   const masterKey = await crypto.subtle.importKey(
     'raw', masterKeyRaw, 'AES-GCM', true, ['encrypt', 'decrypt']
   );
 
   const recoveryKey = generateRecoveryKey();
+  const combined = combineSecrets(pin, passphrase, password);
 
-  const pinSalt  = randomBytes(16);
-  const passSalt = randomBytes(16);
-  const recSalt  = randomBytes(16);
+  const combinedSalt = randomBytes(16);
+  const recSalt      = randomBytes(16);
 
-  const pinWrapKey  = await deriveKeyFromSecret(pin, pinSalt);
-  const passWrapKey = await deriveKeyFromSecret(passphrase, passSalt);
-  const recWrapKey  = await deriveKeyFromSecret(recoveryKey, recSalt);
+  const combinedWrapKey = await deriveKeyFromSecret(combined, combinedSalt);
+  const recWrapKey      = await deriveKeyFromSecret(recoveryKey, recSalt);
 
-  const pinWrapped  = await encryptBytes(pinWrapKey, masterKeyRaw);
-  const passWrapped = await encryptBytes(passWrapKey, masterKeyRaw);
-  const recWrapped  = await encryptBytes(recWrapKey, masterKeyRaw);
+  const combinedWrapped = await encryptBytes(combinedWrapKey, masterKeyRaw);
+  const recWrapped      = await encryptBytes(recWrapKey, masterKeyRaw);
 
   const meta = {
-    version: 1,
+    version: 2,
     pinLength: pin.length,
-    pin:      { salt: b64encode(pinSalt),  iv: pinWrapped.iv,  data: pinWrapped.data },
-    pass:     { salt: b64encode(passSalt), iv: passWrapped.iv, data: passWrapped.data },
-    recovery: { salt: b64encode(recSalt),  iv: recWrapped.iv,  data: recWrapped.data },
+    combined: { salt: b64encode(combinedSalt), iv: combinedWrapped.iv, data: combinedWrapped.data },
+    recovery: { salt: b64encode(recSalt),       iv: recWrapped.iv,      data: recWrapped.data },
     createdAt: new Date().toISOString(),
   };
   saveVaultMeta(meta);
@@ -178,6 +196,7 @@ async function _tryUnwrap(secret, slot) {
   const meta = loadVaultMeta();
   if (!meta) return false;
   const entry = meta[slot];
+  if (!entry) return false;
   const salt = new Uint8Array(b64decode(entry.salt));
   try {
     const wrapKey = await deriveKeyFromSecret(secret, salt);
@@ -192,37 +211,33 @@ async function _tryUnwrap(secret, slot) {
   }
 }
 
-export function unlockWithPIN(pin)               { return _tryUnwrap(pin, 'pin'); }
-export function unlockWithPassphrase(passphrase) { return _tryUnwrap(passphrase, 'pass'); }
-export function unlockWithRecoveryKey(code)      { return _tryUnwrap(code.toUpperCase(), 'recovery'); }
+/** Everyday unlock — PIN, passphrase, and password must ALL be correct together. */
+export function unlockWithCombined(pin, passphrase, password) {
+  return _tryUnwrap(combineSecrets(pin, passphrase, password), 'combined');
+}
+/** Sole emergency override — used only when PIN/passphrase/password are all forgotten. */
+export function unlockWithRecoveryKey(code) {
+  return _tryUnwrap(code.toUpperCase(), 'recovery');
+}
 
 export function getPinLength() {
   const meta = loadVaultMeta();
   return meta?.pinLength || 6;
 }
 
-// ── Reset PIN (requires vault already unlocked this session) ─────
-export async function resetPIN(newPin) {
+// ── Reset the combined secret (requires vault already unlocked this session) ──
+// Used both for "change PIN/passphrase/password" in Settings, and for setting
+// fresh credentials after an emergency unlock via the recovery key.
+export async function resetCombinedSecret(newPin, newPassphrase, newPassword) {
   if (!_sessionKey) throw new Error('Vault is locked');
   const meta = loadVaultMeta();
   const rawBuf = await crypto.subtle.exportKey('raw', _sessionKey);
-  const pinSalt = randomBytes(16);
-  const pinWrapKey = await deriveKeyFromSecret(newPin, pinSalt);
-  const wrapped = await encryptBytes(pinWrapKey, rawBuf);
+  const combined = combineSecrets(newPin, newPassphrase, newPassword);
+  const combinedSalt = randomBytes(16);
+  const combinedWrapKey = await deriveKeyFromSecret(combined, combinedSalt);
+  const wrapped = await encryptBytes(combinedWrapKey, rawBuf);
   meta.pinLength = newPin.length;
-  meta.pin = { salt: b64encode(pinSalt), iv: wrapped.iv, data: wrapped.data };
-  saveVaultMeta(meta);
-}
-
-// ── Reset passphrase (requires vault already unlocked this session) ──
-export async function resetPassphrase(newPassphrase) {
-  if (!_sessionKey) throw new Error('Vault is locked');
-  const meta = loadVaultMeta();
-  const rawBuf = await crypto.subtle.exportKey('raw', _sessionKey);
-  const passSalt = randomBytes(16);
-  const passWrapKey = await deriveKeyFromSecret(newPassphrase, passSalt);
-  const wrapped = await encryptBytes(passWrapKey, rawBuf);
-  meta.pass = { salt: b64encode(passSalt), iv: wrapped.iv, data: wrapped.data };
+  meta.combined = { salt: b64encode(combinedSalt), iv: wrapped.iv, data: wrapped.data };
   saveVaultMeta(meta);
 }
 
@@ -238,6 +253,23 @@ export async function regenerateRecoveryKey() {
   meta.recovery = { salt: b64encode(recSalt), iv: wrapped.iv, data: wrapped.data };
   saveVaultMeta(meta);
   return recoveryKey;
+}
+
+// ── Generic password-based encryption — used for the standalone credentials
+// file, which is locked with the recovery key and must be fully self-contained
+// (decryptable using only the recovery key + the file itself, nothing else). ──
+export async function encryptWithPassword(obj, password) {
+  const salt = randomBytes(16);
+  const key = await deriveKeyFromSecret(password, salt);
+  const bytes = new TextEncoder().encode(JSON.stringify(obj));
+  const enc = await encryptBytes(key, bytes);
+  return { salt: b64encode(salt), iv: enc.iv, data: enc.data };
+}
+export async function decryptWithPassword(blob, password) {
+  const salt = new Uint8Array(b64decode(blob.salt));
+  const key = await deriveKeyFromSecret(password, salt);
+  const bytes = await decryptBytes(key, blob.iv, blob.data);
+  return JSON.parse(new TextDecoder().decode(bytes));
 }
 
 export function lockVault() {
