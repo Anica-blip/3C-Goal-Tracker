@@ -741,7 +741,7 @@
     import {
       hasVault, initializeVault, unlockWithPIN, unlockWithPassphrase,
       unlockWithRecoveryKey, getPinLength, resetPIN, destroyVault, lockVault,
-      resetPassphrase, regenerateRecoveryKey,
+      resetPassphrase, regenerateRecoveryKey, restoreSession,
     } from './js/crypto.js';
     import {
       getContacts, saveContact, deleteContact,
@@ -755,6 +755,12 @@
     import { EMAILJS_CONFIG } from './config.js';
 
     initI18n();
+
+    // ── Restore an unlocked session after a page refresh (same tab only) ──
+    if (await restoreSession()) {
+      document.getElementById('cover-screen').style.display = 'none';
+      showApp();
+    }
 
     const lockScreen   = document.getElementById('lock-screen');
     const altUnlock     = document.getElementById('alt-unlock');
