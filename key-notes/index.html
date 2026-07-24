@@ -313,7 +313,7 @@
     <div id="lock-screen" style="display:none; width:100%; align-items:center; flex-direction:column;">
       <!-- Off-screen (not display:none — browsers ignore autofill on fully hidden fields) form,
            purely so the browser's native "save this password" / autofill can recognize KEY Notes'
-           PIN as a credential. Never read from here except to mirror the PIN for save/retrieve. -->
+           combined credential. Never read from here except to mirror it for save/retrieve. -->
       <form id="pin-save-form" autocomplete="on" onsubmit="return false;"
         style="position:absolute; left:-9999px; top:-9999px; opacity:0; pointer-events:none;">
         <input type="text" id="pin-save-username" name="username" autocomplete="username" value="KEY Notes" readonly />
@@ -345,51 +345,69 @@
       </div>
 
       <div class="lock-links">
-        <button id="forgot-pin-btn" data-i18n="lock.forgotPin">Forgot PIN?</button>
+        <button id="forgot-pin-btn" data-i18n="lock.forgotPin" style="display:none;">Forgot PIN?</button>
       </div>
     </div>
 
-    <!-- ══════════════════ ALT UNLOCK (passphrase / recovery) ══════════════════ -->
+    <!-- ══════════════════ LOCK STEP 2: passphrase ══════════════════ -->
+    <div id="lock-passphrase-screen" style="display:none; width:100%; align-items:center; flex-direction:column;">
+      <div class="lock-logo">
+        <div class="lock-subtitle" data-i18n="onboard.passphraseLabel">Master passphrase</div>
+      </div>
+      <div class="card alt-unlock">
+        <input type="password" id="lps-input" data-i18n-placeholder="lock.passphrasePh" placeholder="Enter your master passphrase" style="margin-bottom:14px;" />
+        <button id="lps-continue" class="btn btn--primary btn--full" data-i18n="onboard.continueBtn" style="margin-bottom:10px;">Continue</button>
+        <button id="lps-back" class="btn btn--glass btn--full" data-i18n="lock.backToPin">Back to PIN</button>
+      </div>
+    </div>
+
+    <!-- ══════════════════ LOCK STEP 3: strong password ══════════════════ -->
+    <div id="lock-password-screen" style="display:none; width:100%; align-items:center; flex-direction:column;">
+      <div class="lock-logo">
+        <div class="lock-subtitle" data-i18n="onboard.passwordLabel">Strong password</div>
+      </div>
+      <div class="card alt-unlock">
+        <input type="password" id="lpw-input" style="margin-bottom:14px;" />
+        <div class="lock-error" id="lpw-error"></div>
+        <button id="lpw-unlock" class="btn btn--primary btn--full" data-i18n="lock.unlockBtn" style="margin-bottom:10px;">Unlock</button>
+        <button id="lpw-back" class="btn btn--glass btn--full" data-i18n="lock.backToPin">Back to PIN</button>
+      </div>
+    </div>
+
+    <!-- ══════════════════ ALT UNLOCK (recovery key — sole emergency override) ══════════════════ -->
     <div id="alt-unlock" style="display:none; width:100%; align-items:center; flex-direction:column;">
       <div class="lock-logo">
         <div><span class="logo-dash">KEY</span><span class="logo-notes">Notes</span></div>
+        <div class="lock-subtitle" data-i18n="lock.recoveryLabel">Recovery key</div>
       </div>
       <div class="card alt-unlock">
-        <div class="form-group">
-          <label id="alt-unlock-label" data-i18n="lock.passphraseLabel">Master passphrase</label>
-          <input type="password" id="alt-unlock-input" data-i18n-placeholder="lock.passphrasePh" placeholder="Enter your master passphrase" />
-        </div>
+        <input type="text" id="alt-unlock-input" data-i18n-placeholder="lock.recoveryPh" placeholder="XXXX-XXXX-XXXX-XXXX-XXXX-XXXX" style="margin-bottom:14px;" />
         <div class="lock-error" id="alt-unlock-error"></div>
         <button id="alt-unlock-submit" class="btn btn--primary btn--full" data-i18n="lock.unlockBtn" style="margin-bottom:10px;">Unlock</button>
-        <button id="alt-unlock-switch" class="btn btn--ghost btn--full" style="margin-bottom:10px;" data-i18n="lock.useRecovery">Use recovery key instead</button>
         <button id="alt-unlock-back" class="btn btn--glass btn--full" data-i18n="lock.backToPin">Back to PIN</button>
       </div>
     </div>
 
-    <!-- ══════════════════ SET NEW PIN (after alt unlock) ══════════════════ -->
+    <!-- ══════════════════ SET NEW CREDENTIALS (after recovery-key unlock) ══════════════════ -->
     <div id="new-pin-screen" style="display:none; width:100%; align-items:center; flex-direction:column;">
       <div class="lock-logo">
-        <div class="lock-subtitle" data-i18n="lock.setNewPin">Set a new PIN</div>
+        <div class="lock-subtitle" data-i18n="lock.setNewCredentials">Set new sign-in details</div>
       </div>
-      <div id="new-pin-length-choice" style="display:flex; gap:10px; justify-content:center; margin-bottom:20px;">
-        <button type="button" class="btn btn--glass new-pin-len-btn" data-len="4" style="padding:8px 20px;">4 digits</button>
-        <button type="button" class="btn btn--primary new-pin-len-btn" data-len="6" style="padding:8px 20px;">6 digits</button>
-      </div>
-      <div class="lock-error" id="new-pin-error"></div>
-      <div class="pin-dots" id="new-pin-dots"></div>
-      <div class="pin-pad" id="new-pin-pad">
-        <button class="pin-key" data-digit="1">1</button>
-        <button class="pin-key" data-digit="2">2</button>
-        <button class="pin-key" data-digit="3">3</button>
-        <button class="pin-key" data-digit="4">4</button>
-        <button class="pin-key" data-digit="5">5</button>
-        <button class="pin-key" data-digit="6">6</button>
-        <button class="pin-key" data-digit="7">7</button>
-        <button class="pin-key" data-digit="8">8</button>
-        <button class="pin-key" data-digit="9">9</button>
-        <div class="pin-key pin-key--ghost"></div>
-        <button class="pin-key" data-digit="0">0</button>
-        <button class="pin-key" id="new-pin-backspace">⌫</button>
+      <div class="card" style="width:100%; max-width:360px;">
+        <div class="form-group">
+          <label data-i18n="onboard.step2Title">Choose a PIN</label>
+          <input type="text" inputmode="numeric" maxlength="6" id="nc-pin" />
+        </div>
+        <div class="form-group">
+          <label data-i18n="onboard.passphraseLabel">Master passphrase</label>
+          <input type="password" id="nc-passphrase" />
+        </div>
+        <div class="form-group">
+          <label data-i18n="onboard.passwordLabel">Strong password</label>
+          <input type="password" id="nc-password" />
+        </div>
+        <div class="lock-error" id="new-pin-error"></div>
+        <button class="btn btn--primary btn--full" id="nc-submit" data-i18n="common.save">Save</button>
       </div>
     </div>
 
@@ -400,6 +418,7 @@
         <div class="ob-progress-dot" data-step="1"></div>
         <div class="ob-progress-dot" data-step="2"></div>
         <div class="ob-progress-dot" data-step="3"></div>
+        <div class="ob-progress-dot" data-step="4"></div>
       </div>
 
       <div class="ob-card">
@@ -472,11 +491,36 @@
           <button class="btn btn--ghost btn--full ob-back" data-back-to="1" data-i18n="onboard.backBtn" style="margin-top:20px;">Back</button>
         </div>
 
-        <!-- Step 3 — Recovery key -->
+        <!-- Step 3 — Strong password (required together with PIN + passphrase every unlock) -->
         <div class="ob-step card" data-step="3">
+          <h3 data-i18n="onboard.step3aTitle" style="margin-bottom:8px;">Add a strong password</h3>
+          <p data-i18n="onboard.step3aDesc" style="font-size:0.85rem; margin-bottom:18px;">
+            This is required together with your PIN and passphrase every time — even if someone gets the other two, this one still protects you. At least 8 characters, mixing letters, numbers, and symbols.
+          </p>
+          <div class="form-group">
+            <label data-i18n="onboard.passwordLabel">Strong password</label>
+            <div style="display:flex; gap:8px;">
+              <input type="password" id="ob-password" style="flex:1;" />
+              <button type="button" class="btn btn--glass ob-pw-toggle" data-target="ob-password" style="padding:8px 14px; font-size:0.78rem; white-space:nowrap;"></button>
+            </div>
+          </div>
+          <div class="form-group">
+            <label data-i18n="onboard.passwordConfirm">Confirm password</label>
+            <div style="display:flex; gap:8px;">
+              <input type="password" id="ob-password-confirm" style="flex:1;" />
+              <button type="button" class="btn btn--glass ob-pw-toggle" data-target="ob-password-confirm" style="padding:8px 14px; font-size:0.78rem; white-space:nowrap;"></button>
+            </div>
+          </div>
+          <div class="lock-error" id="ob-password-error"></div>
+          <button class="btn btn--primary btn--full ob-step3a-next" data-i18n="onboard.continueBtn" style="margin-bottom:10px;">Continue</button>
+          <button class="btn btn--ghost btn--full ob-back" data-back-to="2" data-i18n="onboard.backBtn">Back</button>
+        </div>
+
+        <!-- Step 4 — Recovery key -->
+        <div class="ob-step card" data-step="4">
           <h3 data-i18n="onboard.step3Title" style="margin-bottom:8px;">Your recovery key</h3>
           <p data-i18n="onboard.step3Desc" style="font-size:0.85rem; margin-bottom:16px;">
-            If you ever forget your PIN and your passphrase, this is the only way back in. Save it somewhere safe — a password manager, a printed copy, anywhere but memory.
+            If you ever forget your PIN, passphrase, or password, this is the only way back in. Save it somewhere safe. A password manager, a printed copy, anywhere but memory.
           </p>
           <div class="recovery-box" id="ob-recovery-key">XXXX-XXXX-XXXX-XXXX-XXXX-XXXX</div>
 
@@ -492,9 +536,24 @@
           </label>
 
           <button class="btn btn--primary btn--full" id="ob-finish" disabled data-i18n="onboard.finishBtn">Enter KEY Notes</button>
-          <button class="btn btn--ghost btn--full" id="ob-step3-back" data-i18n="onboard.backBtn" style="margin-top:10px;">Back</button>
+          <button class="btn btn--ghost btn--full" id="ob-recovery-back-btn" data-i18n="onboard.backBtn" style="margin-top:10px;">Back</button>
         </div>
 
+      </div>
+    </div>
+
+    <!-- ══════════════════ CREDENTIALS FILE POPUP (shown after auto-download) ══════════════════ -->
+    <div id="creds-popup" class="modal-overlay">
+      <div class="modal-card" style="max-width:480px;">
+        <div class="modal-header">
+          <span data-i18n="onboard.credsPopupTitle" style="font-size:0.78rem; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; color:var(--cyan);">Your sign-in details</span>
+          <button class="icon-btn" id="creds-popup-close"><svg viewBox="0 0 24 24"><path d="M5 5l14 14M19 5L5 19"/></svg></button>
+        </div>
+        <p data-i18n="onboard.credsPopupDesc" style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:14px;">
+          A file with these details was just saved to your device. Copy the text below if you'd also like to paste it somewhere else you trust.
+        </p>
+        <textarea id="creds-popup-json" readonly style="width:100%; min-height:120px; background:rgba(255,255,255,0.03); border:1px solid var(--border); border-radius:var(--radius-md); padding:12px; color:var(--text-primary); font-family:'Courier New',monospace; font-size:0.75rem; margin-bottom:14px;"></textarea>
+        <button class="btn btn--glass btn--full" id="creds-popup-copy" data-i18n="common.copy">Copy</button>
       </div>
     </div>
 
@@ -720,12 +779,8 @@
       <div class="card">
         <div data-i18n="settings.securityTitle" style="font-weight:700; margin-bottom:10px;">Security</div>
         <div class="settings-item">
-          <span data-i18n="settings.changePinBtn" style="font-size:0.88rem;">Change PIN</span>
-          <button class="btn btn--glass" id="settings-change-pin" style="padding:6px 14px; font-size:0.8rem;">→</button>
-        </div>
-        <div class="settings-item">
-          <span data-i18n="settings.changePassphraseBtn" style="font-size:0.88rem;">Change passphrase</span>
-          <button class="btn btn--glass" id="settings-change-pass" style="padding:6px 14px; font-size:0.8rem;">→</button>
+          <span data-i18n="settings.changeCredentialsBtn" style="font-size:0.88rem;">Change PIN / passphrase / password</span>
+          <button class="btn btn--glass" id="settings-change-credentials" style="padding:6px 14px; font-size:0.8rem;">→</button>
         </div>
         <div class="settings-item">
           <span data-i18n="settings.viewRecoveryBtn" style="font-size:0.88rem;">New recovery key</span>
@@ -750,10 +805,11 @@
 
   <script type="module">
     import {
-      hasVault, initializeVault, unlockWithPIN, unlockWithPassphrase,
-      unlockWithRecoveryKey, getPinLength, resetPIN, destroyVault, lockVault,
-      resetPassphrase, regenerateRecoveryKey, restoreSession,
-      exportVaultMeta, importVaultMeta,
+      hasVault, initializeVault, unlockWithCombined,
+      unlockWithRecoveryKey, getPinLength, destroyVault, lockVault,
+      resetCombinedSecret, regenerateRecoveryKey, restoreSession,
+      exportVaultMeta, importVaultMeta, encryptWithPassword,
+      combineSecrets, splitCombined,
     } from './js/crypto.js';
     import {
       getContacts, saveContact, deleteContact,
@@ -774,13 +830,15 @@
       showApp();
     }
 
-    const lockScreen   = document.getElementById('lock-screen');
-    const altUnlock     = document.getElementById('alt-unlock');
-    const newPinScreen  = document.getElementById('new-pin-screen');
-    const onboarding    = document.getElementById('onboarding');
+    const lockScreen        = document.getElementById('lock-screen');
+    const lockPassphrase    = document.getElementById('lock-passphrase-screen');
+    const lockPassword      = document.getElementById('lock-password-screen');
+    const altUnlock         = document.getElementById('alt-unlock');
+    const newPinScreen      = document.getElementById('new-pin-screen');
+    const onboarding        = document.getElementById('onboarding');
 
     function showOnly(el) {
-      [lockScreen, altUnlock, newPinScreen, onboarding].forEach(e => {
+      [lockScreen, lockPassphrase, lockPassword, altUnlock, newPinScreen, onboarding].forEach(e => {
         e.style.display = e === el ? 'flex' : 'none';
       });
     }
@@ -798,11 +856,12 @@
 
     // ── Route: first run vs returning user (triggered by the cover's Enter button) ──
     let pinBuffer = '';
+    let failedPinAttempts = 0;
     document.getElementById('cover-enter-btn').addEventListener('click', async () => {
       document.getElementById('cover-screen').style.display = 'none';
       document.getElementById('auth-flow').style.display = 'block';
       if (hasVault()) {
-        const autoUnlocked = await tryAutoUnlockFromSavedPin();
+        const autoUnlocked = await tryAutoUnlockFromSavedCombined();
         if (!autoUnlocked) {
           showOnly(lockScreen);
           renderPinDots();
@@ -812,24 +871,26 @@
       }
     });
 
-    // ── Browser-native saved-PIN support (Credential Management API) ──
+    // ── Browser-native saved-credential support (Credential Management API) ──
     // Best-effort: Chrome/Edge support this well, Firefox partially, Safari barely.
-    // Always falls back to the normal PIN pad if unsupported, dismissed, or wrong.
-    async function offerToSavePin(pin) {
+    // Always falls back to the normal manual flow if unsupported, dismissed, or wrong.
+    async function offerToSaveCombined(pin, passphrase, password) {
       try {
         if (!('credentials' in navigator) || typeof PasswordCredential === 'undefined') return;
-        document.getElementById('pin-save-password').value = pin;
+        document.getElementById('pin-save-password').value = combineSecrets(pin, passphrase, password);
         const form = document.getElementById('pin-save-form');
         const cred = new PasswordCredential(form);
         await navigator.credentials.store(cred);
       } catch { /* not supported, or the user dismissed the save prompt — non-fatal */ }
     }
-    async function tryAutoUnlockFromSavedPin() {
+    async function tryAutoUnlockFromSavedCombined() {
       try {
         if (!('credentials' in navigator) || typeof PasswordCredential === 'undefined') return false;
         const cred = await navigator.credentials.get({ password: true, mediation: 'optional' });
         if (!cred || !cred.password) return false;
-        const ok = await unlockWithPIN(cred.password);
+        const [pin, passphrase, password] = splitCombined(cred.password);
+        if (!pin || !passphrase || !password) return false;
+        const ok = await unlockWithCombined(pin, passphrase, password);
         if (ok) { showApp(); return true; }
         return false;
       } catch {
@@ -837,7 +898,7 @@
       }
     }
 
-    // ═══════════════════ PIN PAD (lock screen) ═══════════════════
+    // ═══════════════════ STEP 1: PIN (collects, then advances — no verification yet) ═══════════════════
     function renderPinDots() {
       const len = getPinLength();
       const dotsEl = document.getElementById('pin-dots');
@@ -845,8 +906,7 @@
         .map((_, i) => `<div class="pin-dot ${i < pinBuffer.length ? 'filled' : ''}"></div>`)
         .join('');
     }
-
-    document.getElementById('pin-pad').addEventListener('click', async e => {
+    document.getElementById('pin-pad').addEventListener('click', e => {
       const btn = e.target.closest('.pin-key');
       if (!btn || !btn.dataset.digit) return;
       const len = getPinLength();
@@ -854,17 +914,8 @@
       pinBuffer += btn.dataset.digit;
       renderPinDots();
       if (pinBuffer.length === len) {
-        const ok = await unlockWithPIN(pinBuffer);
-        if (ok) {
-          offerToSavePin(pinBuffer);
-          showApp();
-        } else {
-          document.getElementById('pin-error').textContent = t('lock.wrongPin');
-          document.getElementById('pin-dots').classList.add('shake');
-          setTimeout(() => document.getElementById('pin-dots').classList.remove('shake'), 400);
-          pinBuffer = '';
-          renderPinDots();
-        }
+        document.getElementById('lps-input').value = '';
+        showOnly(lockPassphrase);
       }
     });
     document.getElementById('pin-backspace').addEventListener('click', () => {
@@ -873,11 +924,58 @@
       renderPinDots();
     });
 
-    // ═══════════════════ ALT UNLOCK (forgot PIN) ═══════════════════
-    let altMode = 'passphrase'; // or 'recovery'
+    // ═══════════════════ STEP 2: passphrase ═══════════════════
+    document.getElementById('lps-continue').addEventListener('click', () => {
+      const val = document.getElementById('lps-input').value;
+      if (!val) return;
+      window._lockPassphrase = val;
+      document.getElementById('lpw-input').value = '';
+      document.getElementById('lpw-error').textContent = '';
+      showOnly(lockPassword);
+    });
+    document.getElementById('lps-back').addEventListener('click', () => {
+      pinBuffer = '';
+      renderPinDots();
+      document.getElementById('pin-error').textContent = '';
+      showOnly(lockScreen);
+    });
+
+    // ═══════════════════ STEP 3: strong password → verify all three together ═══════════════════
+    document.getElementById('lpw-unlock').addEventListener('click', async () => {
+      const password = document.getElementById('lpw-input').value;
+      if (!password) return;
+      const ok = await unlockWithCombined(pinBuffer, window._lockPassphrase, password);
+      if (ok) {
+        failedPinAttempts = 0;
+        offerToSaveCombined(pinBuffer, window._lockPassphrase, password);
+        showApp();
+      } else {
+        failedPinAttempts++;
+        pinBuffer = '';
+        window._lockPassphrase = '';
+        renderPinDots();
+        showOnly(lockScreen);
+        document.getElementById('pin-dots').classList.add('shake');
+        setTimeout(() => document.getElementById('pin-dots').classList.remove('shake'), 400);
+        if (failedPinAttempts >= 5) {
+          document.getElementById('pin-error').textContent = t('lock.tooManyAttempts');
+          document.getElementById('forgot-pin-btn').style.display = 'block';
+        } else {
+          document.getElementById('pin-error').textContent = t('lock.wrongPin');
+        }
+      }
+    });
+    document.getElementById('lpw-back').addEventListener('click', () => {
+      pinBuffer = '';
+      renderPinDots();
+      document.getElementById('pin-error').textContent = '';
+      showOnly(lockScreen);
+    });
+
+    // ═══════════════════ ALT UNLOCK (recovery key — sole emergency override) ═══════════════════
     document.getElementById('forgot-pin-btn').addEventListener('click', () => {
-      altMode = 'passphrase';
-      updateAltUnlockUI();
+      document.getElementById('alt-unlock-input').value = '';
+      document.getElementById('alt-unlock-error').textContent = '';
       showOnly(altUnlock);
     });
     document.getElementById('alt-unlock-back').addEventListener('click', () => {
@@ -886,93 +984,34 @@
       document.getElementById('pin-error').textContent = '';
       showOnly(lockScreen);
     });
-    document.getElementById('alt-unlock-switch').addEventListener('click', () => {
-      altMode = altMode === 'passphrase' ? 'recovery' : 'passphrase';
-      updateAltUnlockUI();
-    });
-    function updateAltUnlockUI() {
-      const label   = document.getElementById('alt-unlock-label');
-      const input   = document.getElementById('alt-unlock-input');
-      const switchBtn = document.getElementById('alt-unlock-switch');
-      document.getElementById('alt-unlock-error').textContent = '';
-      input.value = '';
-      if (altMode === 'passphrase') {
-        label.textContent = t('lock.passphraseLabel');
-        input.type = 'password';
-        input.placeholder = t('lock.passphrasePh');
-        switchBtn.textContent = t('lock.useRecovery');
-      } else {
-        label.textContent = t('lock.recoveryLabel');
-        input.type = 'text';
-        input.placeholder = t('lock.recoveryPh');
-        switchBtn.textContent = t('lock.usePassphrase');
-      }
-    }
     document.getElementById('alt-unlock-submit').addEventListener('click', async () => {
       const val = document.getElementById('alt-unlock-input').value.trim();
       if (!val) return;
-      const ok = altMode === 'passphrase'
-        ? await unlockWithPassphrase(val)
-        : await unlockWithRecoveryKey(val);
+      const ok = await unlockWithRecoveryKey(val);
       if (ok) {
-        showOnly(newPinScreen);
-        newPinBuffer = '';
-        newPinFirstEntry = null;
-        renderNewPinDots();
-      } else {
-        document.getElementById('alt-unlock-error').textContent =
-          altMode === 'passphrase' ? t('lock.wrongPassphrase') : t('lock.wrongRecovery');
-      }
-    });
-
-    // ═══════════════════ SET NEW PIN (after alt unlock) ═══════════════════
-    let newPinBuffer = '';
-    let newPinFirstEntry = null;
-    let newPinTargetLength = 6;
-    document.querySelectorAll('.new-pin-len-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        newPinTargetLength = Number(btn.dataset.len);
-        document.querySelectorAll('.new-pin-len-btn').forEach(b => b.classList.toggle('btn--primary', b === btn));
-        document.querySelectorAll('.new-pin-len-btn').forEach(b => b.classList.toggle('btn--glass', b !== btn));
-        newPinBuffer = ''; newPinFirstEntry = null;
-        renderNewPinDots();
-      });
-    });
-    function renderNewPinDots() {
-      const dotsEl = document.getElementById('new-pin-dots');
-      dotsEl.innerHTML = Array.from({ length: newPinTargetLength })
-        .map((_, i) => `<div class="pin-dot ${i < newPinBuffer.length ? 'filled' : ''}"></div>`)
-        .join('');
-    }
-    document.getElementById('new-pin-pad').addEventListener('click', async e => {
-      const btn = e.target.closest('.pin-key');
-      if (!btn || !btn.dataset.digit) return;
-      if (newPinBuffer.length >= newPinTargetLength) return;
-      newPinBuffer += btn.dataset.digit;
-      renderNewPinDots();
-      if (newPinBuffer.length < newPinTargetLength) return;
-
-      if (!newPinFirstEntry) {
-        newPinFirstEntry = newPinBuffer;
-        newPinBuffer = '';
+        document.getElementById('nc-pin').value = '';
+        document.getElementById('nc-passphrase').value = '';
+        document.getElementById('nc-password').value = '';
         document.getElementById('new-pin-error').textContent = '';
-        setTimeout(renderNewPinDots, 150);
-      } else if (newPinBuffer === newPinFirstEntry) {
-        await resetPIN(newPinBuffer);
-        document.getElementById('new-pin-error').style.color = '#6ee7b7';
-        document.getElementById('new-pin-error').textContent = t('lock.pinResetSuccess');
-        setTimeout(() => { showApp(); }, 700);
+        showOnly(newPinScreen);
       } else {
-        document.getElementById('new-pin-error').style.color = '#fca5a5';
-        document.getElementById('new-pin-error').textContent = t('onboard.pinMismatch');
-        newPinFirstEntry = null;
-        newPinBuffer = '';
-        renderNewPinDots();
+        document.getElementById('alt-unlock-error').textContent = t('lock.wrongRecovery');
       }
     });
-    document.getElementById('new-pin-backspace').addEventListener('click', () => {
-      newPinBuffer = newPinBuffer.slice(0, -1);
-      renderNewPinDots();
+
+    // ═══════════════════ SET NEW CREDENTIALS (after recovery-key unlock) ═══════════════════
+    document.getElementById('nc-submit').addEventListener('click', async () => {
+      const pin = document.getElementById('nc-pin').value.trim();
+      const passphrase = document.getElementById('nc-passphrase').value;
+      const password = document.getElementById('nc-password').value;
+      const errEl = document.getElementById('new-pin-error');
+      if (!/^\d{4}$|^\d{6}$/.test(pin)) { errEl.textContent = t('onboard.pinMismatch'); return; }
+      if (passphrase.length < 10) { errEl.textContent = t('onboard.passphraseTooShort'); return; }
+      if (!isStrongPassword(password)) { errEl.textContent = t('onboard.passwordTooWeak'); return; }
+      await resetCombinedSecret(pin, passphrase, password);
+      errEl.style.color = '#6ee7b7';
+      errEl.textContent = t('lock.pinResetSuccess');
+      setTimeout(() => { showApp(); }, 700);
     });
 
     // ═══════════════════ ONBOARDING ═══════════════════
@@ -1029,30 +1068,34 @@
       });
     });
 
-    // ── Plain "Back" buttons (steps 0→1, 1→2 — nothing persisted yet) ──
+    // ── Plain "Back" buttons (nothing persisted yet before the vault is created) ──
     document.querySelectorAll('.ob-back').forEach(btn => {
       btn.addEventListener('click', () => {
         goToStep(Number(btn.dataset.backTo));
-        // Reset in-progress PIN entry if leaving step 2
         obPinBuffer = ''; obPinFirstEntry = null;
         document.getElementById('ob-pin-error').textContent = '';
         document.getElementById('ob-pin-title').textContent = t('onboard.step2Title');
+        document.getElementById('ob-password-error').textContent = '';
       });
     });
 
-    // ── Step 3 "Back" — vault already exists at this point, so discard it first ──
-    document.getElementById('ob-step3-back').addEventListener('click', async () => {
+    // ── Recovery step "Back" — vault already exists at this point, so discard it first ──
+    document.getElementById('ob-recovery-back-btn').addEventListener('click', async () => {
       if (!confirm(t('onboard.discardVaultConfirm'))) return;
       destroyVault();
       lockVault();
       obPinBuffer = ''; obPinFirstEntry = null;
       window._obPassphrase = null;
+      window._obPin = null;
       window._obRecoveryKey = null;
       document.getElementById('ob-recovery-confirm').checked = false;
       document.getElementById('ob-finish').disabled = true;
       document.getElementById('ob-passphrase').value = '';
       document.getElementById('ob-passphrase-confirm').value = '';
       document.getElementById('ob-passphrase-error').textContent = '';
+      document.getElementById('ob-password').value = '';
+      document.getElementById('ob-password-confirm').value = '';
+      document.getElementById('ob-password-error').textContent = '';
       goToStep(1);
     });
 
@@ -1107,9 +1150,7 @@
         document.getElementById('ob-pin-title').textContent = t('onboard.pinConfirmTitle');
         setTimeout(renderObPinDots, 150);
       } else if (obPinBuffer === obPinFirstEntry) {
-        const recoveryKey = await initializeVault(obPinFirstEntry, window._obPassphrase);
-        document.getElementById('ob-recovery-key').textContent = recoveryKey;
-        window._obRecoveryKey = recoveryKey;
+        window._obPin = obPinFirstEntry;
         goToStep(3);
       } else {
         document.getElementById('ob-pin-error').textContent = t('onboard.pinMismatch');
@@ -1120,11 +1161,57 @@
       }
     });
 
+    // ── Step 3 — Strong password (validated, then creates the vault) ──
+    function isStrongPassword(pw) {
+      return pw.length >= 8 && /[A-Za-z]/.test(pw) && /[0-9]/.test(pw) && /[^A-Za-z0-9]/.test(pw);
+    }
+    document.querySelector('.ob-step3a-next').addEventListener('click', async () => {
+      const p1 = document.getElementById('ob-password').value;
+      const p2 = document.getElementById('ob-password-confirm').value;
+      const errEl = document.getElementById('ob-password-error');
+      if (!isStrongPassword(p1)) { errEl.textContent = t('onboard.passwordTooWeak'); return; }
+      if (p1 !== p2) { errEl.textContent = t('onboard.passwordMismatch'); return; }
+      errEl.textContent = '';
+      window._obPassword = p1;
+      const recoveryKey = await initializeVault(window._obPin, window._obPassphrase, p1);
+      document.getElementById('ob-recovery-key').textContent = recoveryKey;
+      window._obRecoveryKey = recoveryKey;
+      goToStep(4);
+    });
+
     // Recovery key confirm checkbox + finish
     document.getElementById('ob-recovery-confirm').addEventListener('change', e => {
       document.getElementById('ob-finish').disabled = !e.target.checked;
     });
-    document.getElementById('ob-finish').addEventListener('click', () => {
+    document.getElementById('ob-finish').addEventListener('click', async () => {
+      const credsObj = { pin: window._obPin, passphrase: window._obPassphrase, password: window._obPassword };
+      const encBlob = await encryptWithPassword(credsObj, window._obRecoveryKey);
+      const fileJson = JSON.stringify({
+        app: 'key-notes', format: 'credentials-v1',
+        createdAt: new Date().toISOString(), ...encBlob,
+      });
+
+      // Auto-download immediately — no button press needed
+      const blob = new Blob([fileJson], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `key-notes-credentials-${new Date().toISOString().slice(0,10)}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+
+      // Show the popup so the person can also copy it if they want
+      document.getElementById('creds-popup-json').value = fileJson;
+      document.getElementById('creds-popup').classList.add('open');
+    });
+    document.getElementById('creds-popup-copy').addEventListener('click', () => {
+      const ta = document.getElementById('creds-popup-json');
+      ta.select();
+      navigator.clipboard.writeText(ta.value).catch(() => document.execCommand('copy'));
+      showToast(t('common.copiedGeneric'));
+    });
+    document.getElementById('creds-popup-close').addEventListener('click', () => {
+      document.getElementById('creds-popup').classList.remove('open');
       showApp();
     });
 
@@ -1185,6 +1272,9 @@
     document.getElementById('lock-btn').addEventListener('click', () => {
       lockVault();
       pinBuffer = '';
+      failedPinAttempts = 0;
+      document.getElementById('forgot-pin-btn').style.display = 'none';
+      document.getElementById('pin-error').textContent = '';
       showAuthFlow();
       showOnly(lockScreen);
       renderPinDots();
@@ -1281,8 +1371,9 @@
       editingContactId = c?.id || null;
       document.getElementById('contact-modal-title').textContent = c ? t('contacts.updateBtn') : t('contacts.addBtn');
       document.getElementById('contact-modal-actions').innerHTML = '';
+      const saveIconBtn = iconBtnEl('save'); saveIconBtn.addEventListener('click', () => document.getElementById('cf-save-btn').click());
       const closeBtn = iconBtnEl('close'); closeBtn.addEventListener('click', closeContactModal);
-      document.getElementById('contact-modal-actions').appendChild(closeBtn);
+      document.getElementById('contact-modal-actions').append(saveIconBtn, closeBtn);
 
       document.getElementById('cf-firstName').value = c?.firstName || '';
       document.getElementById('cf-lastName').value  = c?.lastName || '';
@@ -1395,8 +1486,9 @@
       editingLinkId = l?.id || null;
       document.getElementById('link-modal-title').textContent = l ? t('links.updateBtn') : t('links.addBtn');
       document.getElementById('link-modal-actions').innerHTML = '';
+      const saveIconBtn = iconBtnEl('save'); saveIconBtn.addEventListener('click', () => document.getElementById('lf-save-btn').click());
       const closeBtn = iconBtnEl('close'); closeBtn.addEventListener('click', closeLinkModal);
-      document.getElementById('link-modal-actions').appendChild(closeBtn);
+      document.getElementById('link-modal-actions').append(saveIconBtn, closeBtn);
 
       document.getElementById('lf-name').value = l?.name || '';
       document.getElementById('lf-username').value = l?.username || '';
@@ -1480,8 +1572,9 @@
       editingArchiveId = a?.id || null;
       document.getElementById('archive-modal-title').textContent = a ? t('archive.updateBtn') : t('archive.addBtn');
       document.getElementById('archive-modal-actions').innerHTML = '';
+      const saveIconBtn = iconBtnEl('save'); saveIconBtn.addEventListener('click', () => document.getElementById('af-save-btn').click());
       const closeBtn = iconBtnEl('close'); closeBtn.addEventListener('click', closeArchiveModal);
-      document.getElementById('archive-modal-actions').appendChild(closeBtn);
+      document.getElementById('archive-modal-actions').append(saveIconBtn, closeBtn);
 
       document.getElementById('af-category').value = a?.category || '';
       document.getElementById('af-title').value = a?.title || '';
@@ -1562,8 +1655,9 @@
       editingKeyId = k?.id || null;
       document.getElementById('keys-modal-title').textContent = k ? t('vaultKeys.updateBtn') : t('vaultKeys.addBtn');
       document.getElementById('keys-modal-actions').innerHTML = '';
+      const saveIconBtn = iconBtnEl('save'); saveIconBtn.addEventListener('click', () => document.getElementById('kf-save-btn').click());
       const closeBtn = iconBtnEl('close'); closeBtn.addEventListener('click', closeKeysModal);
-      document.getElementById('keys-modal-actions').appendChild(closeBtn);
+      document.getElementById('keys-modal-actions').append(saveIconBtn, closeBtn);
 
       document.getElementById('kf-title').value = k?.title || '';
       document.getElementById('kf-note').value = k?.note || '';
@@ -1648,40 +1742,23 @@
     document.getElementById('prompt-close').addEventListener('click', closePrompt);
     document.getElementById('prompt-modal').addEventListener('click', e => { if (e.target.id === 'prompt-modal') closePrompt(); });
 
-    document.getElementById('settings-change-pin').addEventListener('click', () => {
-      openPrompt(t('settings.changePinBtn'), `
-        <div class="form-group"><label>${esc(t('lock.setNewPin'))}</label><input type="text" inputmode="numeric" maxlength="6" id="np-pin1" /></div>
-        <div class="form-group"><label>${esc(t('lock.confirmNewPin'))}</label><input type="text" inputmode="numeric" maxlength="6" id="np-pin2" /></div>
+    document.getElementById('settings-change-credentials').addEventListener('click', () => {
+      openPrompt(t('settings.changeCredentialsBtn'), `
+        <div class="form-group"><label>${esc(t('onboard.step2Title'))}</label><input type="text" inputmode="numeric" maxlength="6" id="np-pin1" /></div>
+        <div class="form-group"><label>${esc(t('onboard.passphraseLabel'))}</label><input type="password" id="np-pass1" /></div>
+        <div class="form-group"><label>${esc(t('onboard.passwordLabel'))}</label><input type="password" id="np-pw1" /></div>
         <div class="lock-error" id="np-error" style="color:#fca5a5; font-size:0.82rem; margin-bottom:10px;"></div>
         <button class="btn btn--primary btn--full" id="np-submit">${esc(t('common.save'))}</button>
       `, () => {
         document.getElementById('np-submit').addEventListener('click', async () => {
-          const p1 = document.getElementById('np-pin1').value.trim();
-          const p2 = document.getElementById('np-pin2').value.trim();
-          if (!(p1.length === 4 || p1.length === 6) || p1 !== p2) {
-            document.getElementById('np-error').textContent = t('onboard.pinMismatch');
-            return;
-          }
-          await resetPIN(p1);
-          showToast(t('lock.pinResetSuccess'));
-          closePrompt();
-        });
-      });
-    });
-
-    document.getElementById('settings-change-pass').addEventListener('click', () => {
-      openPrompt(t('settings.changePassphraseBtn'), `
-        <div class="form-group"><label>${esc(t('onboard.passphraseLabel'))}</label><input type="password" id="np-pass1" /></div>
-        <div class="form-group"><label>${esc(t('onboard.passphraseConfirm'))}</label><input type="password" id="np-pass2" /></div>
-        <div class="lock-error" id="np-pass-error" style="color:#fca5a5; font-size:0.82rem; margin-bottom:10px;"></div>
-        <button class="btn btn--primary btn--full" id="np-pass-submit">${esc(t('common.save'))}</button>
-      `, () => {
-        document.getElementById('np-pass-submit').addEventListener('click', async () => {
-          const p1 = document.getElementById('np-pass1').value;
-          const p2 = document.getElementById('np-pass2').value;
-          if (p1.length < 10) { document.getElementById('np-pass-error').textContent = t('onboard.passphraseTooShort'); return; }
-          if (p1 !== p2) { document.getElementById('np-pass-error').textContent = t('onboard.passphraseMismatch'); return; }
-          await resetPassphrase(p1);
+          const pin = document.getElementById('np-pin1').value.trim();
+          const passphrase = document.getElementById('np-pass1').value;
+          const password = document.getElementById('np-pw1').value;
+          const errEl = document.getElementById('np-error');
+          if (!/^\d{4}$|^\d{6}$/.test(pin)) { errEl.textContent = t('onboard.pinMismatch'); return; }
+          if (passphrase.length < 10) { errEl.textContent = t('onboard.passphraseTooShort'); return; }
+          if (!isStrongPassword(password)) { errEl.textContent = t('onboard.passwordTooWeak'); return; }
+          await resetCombinedSecret(pin, passphrase, password);
           showToast(t('lock.pinResetSuccess'));
           closePrompt();
         });
