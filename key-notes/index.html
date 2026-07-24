@@ -311,6 +311,15 @@
 
     <!-- ══════════════════ LOCK SCREEN (returning users) ══════════════════ -->
     <div id="lock-screen" style="display:none; width:100%; align-items:center; flex-direction:column;">
+      <!-- Off-screen (not display:none — browsers ignore autofill on fully hidden fields) form,
+           purely so the browser's native "save this password" / autofill can recognize KEY Notes'
+           PIN as a credential. Never read from here except to mirror the PIN for save/retrieve. -->
+      <form id="pin-save-form" autocomplete="on" onsubmit="return false;"
+        style="position:absolute; left:-9999px; top:-9999px; opacity:0; pointer-events:none;">
+        <input type="text" id="pin-save-username" name="username" autocomplete="username" value="KEY Notes" readonly />
+        <input type="password" id="pin-save-password" name="password" autocomplete="current-password" />
+      </form>
+
       <div class="lock-logo">
         <img src="../assets/favicon.png" alt="KEY Notes" onerror="this.style.display='none'" />
         <div><span class="logo-dash">KEY</span><span class="logo-notes">Notes</span></div>
@@ -789,16 +798,44 @@
 
     // ── Route: first run vs returning user (triggered by the cover's Enter button) ──
     let pinBuffer = '';
-    document.getElementById('cover-enter-btn').addEventListener('click', () => {
+    document.getElementById('cover-enter-btn').addEventListener('click', async () => {
       document.getElementById('cover-screen').style.display = 'none';
       document.getElementById('auth-flow').style.display = 'block';
       if (hasVault()) {
-        showOnly(lockScreen);
-        renderPinDots();
+        const autoUnlocked = await tryAutoUnlockFromSavedPin();
+        if (!autoUnlocked) {
+          showOnly(lockScreen);
+          renderPinDots();
+        }
       } else {
         showOnly(onboarding);
       }
     });
+
+    // ── Browser-native saved-PIN support (Credential Management API) ──
+    // Best-effort: Chrome/Edge support this well, Firefox partially, Safari barely.
+    // Always falls back to the normal PIN pad if unsupported, dismissed, or wrong.
+    async function offerToSavePin(pin) {
+      try {
+        if (!('credentials' in navigator) || typeof PasswordCredential === 'undefined') return;
+        document.getElementById('pin-save-password').value = pin;
+        const form = document.getElementById('pin-save-form');
+        const cred = new PasswordCredential(form);
+        await navigator.credentials.store(cred);
+      } catch { /* not supported, or the user dismissed the save prompt — non-fatal */ }
+    }
+    async function tryAutoUnlockFromSavedPin() {
+      try {
+        if (!('credentials' in navigator) || typeof PasswordCredential === 'undefined') return false;
+        const cred = await navigator.credentials.get({ password: true, mediation: 'optional' });
+        if (!cred || !cred.password) return false;
+        const ok = await unlockWithPIN(cred.password);
+        if (ok) { showApp(); return true; }
+        return false;
+      } catch {
+        return false;
+      }
+    }
 
     // ═══════════════════ PIN PAD (lock screen) ═══════════════════
     function renderPinDots() {
@@ -819,6 +856,7 @@
       if (pinBuffer.length === len) {
         const ok = await unlockWithPIN(pinBuffer);
         if (ok) {
+          offerToSavePin(pinBuffer);
           showApp();
         } else {
           document.getElementById('pin-error').textContent = t('lock.wrongPin');
