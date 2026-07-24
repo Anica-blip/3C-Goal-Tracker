@@ -22,18 +22,24 @@
       background-attachment: fixed;
     }
 
+    html, body {
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
     .lock-wrap {
       min-height: 100vh;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      padding: 40px 20px;
+      padding: 24px 20px;
+      box-sizing: border-box;
     }
 
     .lock-logo {
       text-align: center;
-      margin-bottom: 34px;
+      margin-bottom: 20px;
     }
 
     .lock-logo img {
@@ -237,7 +243,7 @@
             <img src="../assets/favicon.png" alt="KEY Notes" onerror="this.style.display='none'" />
             <div><span class="logo-dash">KEY</span><span class="logo-notes">Notes</span></div>
           </div>
-          <p data-i18n="onboard.welcomeDesc" class="text-center" style="margin-bottom:28px;">
+          <p data-i18n="onboard.welcomeDesc" class="text-center" style="margin-bottom:18px; font-size:0.9rem;">
             A private, encrypted archive for contacts, links, notes, and keys — locked with your own passphrase and PIN. Nothing leaves your device, and nothing is stored in a form anyone but you can read.
           </p>
           <button class="btn btn--primary btn--full ob-next" data-i18n="onboard.startBtn">Let's set it up</button>
