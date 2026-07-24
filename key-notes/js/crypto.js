@@ -124,6 +124,18 @@ function saveVaultMeta(meta) {
   localStorage.setItem(VAULT_KEY, JSON.stringify(meta));
 }
 
+/** Export the raw vault meta (wrapped keys + salts) for inclusion in a full backup. */
+export function exportVaultMeta() {
+  return loadVaultMeta();
+}
+/** Import a vault meta from a backup — used only when setting up a NEW device from
+ *  another device's backup, before any vault of its own exists. Never call this on a
+ *  device that already has an active vault; it would silently replace the PIN/passphrase. */
+export function importVaultMeta(meta) {
+  if (!meta) throw new Error('Backup does not contain vault data');
+  saveVaultMeta(meta);
+}
+
 // ── Setup: create a brand-new vault ───────────────────────────────
 // Generates a random master key, wraps it 3 independent ways, stores
 // the wrapped copies + salts. Returns the recovery key (show ONCE).
