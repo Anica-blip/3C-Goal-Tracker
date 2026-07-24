@@ -208,6 +208,10 @@
       <div class="lock-logo">
         <div class="lock-subtitle" data-i18n="lock.setNewPin">Set a new PIN</div>
       </div>
+      <div id="new-pin-length-choice" style="display:flex; gap:10px; justify-content:center; margin-bottom:20px;">
+        <button type="button" class="btn btn--glass new-pin-len-btn" data-len="4" style="padding:8px 20px;">4 digits</button>
+        <button type="button" class="btn btn--primary new-pin-len-btn" data-len="6" style="padding:8px 20px;">6 digits</button>
+      </div>
       <div class="lock-error" id="new-pin-error"></div>
       <div class="pin-dots" id="new-pin-dots"></div>
       <div class="pin-pad" id="new-pin-pad">
@@ -257,22 +261,33 @@
           </p>
           <div class="form-group">
             <label data-i18n="onboard.passphraseLabel">Master passphrase</label>
-            <input type="password" id="ob-passphrase" />
+            <div style="display:flex; gap:8px;">
+              <input type="password" id="ob-passphrase" style="flex:1;" />
+              <button type="button" class="btn btn--glass ob-pw-toggle" data-target="ob-passphrase" style="padding:8px 14px; font-size:0.78rem; white-space:nowrap;"></button>
+            </div>
           </div>
           <div class="form-group">
             <label data-i18n="onboard.passphraseConfirm">Confirm passphrase</label>
-            <input type="password" id="ob-passphrase-confirm" />
+            <div style="display:flex; gap:8px;">
+              <input type="password" id="ob-passphrase-confirm" style="flex:1;" />
+              <button type="button" class="btn btn--glass ob-pw-toggle" data-target="ob-passphrase-confirm" style="padding:8px 14px; font-size:0.78rem; white-space:nowrap;"></button>
+            </div>
           </div>
           <div class="lock-error" id="ob-passphrase-error"></div>
-          <button class="btn btn--primary btn--full ob-step1-next" data-i18n="onboard.continueBtn">Continue</button>
+          <button class="btn btn--primary btn--full ob-step1-next" data-i18n="onboard.continueBtn" style="margin-bottom:10px;">Continue</button>
+          <button class="btn btn--ghost btn--full ob-back" data-back-to="0" data-i18n="onboard.backBtn">Back</button>
         </div>
 
         <!-- Step 2 — PIN -->
         <div class="ob-step card" data-step="2">
           <h3 id="ob-pin-title" data-i18n="onboard.step2Title" style="margin-bottom:8px;">Choose a PIN</h3>
-          <p id="ob-pin-desc" data-i18n="onboard.step2Desc" style="font-size:0.85rem; margin-bottom:18px;">
+          <p id="ob-pin-desc" data-i18n="onboard.step2Desc" style="font-size:0.85rem; margin-bottom:16px;">
             A quick way to unlock day to day.
           </p>
+          <div id="ob-pin-length-choice" style="display:flex; gap:10px; justify-content:center; margin-bottom:20px;">
+            <button type="button" class="btn btn--glass ob-pin-len-btn" data-len="4" style="padding:8px 20px;">4 digits</button>
+            <button type="button" class="btn btn--primary ob-pin-len-btn" data-len="6" style="padding:8px 20px;">6 digits</button>
+          </div>
           <div class="lock-error" id="ob-pin-error"></div>
           <div class="pin-dots" id="ob-pin-dots"></div>
           <div class="pin-pad" id="ob-pin-pad">
@@ -289,6 +304,7 @@
             <button class="pin-key" data-digit="0">0</button>
             <button class="pin-key" id="ob-pin-backspace">⌫</button>
           </div>
+          <button class="btn btn--ghost btn--full ob-back" data-back-to="1" data-i18n="onboard.backBtn" style="margin-top:20px;">Back</button>
         </div>
 
         <!-- Step 3 — Recovery key -->
@@ -311,6 +327,7 @@
           </label>
 
           <button class="btn btn--primary btn--full" id="ob-finish" disabled data-i18n="onboard.finishBtn">Enter KEY Notes</button>
+          <button class="btn btn--ghost btn--full" id="ob-step3-back" data-i18n="onboard.backBtn" style="margin-top:10px;">Back</button>
         </div>
 
       </div>
@@ -321,7 +338,7 @@
   <script type="module">
     import {
       hasVault, initializeVault, unlockWithPIN, unlockWithPassphrase,
-      unlockWithRecoveryKey, getPinLength, resetPIN,
+      unlockWithRecoveryKey, getPinLength, resetPIN, destroyVault, lockVault,
     } from './js/crypto.js';
     import { initI18n, t } from './js/i18n.js';
     import { EMAILJS_CONFIG } from './config.js';
@@ -340,6 +357,7 @@
     }
 
     // ── Route: first run vs returning user ──────────────────────
+    let pinBuffer = '';
     if (hasVault()) {
       showOnly(lockScreen);
       renderPinDots();
@@ -348,7 +366,6 @@
     }
 
     // ═══════════════════ PIN PAD (lock screen) ═══════════════════
-    let pinBuffer = '';
     function renderPinDots() {
       const len = getPinLength();
       const dotsEl = document.getElementById('pin-dots');
@@ -427,6 +444,7 @@
       if (ok) {
         showOnly(newPinScreen);
         newPinBuffer = '';
+        newPinFirstEntry = null;
         renderNewPinDots();
       } else {
         document.getElementById('alt-unlock-error').textContent =
@@ -437,51 +455,51 @@
     // ═══════════════════ SET NEW PIN (after alt unlock) ═══════════════════
     let newPinBuffer = '';
     let newPinFirstEntry = null;
+    let newPinTargetLength = 6;
+    document.querySelectorAll('.new-pin-len-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        newPinTargetLength = Number(btn.dataset.len);
+        document.querySelectorAll('.new-pin-len-btn').forEach(b => b.classList.toggle('btn--primary', b === btn));
+        document.querySelectorAll('.new-pin-len-btn').forEach(b => b.classList.toggle('btn--glass', b !== btn));
+        newPinBuffer = ''; newPinFirstEntry = null;
+        renderNewPinDots();
+      });
+    });
     function renderNewPinDots() {
       const dotsEl = document.getElementById('new-pin-dots');
-      const target = newPinFirstEntry ? newPinFirstEntry.length : 6;
-      dotsEl.innerHTML = Array.from({ length: target })
+      dotsEl.innerHTML = Array.from({ length: newPinTargetLength })
         .map((_, i) => `<div class="pin-dot ${i < newPinBuffer.length ? 'filled' : ''}"></div>`)
         .join('');
     }
     document.getElementById('new-pin-pad').addEventListener('click', async e => {
       const btn = e.target.closest('.pin-key');
       if (!btn || !btn.dataset.digit) return;
-      if (newPinBuffer.length >= 6) return;
+      if (newPinBuffer.length >= newPinTargetLength) return;
       newPinBuffer += btn.dataset.digit;
       renderNewPinDots();
-      if (!newPinFirstEntry && newPinBuffer.length >= 4 && (newPinBuffer.length === 4 || newPinBuffer.length === 6)) {
-        // allow user to keep typing up to 6, but we detect "done" on backspace-free flow below
-      }
-    });
-    document.getElementById('new-pin-backspace').addEventListener('click', () => {
-      newPinBuffer = newPinBuffer.slice(0, -1);
-      renderNewPinDots();
-    });
-    // Confirm 4 or 6 digit PIN via a simple two-step buffer using Enter-like behavior:
-    // second full stop (4 or 6 digits) triggers compare against first entry.
-    document.getElementById('new-pin-pad').addEventListener('click', async () => {
-      const isDone = newPinBuffer.length === 4 || newPinBuffer.length === 6;
-      if (!isDone) return;
+      if (newPinBuffer.length < newPinTargetLength) return;
+
       if (!newPinFirstEntry) {
         newPinFirstEntry = newPinBuffer;
         newPinBuffer = '';
         document.getElementById('new-pin-error').textContent = '';
         setTimeout(renderNewPinDots, 150);
+      } else if (newPinBuffer === newPinFirstEntry) {
+        await resetPIN(newPinBuffer);
+        document.getElementById('new-pin-error').style.color = '#6ee7b7';
+        document.getElementById('new-pin-error').textContent = t('lock.pinResetSuccess');
+        setTimeout(() => { window.location.href = 'app.html'; }, 900);
       } else {
-        if (newPinBuffer === newPinFirstEntry) {
-          await resetPIN(newPinBuffer);
-          document.getElementById('new-pin-error').style.color = '#6ee7b7';
-          document.getElementById('new-pin-error').textContent = t('lock.pinResetSuccess');
-          setTimeout(() => { window.location.href = 'app.html'; }, 900);
-        } else {
-          document.getElementById('new-pin-error').style.color = '#fca5a5';
-          document.getElementById('new-pin-error').textContent = t('onboard.pinMismatch');
-          newPinFirstEntry = null;
-          newPinBuffer = '';
-          renderNewPinDots();
-        }
+        document.getElementById('new-pin-error').style.color = '#fca5a5';
+        document.getElementById('new-pin-error').textContent = t('onboard.pinMismatch');
+        newPinFirstEntry = null;
+        newPinBuffer = '';
+        renderNewPinDots();
       }
+    });
+    document.getElementById('new-pin-backspace').addEventListener('click', () => {
+      newPinBuffer = newPinBuffer.slice(0, -1);
+      renderNewPinDots();
     });
 
     // ═══════════════════ ONBOARDING ═══════════════════
@@ -497,6 +515,46 @@
 
     document.querySelector('.ob-next').addEventListener('click', () => goToStep(1));
 
+    // ── Passphrase show/hide toggles ──────────────────────────────
+    function setPwToggleLabel(btn, input) {
+      btn.textContent = input.type === 'password' ? t('links.showPassword') : t('links.hidePassword');
+    }
+    document.querySelectorAll('.ob-pw-toggle').forEach(btn => {
+      const input = document.getElementById(btn.dataset.target);
+      setPwToggleLabel(btn, input);
+      btn.addEventListener('click', () => {
+        input.type = input.type === 'password' ? 'text' : 'password';
+        setPwToggleLabel(btn, input);
+      });
+    });
+
+    // ── Plain "Back" buttons (steps 0→1, 1→2 — nothing persisted yet) ──
+    document.querySelectorAll('.ob-back').forEach(btn => {
+      btn.addEventListener('click', () => {
+        goToStep(Number(btn.dataset.backTo));
+        // Reset in-progress PIN entry if leaving step 2
+        obPinBuffer = ''; obPinFirstEntry = null;
+        document.getElementById('ob-pin-error').textContent = '';
+        document.getElementById('ob-pin-title').textContent = t('onboard.step2Title');
+      });
+    });
+
+    // ── Step 3 "Back" — vault already exists at this point, so discard it first ──
+    document.getElementById('ob-step3-back').addEventListener('click', async () => {
+      if (!confirm(t('onboard.discardVaultConfirm'))) return;
+      destroyVault();
+      lockVault();
+      obPinBuffer = ''; obPinFirstEntry = null;
+      window._obPassphrase = null;
+      window._obRecoveryKey = null;
+      document.getElementById('ob-recovery-confirm').checked = false;
+      document.getElementById('ob-finish').disabled = true;
+      document.getElementById('ob-passphrase').value = '';
+      document.getElementById('ob-passphrase-confirm').value = '';
+      document.getElementById('ob-passphrase-error').textContent = '';
+      goToStep(1);
+    });
+
     document.querySelector('.ob-step1-next').addEventListener('click', () => {
       const p1 = document.getElementById('ob-passphrase').value;
       const p2 = document.getElementById('ob-passphrase-confirm').value;
@@ -506,15 +564,26 @@
       errEl.textContent = '';
       window._obPassphrase = p1;
       goToStep(2);
+      renderObPinDots();
     });
 
     // Onboarding PIN entry (two-pass: create, then confirm)
     let obPinBuffer = '';
     let obPinFirstEntry = null;
+    let obPinTargetLength = 6;
+    document.querySelectorAll('.ob-pin-len-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        obPinTargetLength = Number(btn.dataset.len);
+        document.querySelectorAll('.ob-pin-len-btn').forEach(b => b.classList.toggle('btn--primary', b === btn));
+        document.querySelectorAll('.ob-pin-len-btn').forEach(b => b.classList.toggle('btn--glass', b !== btn));
+        obPinBuffer = ''; obPinFirstEntry = null;
+        document.getElementById('ob-pin-title').textContent = t('onboard.step2Title');
+        renderObPinDots();
+      });
+    });
     function renderObPinDots() {
       const dotsEl = document.getElementById('ob-pin-dots');
-      const target = obPinFirstEntry ? obPinFirstEntry.length : 6;
-      dotsEl.innerHTML = Array.from({ length: target })
+      dotsEl.innerHTML = Array.from({ length: obPinTargetLength })
         .map((_, i) => `<div class="pin-dot ${i < obPinBuffer.length ? 'filled' : ''}"></div>`)
         .join('');
     }
@@ -525,12 +594,10 @@
     document.getElementById('ob-pin-pad').addEventListener('click', async e => {
       const btn = e.target.closest('.pin-key');
       if (!btn || !btn.dataset.digit) return;
-      if (obPinBuffer.length >= 6) return;
+      if (obPinBuffer.length >= obPinTargetLength) return;
       obPinBuffer += btn.dataset.digit;
       renderObPinDots();
-
-      const isDone = obPinBuffer.length === 4 || obPinBuffer.length === 6;
-      if (!isDone) return;
+      if (obPinBuffer.length < obPinTargetLength) return;
 
       if (!obPinFirstEntry) {
         obPinFirstEntry = obPinBuffer;
@@ -538,19 +605,17 @@
         document.getElementById('ob-pin-error').textContent = '';
         document.getElementById('ob-pin-title').textContent = t('onboard.pinConfirmTitle');
         setTimeout(renderObPinDots, 150);
+      } else if (obPinBuffer === obPinFirstEntry) {
+        const recoveryKey = await initializeVault(obPinFirstEntry, window._obPassphrase);
+        document.getElementById('ob-recovery-key').textContent = recoveryKey;
+        window._obRecoveryKey = recoveryKey;
+        goToStep(3);
       } else {
-        if (obPinBuffer === obPinFirstEntry) {
-          const recoveryKey = await initializeVault(obPinFirstEntry, window._obPassphrase);
-          document.getElementById('ob-recovery-key').textContent = recoveryKey;
-          window._obRecoveryKey = recoveryKey;
-          goToStep(3);
-        } else {
-          document.getElementById('ob-pin-error').textContent = t('onboard.pinMismatch');
-          obPinFirstEntry = null;
-          obPinBuffer = '';
-          document.getElementById('ob-pin-title').textContent = t('onboard.step2Title');
-          renderObPinDots();
-        }
+        document.getElementById('ob-pin-error').textContent = t('onboard.pinMismatch');
+        obPinFirstEntry = null;
+        obPinBuffer = '';
+        document.getElementById('ob-pin-title').textContent = t('onboard.step2Title');
+        renderObPinDots();
       }
     });
 
