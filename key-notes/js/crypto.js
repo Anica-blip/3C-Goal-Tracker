@@ -10,13 +10,43 @@ const VAULT_KEY   = 'key-notes-vault';
 const PBKDF2_ITER  = 300000; // adjust down only if setup takes too long on target devices
 const CROCKFORD    = '0123456789ABCDEFGHJKMNPQRSTVWXYZ'; // no I/L/O/U — avoids visual ambiguity
 
-// ── In-memory session state (never persisted) ──────────────────
+// ── In-memory session state (never persisted to localStorage) ──
+// Also bridged through sessionStorage so an accidental page refresh doesn't
+// force re-entering the PIN — sessionStorage is tab-scoped and clears
+// automatically when the tab closes, unlike localStorage.
+const SESSION_BRIDGE_KEY = 'key-notes-session';
 let _sessionKey = null; // CryptoKey (AES-GCM), set on unlock, cleared on lock
 
-export function setSessionKey(key) { _sessionKey = key; }
+export function setSessionKey(key) {
+  _sessionKey = key;
+  if (key) {
+    crypto.subtle.exportKey('raw', key).then(raw => {
+      try { sessionStorage.setItem(SESSION_BRIDGE_KEY, b64encode(raw)); } catch { /* non-fatal */ }
+    }).catch(() => {});
+  }
+}
 export function getSessionKey()    { return _sessionKey; }
-export function clearSessionKey()  { _sessionKey = null; }
+export function clearSessionKey() {
+  _sessionKey = null;
+  try { sessionStorage.removeItem(SESSION_BRIDGE_KEY); } catch { /* non-fatal */ }
+}
 export function isUnlocked()       { return _sessionKey !== null; }
+
+/** Attempt to restore an unlocked session after a page refresh (same tab only). */
+export async function restoreSession() {
+  let stored;
+  try { stored = sessionStorage.getItem(SESSION_BRIDGE_KEY); } catch { return false; }
+  if (!stored) return false;
+  try {
+    const raw = b64decode(stored);
+    const key = await crypto.subtle.importKey('raw', raw, 'AES-GCM', true, ['encrypt', 'decrypt']);
+    _sessionKey = key;
+    return true;
+  } catch {
+    try { sessionStorage.removeItem(SESSION_BRIDGE_KEY); } catch { /* non-fatal */ }
+    return false;
+  }
+}
 
 // ── Base64 helpers ──────────────────────────────────────────────
 function b64encode(buf) {
