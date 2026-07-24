@@ -4,7 +4,7 @@
 // so it never touches the Dash Notes app's cache or service worker scope.
 // 3C Thread To Success™
 
-const CACHE = 'key-notes-v5';
+const CACHE = 'key-notes-v6';
 
 const ASSETS = [
   './',
