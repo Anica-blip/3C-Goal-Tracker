@@ -25,24 +25,36 @@
       position: fixed;
       inset: 0;
       z-index: 500;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      background: #080b1a;
     }
-    .cover-image {
-      position: fixed;
-      inset: 0;
+    .cover-container {
       width: 100%;
-      height: 100%;
-      object-fit: cover;
-      object-position: center top;
-      display: block;
-    }
-    .cover-wrap {
-      position: fixed;
-      inset: 0;
+      max-width: 420px;
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: flex-end;
-      padding-bottom: max(48px, env(safe-area-inset-bottom));
+      background: var(--bg-card);
+      border: 1px solid var(--border-strong);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    }
+    .cover-image {
+      width: 100%;
+      display: block;
+      object-fit: cover;
+      aspect-ratio: 3 / 4;
+      background: #0c1024;
+    }
+    .cover-footer {
+      width: 100%;
+      padding: 22px;
+      display: flex;
+      justify-content: center;
     }
     .enter-btn {
       position: relative;
@@ -70,6 +82,16 @@
       width: 22px; height: 22px;
       fill: none; stroke: #00e5d4; stroke-width: 2;
       stroke-linecap: round; stroke-linejoin: round;
+    }
+
+    /* ── Paired Back / Continue buttons, side by side ── */
+    .btn-row {
+      display: flex;
+      gap: 10px;
+      width: 100%;
+    }
+    .btn-row .btn {
+      flex: 1;
     }
 
     .lock-wrap {
@@ -254,8 +276,10 @@
     .field-view label { font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; display:block; margin-bottom: 3px; }
     .field-view .val { font-size: 0.95rem; color: var(--text-primary); word-break: break-word; white-space: pre-wrap; }
 
-    .phone-row { display: flex; gap: 8px; margin-bottom: 8px; }
-    .phone-row input { flex: 1; }
+    .phone-row { display: flex; gap: 6px; margin-bottom: 8px; align-items: center; }
+    .phone-row .phone-type { flex: 0 0 64px; }
+    .phone-row .phone-code { flex: 0 0 62px; }
+    .phone-row .phone-number { flex: 1; }
 
     .note-pad-flex {
       background: rgba(255,255,255,0.03); border: 1px solid var(--border);
@@ -295,12 +319,14 @@
 
   <!-- ══════════ COVER SCREEN (shown first, matches Dash Notes) ══════════ -->
   <div id="cover-screen">
-    <img src="../assets/key-notes.png" alt="KEY Notes" class="cover-image"
-      onerror="this.style.background='#080b1a'" />
-    <div class="cover-wrap">
-      <button id="cover-enter-btn" class="enter-btn" aria-label="Enter KEY Notes">
-        <svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"></polyline></svg>
-      </button>
+    <div class="cover-container">
+      <img src="../assets/key-notes.png" alt="KEY Notes" class="cover-image"
+        onerror="this.style.background='#080b1a'" />
+      <div class="cover-footer">
+        <button id="cover-enter-btn" class="enter-btn" aria-label="Enter KEY Notes">
+          <svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"></polyline></svg>
+        </button>
+      </div>
     </div>
   </div>
 
@@ -344,6 +370,8 @@
         <button class="pin-key" id="pin-backspace">⌫</button>
       </div>
 
+      <button class="btn btn--primary btn--full" id="pin-continue" disabled data-i18n="onboard.continueBtn" style="margin-top:16px; max-width:280px;">Continue</button>
+
       <div class="lock-links">
         <button id="forgot-pin-btn" data-i18n="lock.forgotPin" style="display:none;">Forgot PIN?</button>
       </div>
@@ -356,8 +384,10 @@
       </div>
       <div class="card alt-unlock">
         <input type="password" id="lps-input" data-i18n-placeholder="lock.passphrasePh" placeholder="Enter your master passphrase" style="margin-bottom:14px;" />
-        <button id="lps-continue" class="btn btn--primary btn--full" data-i18n="onboard.continueBtn" style="margin-bottom:10px;">Continue</button>
-        <button id="lps-back" class="btn btn--glass btn--full" data-i18n="lock.backToPin">Back to PIN</button>
+        <div class="btn-row">
+          <button id="lps-back" class="btn btn--glass" data-i18n="lock.backToPin">Back to PIN</button>
+          <button id="lps-continue" class="btn btn--primary" data-i18n="onboard.continueBtn">Continue</button>
+        </div>
       </div>
     </div>
 
@@ -369,8 +399,10 @@
       <div class="card alt-unlock">
         <input type="password" id="lpw-input" style="margin-bottom:14px;" />
         <div class="lock-error" id="lpw-error"></div>
-        <button id="lpw-unlock" class="btn btn--primary btn--full" data-i18n="lock.unlockBtn" style="margin-bottom:10px;">Unlock</button>
-        <button id="lpw-back" class="btn btn--glass btn--full" data-i18n="lock.backToPin">Back to PIN</button>
+        <div class="btn-row">
+          <button id="lpw-back" class="btn btn--glass" data-i18n="lock.backToPin">Back to PIN</button>
+          <button id="lpw-unlock" class="btn btn--primary" data-i18n="lock.unlockBtn">Unlock</button>
+        </div>
       </div>
     </div>
 
@@ -458,8 +490,10 @@
             </div>
           </div>
           <div class="lock-error" id="ob-passphrase-error"></div>
-          <button class="btn btn--primary btn--full ob-step1-next" data-i18n="onboard.continueBtn" style="margin-bottom:10px;">Continue</button>
-          <button class="btn btn--ghost btn--full ob-back" data-back-to="0" data-i18n="onboard.backBtn">Back</button>
+          <div class="btn-row">
+            <button class="btn btn--ghost ob-back" data-back-to="0" data-i18n="onboard.backBtn">Back</button>
+            <button class="btn btn--primary ob-step1-next" data-i18n="onboard.continueBtn">Continue</button>
+          </div>
         </div>
 
         <!-- Step 2 — PIN -->
@@ -488,7 +522,10 @@
             <button class="pin-key" data-digit="0">0</button>
             <button class="pin-key" id="ob-pin-backspace">⌫</button>
           </div>
-          <button class="btn btn--ghost btn--full ob-back" data-back-to="1" data-i18n="onboard.backBtn" style="margin-top:20px;">Back</button>
+          <div class="btn-row" style="margin-top:20px;">
+            <button class="btn btn--ghost ob-back" data-back-to="1" data-i18n="onboard.backBtn">Back</button>
+            <button class="btn btn--primary" id="ob-pin-continue" data-i18n="onboard.continueBtn" disabled>Continue</button>
+          </div>
         </div>
 
         <!-- Step 3 — Strong password (required together with PIN + passphrase every unlock) -->
@@ -512,8 +549,10 @@
             </div>
           </div>
           <div class="lock-error" id="ob-password-error"></div>
-          <button class="btn btn--primary btn--full ob-step3a-next" data-i18n="onboard.continueBtn" style="margin-bottom:10px;">Continue</button>
-          <button class="btn btn--ghost btn--full ob-back" data-back-to="2" data-i18n="onboard.backBtn">Back</button>
+          <div class="btn-row">
+            <button class="btn btn--ghost ob-back" data-back-to="2" data-i18n="onboard.backBtn">Back</button>
+            <button class="btn btn--primary ob-step3a-next" data-i18n="onboard.continueBtn">Continue</button>
+          </div>
         </div>
 
         <!-- Step 4 — Recovery key -->
@@ -535,8 +574,10 @@
             <span data-i18n="onboard.recoveryConfirm">I've saved my recovery key</span>
           </label>
 
-          <button class="btn btn--primary btn--full" id="ob-finish" disabled data-i18n="onboard.finishBtn">Enter KEY Notes</button>
-          <button class="btn btn--ghost btn--full" id="ob-recovery-back-btn" data-i18n="onboard.backBtn" style="margin-top:10px;">Back</button>
+          <div class="btn-row">
+            <button class="btn btn--ghost" id="ob-recovery-back-btn" data-i18n="onboard.backBtn">Back</button>
+            <button class="btn btn--primary" id="ob-finish" disabled data-i18n="onboard.finishBtn">Enter KEY Notes</button>
+          </div>
         </div>
 
       </div>
@@ -898,13 +939,14 @@
       }
     }
 
-    // ═══════════════════ STEP 1: PIN (collects, then advances — no verification yet) ═══════════════════
+    // ═══════════════════ STEP 1: PIN (collects; explicit Continue advances) ═══════════════════
     function renderPinDots() {
       const len = getPinLength();
       const dotsEl = document.getElementById('pin-dots');
       dotsEl.innerHTML = Array.from({ length: len })
         .map((_, i) => `<div class="pin-dot ${i < pinBuffer.length ? 'filled' : ''}"></div>`)
         .join('');
+      document.getElementById('pin-continue').disabled = pinBuffer.length !== len;
     }
     document.getElementById('pin-pad').addEventListener('click', e => {
       const btn = e.target.closest('.pin-key');
@@ -913,15 +955,16 @@
       if (pinBuffer.length >= len) return;
       pinBuffer += btn.dataset.digit;
       renderPinDots();
-      if (pinBuffer.length === len) {
-        document.getElementById('lps-input').value = '';
-        showOnly(lockPassphrase);
-      }
     });
     document.getElementById('pin-backspace').addEventListener('click', () => {
       pinBuffer = pinBuffer.slice(0, -1);
       document.getElementById('pin-error').textContent = '';
       renderPinDots();
+    });
+    document.getElementById('pin-continue').addEventListener('click', () => {
+      if (pinBuffer.length !== getPinLength()) return;
+      document.getElementById('lps-input').value = '';
+      showOnly(lockPassphrase);
     });
 
     // ═══════════════════ STEP 2: passphrase ═══════════════════
@@ -1111,7 +1154,7 @@
       renderObPinDots();
     });
 
-    // Onboarding PIN entry (two-pass: create, then confirm)
+    // Onboarding PIN entry (two-pass: create, then confirm) — explicit Continue advances
     let obPinBuffer = '';
     let obPinFirstEntry = null;
     let obPinTargetLength = 6;
@@ -1130,25 +1173,28 @@
       dotsEl.innerHTML = Array.from({ length: obPinTargetLength })
         .map((_, i) => `<div class="pin-dot ${i < obPinBuffer.length ? 'filled' : ''}"></div>`)
         .join('');
+      document.getElementById('ob-pin-continue').disabled = obPinBuffer.length !== obPinTargetLength;
     }
     document.getElementById('ob-pin-backspace').addEventListener('click', () => {
       obPinBuffer = obPinBuffer.slice(0, -1);
       renderObPinDots();
     });
-    document.getElementById('ob-pin-pad').addEventListener('click', async e => {
+    document.getElementById('ob-pin-pad').addEventListener('click', e => {
       const btn = e.target.closest('.pin-key');
       if (!btn || !btn.dataset.digit) return;
       if (obPinBuffer.length >= obPinTargetLength) return;
       obPinBuffer += btn.dataset.digit;
       renderObPinDots();
-      if (obPinBuffer.length < obPinTargetLength) return;
+    });
+    document.getElementById('ob-pin-continue').addEventListener('click', () => {
+      if (obPinBuffer.length !== obPinTargetLength) return;
 
       if (!obPinFirstEntry) {
         obPinFirstEntry = obPinBuffer;
         obPinBuffer = '';
         document.getElementById('ob-pin-error').textContent = '';
         document.getElementById('ob-pin-title').textContent = t('onboard.pinConfirmTitle');
-        setTimeout(renderObPinDots, 150);
+        renderObPinDots();
       } else if (obPinBuffer === obPinFirstEntry) {
         window._obPin = obPinFirstEntry;
         goToStep(3);
@@ -1306,7 +1352,9 @@
       list.forEach(c => {
         const row = document.createElement('div');
         row.className = 'record-row';
-        const sub = c.business || (c.phones?.[0]?.number) || c.email || '';
+        const firstPhone = c.phones?.[0];
+        const phoneStr = firstPhone ? `${firstPhone.code ? firstPhone.code + ' ' : ''}${firstPhone.number}` : '';
+        const sub = c.business || phoneStr || c.email || '';
         row.innerHTML = `
           <div class="record-row__main">
             <div class="record-row__title">${esc(c.firstName)} ${esc(c.lastName)}</div>
@@ -1322,7 +1370,7 @@
       const q = e.target.value.trim().toLowerCase();
       if (!q) return renderContactsList(contactsCache);
       const filtered = contactsCache.filter(c =>
-        [c.firstName, c.lastName, c.business, c.email, c.address, ...(c.phones||[]).map(p=>p.number)]
+        [c.firstName, c.lastName, c.business, c.email, c.address, ...(c.phones||[]).flatMap(p=>[p.number, p.code])]
           .some(v => (v||'').toLowerCase().includes(q))
       );
       renderContactsList(filtered);
@@ -1331,14 +1379,18 @@
     function renderPhoneRows(phones) {
       const wrap = document.getElementById('cf-phones');
       wrap.innerHTML = '';
-      (phones.length ? phones : [{label:'', number:''}]).forEach((p, i) => addPhoneRow(p.label, p.number));
+      (phones.length ? phones : [{type:'Mbl', code:'', number:''}]).forEach(p => addPhoneRow(p.type, p.code, p.number));
     }
-    function addPhoneRow(label = '', number = '') {
+    function addPhoneRow(type = 'Mbl', code = '', number = '') {
       const wrap = document.getElementById('cf-phones');
       const row = document.createElement('div');
       row.className = 'phone-row';
       row.innerHTML = `
-        <input type="text" class="phone-label" placeholder="${esc(t('contacts.phoneLabelPh'))}" value="${esc(label)}" />
+        <select class="phone-type">
+          <option value="Mbl" ${type === 'Mbl' ? 'selected' : ''}>Mbl</option>
+          <option value="Tel" ${type === 'Tel' ? 'selected' : ''}>Tel</option>
+        </select>
+        <input type="text" class="phone-code" placeholder="+351" value="${esc(code)}" />
         <input type="text" class="phone-number" placeholder="${esc(t('contacts.phoneNumberPh'))}" value="${esc(number)}" />
         <button type="button" class="icon-btn danger phone-remove">${icon('delete')}</button>`;
       row.querySelector('.phone-remove').addEventListener('click', () => row.remove());
@@ -1359,7 +1411,7 @@
       const view = document.getElementById('contact-view-mode');
       view.innerHTML = `
         ${c.business ? `<div class="field-view"><label>${esc(t('contacts.labelBusiness'))}</label><div class="val">${esc(c.business)}</div></div>` : ''}
-        ${(c.phones||[]).map(p => `<div class="field-view"><label>${esc(p.label || t('contacts.labelPhones'))}</label><div class="val">${esc(p.number)}</div></div>`).join('')}
+        ${(c.phones||[]).map(p => `<div class="field-view"><label>${esc(p.type || 'Mbl')}</label><div class="val">${esc(p.code ? p.code + ' ' : '')}${esc(p.number)}</div></div>`).join('')}
         ${c.email ? `<div class="field-view"><label>${esc(t('contacts.labelEmail'))}</label><div class="val">${esc(c.email)}</div></div>` : ''}
         ${c.address ? `<div class="field-view"><label>${esc(t('contacts.labelAddress'))}</label><div class="val">${esc(c.address)}</div></div>` : ''}
       `;
@@ -1393,7 +1445,8 @@
       const firstName = document.getElementById('cf-firstName').value.trim();
       if (!firstName) { showToast(t('contacts.toastNoName'), 'error'); return; }
       const phones = Array.from(document.querySelectorAll('#cf-phones .phone-row')).map(row => ({
-        label: row.querySelector('.phone-label').value.trim(),
+        type: row.querySelector('.phone-type').value,
+        code: row.querySelector('.phone-code').value.trim(),
         number: row.querySelector('.phone-number').value.trim(),
       })).filter(p => p.number);
 
@@ -1525,24 +1578,74 @@
     // ═══════════════════════ ARCHIVE ═══════════════════════
     let archiveCache = [];
     let editingArchiveId = null;
+    let currentArchiveCategory = null;
 
     async function loadArchive() {
       archiveCache = await getArchiveNotes();
+      currentArchiveCategory = null;
       renderArchiveList(archiveCache);
     }
     function renderArchiveList(list) {
       const el = document.getElementById('archive-list');
       document.getElementById('archive-count').textContent = archiveCache.length;
-      if (!list.length) { el.innerHTML = `<div class="empty-row">${esc(t('archive.emptyState'))}</div>`; return; }
-      el.innerHTML = '';
-      list.forEach(a => {
-        const row = document.createElement('div');
-        row.className = 'record-row';
-        row.innerHTML = `<div class="record-row__main"><div class="record-row__title">${esc(a.title)}</div><div class="record-row__sub">${esc(a.category)}</div></div>`;
-        row.appendChild(iconBtnEl('view'));
-        row.addEventListener('click', () => openArchiveView(a));
-        el.appendChild(row);
-      });
+      const isSearching = document.getElementById('archive-search').value.trim() !== '';
+
+      if (isSearching) {
+        if (!list.length) { el.innerHTML = `<div class="empty-row">${esc(t('archive.emptyState'))}</div>`; return; }
+        el.innerHTML = '';
+        list.forEach(a => {
+          const row = document.createElement('div');
+          row.className = 'record-row';
+          row.innerHTML = `<div class="record-row__main"><div class="record-row__title">${esc(a.title)}</div><div class="record-row__sub">${esc(a.category)}</div></div>`;
+          row.appendChild(iconBtnEl('view'));
+          row.addEventListener('click', () => openArchiveView(a));
+          el.appendChild(row);
+        });
+        return;
+      }
+
+      if (currentArchiveCategory === null) {
+        const noCatLabel = t('archive.noCategoryLabel');
+        const categories = [...new Set(archiveCache.map(a => a.category || noCatLabel))]
+          .sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
+        if (!categories.length) { el.innerHTML = `<div class="empty-row">${esc(t('archive.emptyState'))}</div>`; return; }
+        el.innerHTML = '';
+        categories.forEach(cat => {
+          const count = archiveCache.filter(a => (a.category || noCatLabel) === cat).length;
+          const row = document.createElement('div');
+          row.className = 'record-row';
+          row.innerHTML = `<div class="record-row__main"><div class="record-row__title">${esc(cat)}</div><div class="record-row__sub">${count} ${esc(t('archive.notesCount'))}</div></div>`;
+          row.appendChild(iconBtnEl('next'));
+          row.addEventListener('click', () => {
+            currentArchiveCategory = cat;
+            renderArchiveList(archiveCache);
+          });
+          el.appendChild(row);
+        });
+      } else {
+        const noCatLabel = t('archive.noCategoryLabel');
+        const notesInCat = archiveCache
+          .filter(a => (a.category || noCatLabel) === currentArchiveCategory)
+          .sort((a, b) => (a.title || '').localeCompare(b.title || '', undefined, { sensitivity: 'base' }));
+        el.innerHTML = '';
+
+        const backRow = document.createElement('div');
+        backRow.className = 'record-row';
+        backRow.style.borderStyle = 'dashed';
+        backRow.innerHTML = `<div class="record-row__main"><div class="record-row__title">${esc(currentArchiveCategory)}</div></div>`;
+        backRow.appendChild(iconBtnEl('back'));
+        backRow.addEventListener('click', () => { currentArchiveCategory = null; renderArchiveList(archiveCache); });
+        el.appendChild(backRow);
+
+        notesInCat.forEach(a => {
+          const row = document.createElement('div');
+          row.className = 'record-row';
+          row.innerHTML = `<div class="record-row__main"><div class="record-row__title">${esc(a.title)}</div></div>`;
+          row.appendChild(iconBtnEl('view'));
+          row.addEventListener('click', () => openArchiveView(a));
+          el.appendChild(row);
+        });
+      }
     }
     document.getElementById('archive-search').addEventListener('input', e => {
       const q = e.target.value.trim().toLowerCase();
@@ -1568,6 +1671,10 @@
       document.getElementById('archive-edit-mode').style.display = 'none';
       document.getElementById('archive-modal').classList.add('open');
     }
+    async function refreshArchiveKeepingContext() {
+      archiveCache = await getArchiveNotes();
+      renderArchiveList(archiveCache);
+    }
     function openArchiveEdit(a = null) {
       editingArchiveId = a?.id || null;
       document.getElementById('archive-modal-title').textContent = a ? t('archive.updateBtn') : t('archive.addBtn');
@@ -1576,7 +1683,7 @@
       const closeBtn = iconBtnEl('close'); closeBtn.addEventListener('click', closeArchiveModal);
       document.getElementById('archive-modal-actions').append(saveIconBtn, closeBtn);
 
-      document.getElementById('af-category').value = a?.category || '';
+      document.getElementById('af-category').value = a?.category || (currentArchiveCategory && currentArchiveCategory !== t('archive.noCategoryLabel') ? currentArchiveCategory : '');
       document.getElementById('af-title').value = a?.title || '';
       document.getElementById('af-note').value = a?.note || '';
       document.getElementById('af-save-btn').textContent = a ? t('archive.updateBtn') : t('archive.saveBtn');
@@ -1596,11 +1703,11 @@
       });
       showToast(editingArchiveId ? t('archive.toastUpdated') : t('archive.toastSaved'));
       closeArchiveModal();
-      await loadArchive();
+      await refreshArchiveKeepingContext();
     });
     function confirmDeleteArchive(id) {
       if (!confirm(t('archive.confirmDelete'))) return;
-      deleteArchiveNote(id).then(() => { showToast(t('archive.toastDeleted')); closeArchiveModal(); loadArchive(); });
+      deleteArchiveNote(id).then(() => { showToast(t('archive.toastDeleted')); closeArchiveModal(); refreshArchiveKeepingContext(); });
     }
     function closeArchiveModal() { document.getElementById('archive-modal').classList.remove('open'); }
     document.getElementById('archive-modal').addEventListener('click', e => { if (e.target.id === 'archive-modal') closeArchiveModal(); });
