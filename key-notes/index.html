@@ -184,7 +184,9 @@
     /* ── Alt unlock (passphrase / recovery) ─────────────── */
     .alt-unlock { width: 100%; max-width: 340px; }
     .alt-unlock input {
-      text-align: center; letter-spacing: 0.04em;
+      text-align: left;
+      font-size: 1.05rem;
+      padding: 14px 16px;
     }
 
     /* ── Onboarding steps ────────────────────────────────── */
@@ -824,6 +826,10 @@
           <button class="btn btn--glass" id="settings-change-credentials" style="padding:6px 14px; font-size:0.8rem;">→</button>
         </div>
         <div class="settings-item">
+          <span data-i18n="settings.viewCredentialsBtn" style="font-size:0.88rem;">View my sign-in details</span>
+          <button class="btn btn--glass" id="settings-view-credentials" style="padding:6px 14px; font-size:0.8rem;">→</button>
+        </div>
+        <div class="settings-item">
           <span data-i18n="settings.viewRecoveryBtn" style="font-size:0.88rem;">New recovery key</span>
           <button class="btn btn--glass" id="settings-new-recovery" style="padding:6px 14px; font-size:0.8rem;">→</button>
         </div>
@@ -842,6 +848,20 @@
     </div>
   </div>
 
+  <!-- Backup reminder shown before locking -->
+  <div class="modal-overlay" id="lock-confirm-modal">
+    <div class="modal-card" style="max-width:380px;">
+      <div class="modal-header">
+        <span data-i18n="settings.backupReminderTitle" style="font-size:0.78rem; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; color:var(--cyan);">Back up before you go?</span>
+      </div>
+      <p data-i18n="settings.backupReminderDesc" style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:18px;">
+        Good practice: download an encrypted backup before locking, so today's changes are safe even if this browser's storage is ever cleared.
+      </p>
+      <button class="btn btn--primary btn--full" id="lock-confirm-backup" data-i18n="settings.downloadAndLockBtn" style="margin-bottom:10px;">Download backup &amp; lock</button>
+      <button class="btn btn--ghost btn--full" id="lock-confirm-skip" data-i18n="settings.lockWithoutBackupBtn">Lock without backing up</button>
+    </div>
+  </div>
+
   </div>
 
   <script type="module">
@@ -849,7 +869,7 @@
       hasVault, initializeVault, unlockWithCombined,
       unlockWithRecoveryKey, getPinLength, destroyVault, lockVault,
       resetCombinedSecret, regenerateRecoveryKey, restoreSession,
-      exportVaultMeta, importVaultMeta, encryptWithPassword,
+      exportVaultMeta, importVaultMeta,
       combineSecrets, splitCombined,
     } from './js/crypto.js';
     import {
@@ -858,6 +878,7 @@
       getArchiveNotes, saveArchiveNote, deleteArchiveNote,
       getKeyRecords, saveKeyRecord, deleteKeyRecord,
       exportEncrypted, importEncrypted,
+      saveCredentialsNote, loadCredentialsNote, exportCredentialsNoteRaw, importCredentialsNoteRaw,
     } from './js/storage.js';
     import { icon } from './js/icons.js';
     import { initI18n, setLanguage, getCurrentLang, getLangMeta, t } from './js/i18n.js';
@@ -1052,6 +1073,7 @@
       if (passphrase.length < 10) { errEl.textContent = t('onboard.passphraseTooShort'); return; }
       if (!isStrongPassword(password)) { errEl.textContent = t('onboard.passwordTooWeak'); return; }
       await resetCombinedSecret(pin, passphrase, password);
+      await saveCredentialsNote(pin, passphrase, password);
       errEl.style.color = '#6ee7b7';
       errEl.textContent = t('lock.pinResetSuccess');
       setTimeout(() => { showApp(); }, 700);
@@ -1088,6 +1110,7 @@
         }
         importVaultMeta(parsed.vault);
         await importEncrypted(parsed.data || parsed);
+        importCredentialsNoteRaw(parsed.credentials);
         showToast(t('settings.toastRestored'));
         showOnly(lockScreen);
         renderPinDots();
@@ -1229,6 +1252,7 @@
       errEl.textContent = '';
       window._obPassword = p1;
       const recoveryKey = await initializeVault(window._obPin, window._obPassphrase, p1);
+      await saveCredentialsNote(window._obPin, window._obPassphrase, p1);
       document.getElementById('ob-recovery-key').textContent = recoveryKey;
       window._obRecoveryKey = recoveryKey;
       goToStep(4);
@@ -1239,24 +1263,25 @@
       document.getElementById('ob-finish').disabled = !e.target.checked;
     });
     document.getElementById('ob-finish').addEventListener('click', async () => {
-      const credsObj = { pin: window._obPin, passphrase: window._obPassphrase, password: window._obPassword };
-      const encBlob = await encryptWithPassword(credsObj, window._obRecoveryKey);
-      const fileJson = JSON.stringify({
-        app: 'key-notes', format: 'credentials-v1',
-        createdAt: new Date().toISOString(), ...encBlob,
-      });
-
-      // Auto-download immediately — no button press needed
-      const blob = new Blob([fileJson], { type: 'application/json' });
+      // Download the ONE unified file — vault, data, and an encrypted copy of
+      // these credentials, all together. This is the single file that matters.
+      const backup = await buildFullBackup();
+      const blob = new Blob([JSON.stringify(backup)], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `key-notes-credentials-${new Date().toISOString().slice(0,10)}.json`;
+      a.download = `key-notes-backup-${new Date().toISOString().slice(0,10)}.json`;
       a.click();
       URL.revokeObjectURL(url);
 
-      // Show the popup so the person can also copy it if they want
-      document.getElementById('creds-popup-json').value = fileJson;
+      // Also show a readable summary popup so it can be copied by hand too
+      const summary =
+`KEY Notes sign-in details
+PIN: ${window._obPin}
+Passphrase: ${window._obPassphrase}
+Password: ${window._obPassword}
+Recovery key: ${window._obRecoveryKey}`;
+      document.getElementById('creds-popup-json').value = summary;
       document.getElementById('creds-popup').classList.add('open');
     });
     document.getElementById('creds-popup-copy').addEventListener('click', () => {
@@ -1324,7 +1349,7 @@
     });
 
     // ── Lock button ───────────────────────────────────────────────
-    document.getElementById('lock-btn').addEventListener('click', () => {
+    function doLock() {
       lockVault();
       pinBuffer = '';
       failedPinAttempts = 0;
@@ -1333,6 +1358,25 @@
       showAuthFlow();
       showOnly(lockScreen);
       renderPinDots();
+    }
+    document.getElementById('lock-btn').addEventListener('click', () => {
+      document.getElementById('lock-confirm-modal').classList.add('open');
+    });
+    document.getElementById('lock-confirm-skip').addEventListener('click', () => {
+      document.getElementById('lock-confirm-modal').classList.remove('open');
+      doLock();
+    });
+    document.getElementById('lock-confirm-backup').addEventListener('click', async () => {
+      const backup = await buildFullBackup();
+      const blob = new Blob([JSON.stringify(backup)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `key-notes-backup-${new Date().toISOString().slice(0,10)}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      document.getElementById('lock-confirm-modal').classList.remove('open');
+      doLock();
     });
 
     function esc(s) {
@@ -1808,10 +1852,11 @@
       const dataBackup = await exportEncrypted();
       return {
         app: 'key-notes',
-        format: 'full-backup-v1',
+        format: 'full-backup-v2',
         exportedAt: new Date().toISOString(),
         vault: exportVaultMeta(),
         data: dataBackup,
+        credentials: exportCredentialsNoteRaw(),
       };
     }
 
@@ -1875,12 +1920,25 @@
           if (passphrase.length < 10) { errEl.textContent = t('onboard.passphraseTooShort'); return; }
           if (!isStrongPassword(password)) { errEl.textContent = t('onboard.passwordTooWeak'); return; }
           await resetCombinedSecret(pin, passphrase, password);
+          await saveCredentialsNote(pin, passphrase, password);
           showToast(t('lock.pinResetSuccess'));
           closePrompt();
         });
       });
     });
 
+    document.getElementById('settings-view-credentials').addEventListener('click', async () => {
+      const note = await loadCredentialsNote();
+      if (!note) {
+        openPrompt(t('settings.viewCredentialsBtn'), `<p style="font-size:0.85rem; color:var(--text-secondary);">${esc(t('settings.noCredentialsNote'))}</p>`);
+        return;
+      }
+      openPrompt(t('settings.viewCredentialsBtn'), `
+        <div class="field-view"><label>${esc(t('onboard.step2Title'))}</label><div class="val">${esc(note.pin)}</div></div>
+        <div class="field-view"><label>${esc(t('onboard.passphraseLabel'))}</label><div class="val">${esc(note.passphrase)}</div></div>
+        <div class="field-view"><label>${esc(t('onboard.passwordLabel'))}</label><div class="val">${esc(note.password)}</div></div>
+      `);
+    });
     document.getElementById('settings-new-recovery').addEventListener('click', async () => {
       const newKey = await regenerateRecoveryKey();
       openPrompt(t('settings.viewRecoveryBtn'), `
