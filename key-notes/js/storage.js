@@ -149,10 +149,33 @@ export async function getKeyRecords() {
 }
 
 // ── Encrypted export — raw blobs copied as-is, only openable via KEY Notes ──
+// ── Credentials note — a small encrypted reminder of PIN/passphrase/password,
+// encrypted with the SAME master key as everything else. This means it
+// automatically travels with every backup export, updates whenever the
+// credentials change, and is only readable once genuinely unlocked. ──
+const CREDS_NOTE_KEY = 'key-notes-creds-note';
+
+export async function saveCredentialsNote(pin, passphrase, password) {
+  const enc = await encryptObject({ pin, passphrase, password });
+  localStorage.setItem(CREDS_NOTE_KEY, JSON.stringify(enc));
+}
+export async function loadCredentialsNote() {
+  const raw = localStorage.getItem(CREDS_NOTE_KEY);
+  if (!raw) return null;
+  try { return await decryptObject(JSON.parse(raw)); } catch { return null; }
+}
+export function exportCredentialsNoteRaw() {
+  const raw = localStorage.getItem(CREDS_NOTE_KEY);
+  return raw ? JSON.parse(raw) : null;
+}
+export function importCredentialsNoteRaw(blob) {
+  if (blob) localStorage.setItem(CREDS_NOTE_KEY, JSON.stringify(blob));
+}
+
 export async function exportEncrypted() {
-  const db = await openDB();
   const dump = {};
   for (const name of Object.values(STORES)) {
+    const db = await openDB();
     dump[name] = await txRead(db, name);
   }
   return {
@@ -167,9 +190,11 @@ export async function importEncrypted(backup) {
   if (!backup || backup.app !== 'key-notes' || backup.format !== 'encrypted') {
     throw new Error('Not a valid KEY Notes encrypted backup file');
   }
-  const db = await openDB();
   for (const name of Object.values(STORES)) {
     const rows = backup.stores?.[name] || [];
-    for (const row of rows) await txWrite(db, name, row);
+    for (const row of rows) {
+      const db = await openDB();
+      await txWrite(db, name, row);
+    }
   }
 }
