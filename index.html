@@ -71,22 +71,60 @@
       stroke-linecap: round;
       stroke-linejoin: round;
     }
+
+    /* ── Desktop only: contained app-card instead of full-bleed.
+         Mobile (below 768px) is completely untouched — same rules as before. ── */
+    @media (min-width: 768px) {
+      html, body { overflow: auto; }
+      body {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+        padding: 24px;
+        box-sizing: border-box;
+      }
+      #cover-root {
+        position: relative;
+        width: 100%;
+        max-width: 420px;
+        border-radius: 20px;
+        overflow: hidden;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+      }
+      .cover-image {
+        position: static;
+        width: 100%;
+        height: auto;
+        aspect-ratio: 3 / 4;
+        display: block;
+      }
+      .cover-wrap {
+        position: static;
+        inset: auto;
+        padding: 22px;
+        background: rgba(255, 255, 255, 0.03);
+      }
+    }
   </style>
 </head>
 <body>
 
-  <img
-    src="assets/dash-notes-cover.png"
-    alt="Dash Notes"
-    class="cover-image"
-    onerror="this.style.background='#080b1a'" />
+  <div id="cover-root">
+    <img
+      src="assets/dash-notes-cover.png"
+      alt="Dash Notes"
+      class="cover-image"
+      onerror="this.style.background='#080b1a'" />
 
-  <div class="cover-wrap">
-    <a href="app.html" class="enter-btn" aria-label="Enter Dash Notes">
-      <svg viewBox="0 0 24 24">
-        <polyline points="9 18 15 12 9 6"></polyline>
-      </svg>
-    </a>
+    <div class="cover-wrap">
+      <a href="app.html" class="enter-btn" aria-label="Enter Dash Notes">
+        <svg viewBox="0 0 24 24">
+          <polyline points="9 18 15 12 9 6"></polyline>
+        </svg>
+      </a>
+    </div>
   </div>
 
 </body>
