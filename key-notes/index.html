@@ -1165,6 +1165,8 @@
         document.querySelectorAll('.ob-pin-len-btn').forEach(b => b.classList.toggle('btn--glass', b !== btn));
         obPinBuffer = ''; obPinFirstEntry = null;
         document.getElementById('ob-pin-title').textContent = t('onboard.step2Title');
+        document.getElementById('ob-pin-desc').textContent = t('onboard.step2Desc');
+        document.getElementById('ob-pin-error').textContent = '';
         renderObPinDots();
       });
     });
@@ -1192,17 +1194,24 @@
       if (!obPinFirstEntry) {
         obPinFirstEntry = obPinBuffer;
         obPinBuffer = '';
-        document.getElementById('ob-pin-error').textContent = '';
+        const errEl = document.getElementById('ob-pin-error');
+        errEl.style.color = '#6ee7b7';
+        errEl.textContent = t('onboard.pinConfirmHint');
         document.getElementById('ob-pin-title').textContent = t('onboard.pinConfirmTitle');
+        document.getElementById('ob-pin-desc').textContent = t('onboard.pinConfirmHint');
+        showToast(t('onboard.pinConfirmHint'));
         renderObPinDots();
       } else if (obPinBuffer === obPinFirstEntry) {
         window._obPin = obPinFirstEntry;
         goToStep(3);
       } else {
-        document.getElementById('ob-pin-error').textContent = t('onboard.pinMismatch');
+        const errEl = document.getElementById('ob-pin-error');
+        errEl.style.color = '#fca5a5';
+        errEl.textContent = t('onboard.pinMismatch');
         obPinFirstEntry = null;
         obPinBuffer = '';
         document.getElementById('ob-pin-title').textContent = t('onboard.step2Title');
+        document.getElementById('ob-pin-desc').textContent = t('onboard.step2Desc');
         renderObPinDots();
       }
     });
