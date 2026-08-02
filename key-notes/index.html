@@ -283,6 +283,10 @@
     .phone-row .phone-code { flex: 0 0 62px; }
     .phone-row .phone-number { flex: 1; }
 
+    .email-row { display: flex; gap: 6px; margin-bottom: 8px; align-items: center; }
+    .email-row .email-type { flex: 0 0 64px; }
+    .email-row .email-address { flex: 1; }
+
     .note-pad-flex {
       background: rgba(255,255,255,0.03); border: 1px solid var(--border);
       border-radius: var(--radius-md); padding: 16px; width: 100%;
@@ -739,7 +743,11 @@
           <div id="cf-phones"></div>
           <button type="button" class="btn btn--glass" id="cf-add-phone" data-i18n="contacts.addPhoneBtn" style="font-size:0.8rem; padding:8px 14px;">+ Add another number</button>
         </div>
-        <div class="form-group"><label data-i18n="contacts.labelEmail">Email</label><input type="email" id="cf-email" /></div>
+        <div class="form-group">
+          <label data-i18n="contacts.labelEmails">Email addresses</label>
+          <div id="cf-emails"></div>
+          <button type="button" class="btn btn--glass" id="cf-add-email" data-i18n="contacts.addEmailBtn" style="font-size:0.8rem; padding:8px 14px;">+ Add email</button>
+        </div>
         <div class="form-group"><label data-i18n="contacts.labelAddress">Address</label><textarea id="cf-address"></textarea></div>
         <button class="btn btn--primary btn--full" id="cf-save-btn"></button>
       </div>
@@ -1407,7 +1415,8 @@ Recovery key: ${window._obRecoveryKey}`;
         row.className = 'record-row';
         const firstPhone = c.phones?.[0];
         const phoneStr = firstPhone ? `${firstPhone.code ? firstPhone.code + ' ' : ''}${firstPhone.number}` : '';
-        const sub = c.business || phoneStr || c.email || '';
+        const firstEmail = c.emails?.[0]?.email || '';
+        const sub = c.business || phoneStr || firstEmail || '';
         row.innerHTML = `
           <div class="record-row__main">
             <div class="record-row__title">${esc(c.firstName)} ${esc(c.lastName)}</div>
@@ -1423,7 +1432,9 @@ Recovery key: ${window._obRecoveryKey}`;
       const q = e.target.value.trim().toLowerCase();
       if (!q) return renderContactsList(contactsCache);
       const filtered = contactsCache.filter(c =>
-        [c.firstName, c.lastName, c.business, c.email, c.address, ...(c.phones||[]).flatMap(p=>[p.number, p.code])]
+        [c.firstName, c.lastName, c.business, c.address,
+          ...(c.phones||[]).flatMap(p=>[p.number, p.code]),
+          ...(c.emails||[]).map(e=>e.email)]
           .some(v => (v||'').toLowerCase().includes(q))
       );
       renderContactsList(filtered);
@@ -1451,6 +1462,27 @@ Recovery key: ${window._obRecoveryKey}`;
     }
     document.getElementById('cf-add-phone').addEventListener('click', () => addPhoneRow());
 
+    function renderEmailRows(emails) {
+      const wrap = document.getElementById('cf-emails');
+      wrap.innerHTML = '';
+      (emails.length ? emails : [{type:'Per', email:''}]).forEach(e => addEmailRow(e.type, e.email));
+    }
+    function addEmailRow(type = 'Per', email = '') {
+      const wrap = document.getElementById('cf-emails');
+      const row = document.createElement('div');
+      row.className = 'email-row';
+      row.innerHTML = `
+        <select class="email-type">
+          <option value="Bus" ${type === 'Bus' ? 'selected' : ''}>Bus</option>
+          <option value="Per" ${type === 'Per' ? 'selected' : ''}>Per</option>
+        </select>
+        <input type="email" class="email-address" placeholder="${esc(t('contacts.emailPh'))}" value="${esc(email)}" />
+        <button type="button" class="icon-btn danger email-remove">${icon('delete')}</button>`;
+      row.querySelector('.email-remove').addEventListener('click', () => row.remove());
+      wrap.appendChild(row);
+    }
+    document.getElementById('cf-add-email').addEventListener('click', () => addEmailRow());
+
     function openContactView(c) {
       editingContactId = c.id;
       document.getElementById('contact-modal-title').textContent = `${c.firstName} ${c.lastName}`.trim();
@@ -1465,7 +1497,7 @@ Recovery key: ${window._obRecoveryKey}`;
       view.innerHTML = `
         ${c.business ? `<div class="field-view"><label>${esc(t('contacts.labelBusiness'))}</label><div class="val">${esc(c.business)}</div></div>` : ''}
         ${(c.phones||[]).map(p => `<div class="field-view"><label>${esc(p.type || 'Mbl')}</label><div class="val">${esc(p.code ? p.code + ' ' : '')}${esc(p.number)}</div></div>`).join('')}
-        ${c.email ? `<div class="field-view"><label>${esc(t('contacts.labelEmail'))}</label><div class="val">${esc(c.email)}</div></div>` : ''}
+        ${(c.emails||[]).map(e => `<div class="field-view"><label>${esc(e.type || 'Per')}</label><div class="val">${esc(e.email)}</div></div>`).join('')}
         ${c.address ? `<div class="field-view"><label>${esc(t('contacts.labelAddress'))}</label><div class="val">${esc(c.address)}</div></div>` : ''}
       `;
       document.getElementById('contact-view-mode').style.display = 'block';
@@ -1483,9 +1515,9 @@ Recovery key: ${window._obRecoveryKey}`;
       document.getElementById('cf-firstName').value = c?.firstName || '';
       document.getElementById('cf-lastName').value  = c?.lastName || '';
       document.getElementById('cf-business').value  = c?.business || '';
-      document.getElementById('cf-email').value     = c?.email || '';
       document.getElementById('cf-address').value   = c?.address || '';
       renderPhoneRows(c?.phones || []);
+      renderEmailRows(c?.emails || []);
 
       const saveBtn = document.getElementById('cf-save-btn');
       saveBtn.textContent = c ? t('contacts.updateBtn') : t('contacts.saveBtn');
@@ -1502,6 +1534,10 @@ Recovery key: ${window._obRecoveryKey}`;
         code: row.querySelector('.phone-code').value.trim(),
         number: row.querySelector('.phone-number').value.trim(),
       })).filter(p => p.number);
+      const emails = Array.from(document.querySelectorAll('#cf-emails .email-row')).map(row => ({
+        type: row.querySelector('.email-type').value,
+        email: row.querySelector('.email-address').value.trim(),
+      })).filter(e => e.email);
 
       const payload = {
         id: editingContactId || undefined,
@@ -1509,7 +1545,7 @@ Recovery key: ${window._obRecoveryKey}`;
         lastName: document.getElementById('cf-lastName').value.trim(),
         business: document.getElementById('cf-business').value.trim(),
         phones,
-        email: document.getElementById('cf-email').value.trim(),
+        emails,
         address: document.getElementById('cf-address').value.trim(),
       };
       await saveContact(payload);
