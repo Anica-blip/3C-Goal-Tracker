@@ -120,7 +120,7 @@ export async function getContacts() {
 }
 
 // ── Links ──────────────────────────────────────────────────────
-// { name, username, url, password }
+// { name, url, email, username, password }
 export async function saveLink(obj)      { return saveRecord(STORES.LINKS, obj); }
 export async function deleteLink(id)     { return deleteRecord(STORES.LINKS, id); }
 export async function getLinks() {
