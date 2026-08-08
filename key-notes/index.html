@@ -764,8 +764,9 @@
       <div id="link-view-mode"></div>
       <div id="link-edit-mode" style="display:none;">
         <div class="form-group"><label data-i18n="links.labelName">Name *</label><input type="text" id="lf-name" /></div>
-        <div class="form-group"><label data-i18n="links.labelUsername">Username</label><input type="text" id="lf-username" /></div>
         <div class="form-group"><label data-i18n="links.labelUrl">URL</label><input type="text" id="lf-url" /></div>
+        <div class="form-group"><label data-i18n="links.labelEmail">Email Address</label><input type="email" id="lf-email" /></div>
+        <div class="form-group"><label data-i18n="links.labelUsername">Username</label><input type="text" id="lf-username" /></div>
         <div class="form-group"><label data-i18n="links.labelPassword">Password</label><input type="text" id="lf-password" /></div>
         <button class="btn btn--primary btn--full" id="lf-save-btn"></button>
       </div>
@@ -1607,8 +1608,9 @@ Recovery key: ${window._obRecoveryKey}`;
 
       const view = document.getElementById('link-view-mode');
       view.innerHTML = `
-        ${l.username ? `<div class="field-view"><label>${esc(t('links.labelUsername'))}</label><div class="val">${esc(l.username)}</div></div>` : ''}
         ${l.url ? `<div class="field-view"><label>${esc(t('links.labelUrl'))}</label><div class="val">${esc(l.url)}</div></div>` : ''}
+        ${l.email ? `<div class="field-view"><label>${esc(t('links.labelEmail'))}</label><div class="val">${esc(l.email)}</div></div>` : ''}
+        ${l.username ? `<div class="field-view"><label>${esc(t('links.labelUsername'))}</label><div class="val">${esc(l.username)}</div></div>` : ''}
         <div class="field-view"><label>${esc(t('links.labelPassword'))}</label>
           <div class="val" style="display:flex; align-items:center; gap:10px;">
             <span id="link-password-display">••••••••</span>
@@ -1633,8 +1635,9 @@ Recovery key: ${window._obRecoveryKey}`;
       document.getElementById('link-modal-actions').append(saveIconBtn, closeBtn);
 
       document.getElementById('lf-name').value = l?.name || '';
-      document.getElementById('lf-username').value = l?.username || '';
       document.getElementById('lf-url').value = l?.url || '';
+      document.getElementById('lf-email').value = l?.email || '';
+      document.getElementById('lf-username').value = l?.username || '';
       document.getElementById('lf-password').value = l?.password || '';
 
       document.getElementById('lf-save-btn').textContent = l ? t('links.updateBtn') : t('links.saveBtn');
@@ -1648,8 +1651,9 @@ Recovery key: ${window._obRecoveryKey}`;
       await saveLink({
         id: editingLinkId || undefined,
         name,
-        username: document.getElementById('lf-username').value.trim(),
         url: document.getElementById('lf-url').value.trim(),
+        email: document.getElementById('lf-email').value.trim(),
+        username: document.getElementById('lf-username').value.trim(),
         password: document.getElementById('lf-password').value,
       });
       showToast(editingLinkId ? t('links.toastUpdated') : t('links.toastSaved'));
