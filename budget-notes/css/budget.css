@@ -544,3 +544,70 @@ div.mv-row__main { cursor: default; }
   .mv-tab__m { font-size: 0.82rem; }
   .mv-sum__table th, .mv-sum__table td { font-size: 0.82rem; }
 }
+
+
+/* ── Day badge: square, full colour, white bold 01–31 ────── */
+.mv-day {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  vertical-align: middle;
+  min-width: 28px;
+  height: 28px;
+  margin-right: 10px;
+  padding: 0 4px;
+  border-radius: 7px;
+  background: linear-gradient(135deg, #7c3aed 0%, #4a1c8c 100%);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow: 0 2px 8px rgba(124, 58, 237, 0.35);
+  color: #fff;
+  font-size: 0.8rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+/* ── Month that has not started ──────────────────────────── */
+.mv-notice { text-align: center; padding: 34px 22px; }
+.mv-notice__icon { font-size: 2.2rem; margin-bottom: 10px; }
+.mv-notice__title { font-size: 1rem; font-weight: 700; color: var(--text-primary); margin-bottom: 8px; }
+.mv-notice p { margin: 0 auto; max-width: 420px; font-size: 0.86rem; line-height: 1.65; }
+
+/* ── Editor: two date boxes side by side ─────────────────── */
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.form-row .form-group { min-width: 0; }
+.form-row label { font-size: 0.7rem; }
+.mv-help { margin: -6px 0 8px; font-size: 0.76rem; line-height: 1.55; color: var(--text-muted); }
+.mv-help--info { color: var(--cyan-dim); margin-top: 0; }
+
+/* ── Language selector (same as Dash Notes) ──────────────── */
+.lang-option {
+  display: block;
+  width: 100%;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  padding: 9px 14px;
+  text-align: left;
+  font-family: var(--font);
+  letter-spacing: 0.02em;
+  transition: background var(--transition);
+  white-space: nowrap;
+}
+.lang-option:hover  { background: var(--bg-glass); color: var(--text-primary); }
+.lang-option.active { color: var(--cyan); background: var(--cyan-subtle); }
+
+/* longer words in other languages must never overflow the top bar */
+.nav-action-link { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 90px; }
+.mv-row__label { hyphens: auto; }
+
+@media (max-width: 420px) {
+  .nav-action-link { font-size: 0.68rem !important; letter-spacing: 0.02em !important; }
+  #lang-btn { padding: 4px 7px !important; }
+  .form-row { gap: 8px; }
+  .mv-day { min-width: 26px; height: 26px; margin-right: 8px; font-size: 0.74rem; }
+}
