@@ -4,7 +4,7 @@
 //
 // When you change ANY file below, bump CACHE (v1 → v2) so phones pick up the update.
 
-const CACHE = 'budget-notes-v1';
+const CACHE = 'budget-notes-v2';
 
 const ASSETS = [
   './',

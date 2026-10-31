@@ -1,7 +1,7 @@
 {
   "name": "BUDGET Notes",
   "short_name": "BUDGET Notes",
-  "description": "A monthly budget planner you set once and it carries forward.",
+  "description": "A personal budget planner you set once and it carries forward.",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",

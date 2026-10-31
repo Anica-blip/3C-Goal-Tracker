@@ -1,6 +1,6 @@
 # BUDGET Notes
 
-A monthly budget planner you set once — it carries forward. Part of the 3C Goal Tracker family (DASH Notes · KEY Notes · BUDGET Notes).
+A personal budget planner you set once — it carries forward. Part of the 3C Goal Tracker family (DASH Notes · KEY Notes · BUDGET Notes).
 
 © 3C Thread To Success™. All rights reserved. BUDGET Notes is a personal tool built for and by Chef Anica; its design, code and wording are protected as part of the 3C Thread To Success™ brand.
 
@@ -38,7 +38,7 @@ budget-notes/
     ├── engine.js     pure budget logic: months, carry-forward, totals, year lock
     ├── storage.js    IndexedDB — the ONLY file that knows where data lives
     ├── store.js      in-memory state, saving, change notifications
-    ├── i18n.js       text (English now; FR / DE / EL / PT can be added later)
+    ├── i18n.js       all text in EN · FR · DE · EL · PT
     ├── ui.js         escaping, toast, money + month formatting
     ├── planner.js    month tabs, two-column blocks, summary, line editor
     ├── summary.js    Year at a Glance
@@ -52,6 +52,9 @@ Shared with the other apps (unchanged): `../css/style.css`, `../assets/favicon.p
 
 - Every line keeps a **history** (not a copy per month). Change it **Forward** and that month plus every month after follows; tick **Once** and only that month changes. Earlier months are never rewritten.
 - Amounts are stored in whole cents. Currency is euro, dates are British English, and "this month" follows Europe/Lisbon time.
-- Money Left = Income − Fixed − Variable. (`DEDUCT_SAVINGS` in `js/engine.js` also deducts Savings & Investments if you ever want that.)
+- Fixed, Variable and Bank Commission lines can carry a date. A **Start date** makes a line begin in that month (earlier months fill in too) and shows its day on a badge; an **End date** makes that month its last. **Once** changes one month only (e.g. a late payment); Once + Remove skips a single month.
+- Months that have not started stay empty — nothing is added ahead of time.
+- Money Left = Income − Fixed − Variable − Bank Commission. (`DEDUCT_SAVINGS` in `js/engine.js` also deducts Savings & Investments if you ever want that.)
+- Five languages: English, French, German, Greek, Portuguese — all text lives in `js/i18n.js`.
 - A year closes after 31 December and moves to the Archive as a read-only record (unlock to correct a mistake).
 - Storage is local to the device (IndexedDB). Swap `js/storage.js` to move to Cloudflare later.
