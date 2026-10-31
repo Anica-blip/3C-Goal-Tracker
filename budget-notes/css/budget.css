@@ -509,8 +509,6 @@ div.mv-row__main { cursor: default; }
 }
 .ar-year--live .ar-year__tag,
 .ar-year__tag--live { color: var(--cyan); background: var(--cyan-subtle); border-color: rgba(0, 229, 212, 0.25); }
-.ar-year--unlocked .ar-year__tag,
-.ar-year__tag--unlocked { color: #fcd34d; background: rgba(245, 158, 11, 0.12); border-color: rgba(245, 158, 11, 0.3); }
 .ar-year__go { color: var(--text-muted); font-size: 1.4rem; line-height: 1; }
 
 .ar-bar { display: flex; align-items: center; gap: 12px; margin: 4px 0 12px; }
@@ -518,19 +516,6 @@ div.mv-row__main { cursor: default; }
 .ar-back { padding: 8px 14px; font-size: 0.82rem; }
 .ar-title { font-size: 1.4rem; font-weight: 800; }
 
-.ar-lock {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 14px;
-  flex-wrap: wrap;
-  padding: 14px 16px;
-  margin-bottom: 4px;
-}
-.ar-lock p { flex: 1; min-width: 200px; margin: 0; font-size: 0.8rem; line-height: 1.55; }
-.ar-lock .btn { padding: 8px 16px; font-size: 0.82rem; }
-.ar-lock--archived { border-color: var(--border-strong); }
-.ar-lock--unlocked { border-color: rgba(245, 158, 11, 0.4); }
 
 /* ── Save & Restore ──────────────────────────────────────── */
 .bk-title { font-size: 0.88rem; font-weight: 700; color: var(--text-primary); margin-bottom: 6px; }
@@ -611,3 +596,27 @@ div.mv-row__main { cursor: default; }
   .form-row { gap: 8px; }
   .mv-day { min-width: 26px; height: 26px; margin-right: 8px; font-size: 0.74rem; }
 }
+
+
+/* ── Year box next to the month title ────────────────────── */
+.mv-year { display: inline-block; margin: 0 0 0 auto; text-transform: none; letter-spacing: 0; }
+.mv-year select {
+  width: auto;
+  padding: 6px 30px 6px 12px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2300e5d4' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 9px center;
+  background-size: 14px;
+}
+.mv-year select option { background: #1a0a52; color: #f0f4ff; }
+.sr-only {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
+}
+
+/* ── Archive extras ──────────────────────────────────────── */
+.ar-note { margin: 0 0 6px; font-size: 0.8rem; color: var(--cyan-dim); line-height: 1.55; }
+.ar-add { margin-top: 4px; align-self: flex-start; }
