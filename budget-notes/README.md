@@ -42,7 +42,7 @@ budget-notes/
     ├── ui.js         escaping, toast, money + month formatting
     ├── planner.js    month tabs, two-column blocks, summary, line editor
     ├── summary.js    Year at a Glance
-    ├── archive.js    year buttons, read-only closed years, unlock
+    ├── archive.js    year list, open any year, add an earlier year
     └── backup.js     share, download backup, restore
 ```
 
@@ -52,9 +52,9 @@ Shared with the other apps (unchanged): `../css/style.css`, `../assets/favicon.p
 
 - Every line keeps a **history** (not a copy per month). Change it **Forward** and that month plus every month after follows; tick **Once** and only that month changes. Earlier months are never rewritten.
 - Amounts are stored in whole cents. Currency is euro, dates are British English, and "this month" follows Europe/Lisbon time.
-- Fixed, Variable and Bank Commission lines can carry a date. A **Start date** makes a line begin in that month (earlier months fill in too) and shows its day on a badge; an **End date** makes that month its last. **Once** changes one month only (e.g. a late payment); Once + Remove skips a single month.
+- Income, Fixed, Variable and Bank Commission lines can carry a date. A **Start date** makes a line begin in that month (earlier months fill in too) and shows its day on a badge; an **End date** makes that month its last. **Once** changes one month only (e.g. a late payment); Once + Remove skips a single month.
 - Months that have not started stay empty — nothing is added ahead of time.
 - Money Left = Income − Fixed − Variable − Bank Commission. (`DEDUCT_SAVINGS` in `js/engine.js` also deducts Savings & Investments if you ever want that.)
 - Five languages: English, French, German, Greek, Portuguese — all text lives in `js/i18n.js`.
-- A year closes after 31 December and moves to the Archive as a read-only record (unlock to correct a mistake).
+- Nothing is ever locked: any month of any year can be edited at any time. The Planner has a year box, and the Archive lists your years (with “Add an earlier year”) so you can start recording from any point.
 - Storage is local to the device (IndexedDB). Swap `js/storage.js` to move to Cloudflare later.
