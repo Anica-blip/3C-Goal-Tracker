@@ -4,7 +4,7 @@
 import * as E from './engine.js';
 import * as store from './store.js';
 import { t, getLocale } from './i18n.js';
-import { money, monthLong, monthShort, showToast } from './ui.js';
+import { money, monthLong, monthShort, showToast, dayText } from './ui.js';
 
 // ── Readable text version (for the share menu) ─────────────
 function formatAsText() {
@@ -20,6 +20,7 @@ function formatAsText() {
     ['savings',  'block.savings',  'total.savings'],
     ['fixed',    'block.fixed',    'total.fixed'],
     ['variable', 'block.variable', 'total.variable'],
+    ['commission', 'block.commission', 'total.commission'],
   ];
   const totals = E.monthTotals(s.lines, month);
 
@@ -30,7 +31,8 @@ function formatAsText() {
     const rows = E.monthLines(s.lines, sec, month);
     rows.forEach(r => {
       const tick = sec === 'savings' ? (r.done ? '☑ ' : '☐ ') : '• ';
-      lines.push(`${tick}${r.label}${r.amount ? ` — ${money(r.amount)}` : ''}`);
+      const day = r.dayShown ? `${dayText(r.dayShown)} · ` : '';
+      lines.push(`${tick}${day}${r.label}${r.amount ? ` — ${money(r.amount)}` : ''}`);
     });
     lines.push(`${t(totalKey)}: ${money(totals[sec])}`);
   });
@@ -39,13 +41,13 @@ function formatAsText() {
   lines.push(`${t('backup.shareLeft').toUpperCase()}: ${money(totals.moneyLeft)}`);
 
   const year = E.yearOf(month);
-  const yt = E.yearTotals(s.lines, year);
+  const yt = E.yearTotals(s.lines, year, month);
   if (yt.total.hasFigures) {
     lines.push('');
     lines.push(t('backup.shareYear', { year }));
     lines.push('-'.repeat(20));
     yt.months.filter(m => m.hasFigures).forEach(m => {
-      lines.push(`${monthShort(m.key)}: ${t('year.income')} ${money(m.income)} · ${t('year.fixed')} ${money(m.fixed)} · ${t('year.variable')} ${money(m.variable)} · ${t('year.left')} ${money(m.moneyLeft)}`);
+      lines.push(`${monthShort(m.key)}: ${t('year.income')} ${money(m.income)} · ${t('year.fixed')} ${money(m.fixed)} · ${t('year.variable')} ${money(m.variable)} · ${t('year.commission')} ${money(m.commission)} · ${t('year.left')} ${money(m.moneyLeft)}`);
     });
     lines.push(`${t('year.total')}: ${t('year.left')} ${money(yt.total.moneyLeft)}`);
   }

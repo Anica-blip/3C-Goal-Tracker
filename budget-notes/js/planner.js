@@ -3,11 +3,12 @@
 //
 // createMonthView() is shared: the Planner tab uses it for the rolling months,
 // the Archive tab uses it for one past year. Both read the same data from store.js.
+// Months that have not started yet stay empty — nothing is shown or added ahead of time.
 
 import * as E from './engine.js';
 import * as store from './store.js';
 import { t } from './i18n.js';
-import { esc, money, plainAmount, showToast, monthLong, monthShort } from './ui.js';
+import { esc, money, plainAmount, showToast, monthLong, monthShort, dateLong, dayText } from './ui.js';
 
 const CLOSE_SVG = '<svg viewBox="0 0 24 24"><path d="M5 5l14 14M19 5L5 19"/></svg>';
 const CHECK_SVG = '<svg viewBox="0 0 24 24"><polyline points="5 12 10 17 19 7"/></svg>';
@@ -23,8 +24,9 @@ function rowHTML(r, readOnly) {
   const amount = r.amount === 0
     ? `<span class="mv-row__amt mv-row__amt--zero">${esc(t('sum.none'))}</span>`
     : `<span class="mv-row__amt">${money(r.amount)}</span>`;
+  const day = r.dayShown ? `<span class="mv-day">${dayText(r.dayShown)}</span>` : '';
   const badge = r.once ? ` <span class="mv-pill">${esc(t('line.onceBadge'))}</span>` : '';
-  const main = `<span class="mv-row__label">${esc(r.label)}${badge}</span>${amount}`;
+  const main = `<span class="mv-row__label">${day}${esc(r.label)}${badge}</span>${amount}`;
   const body = readOnly
     ? `<div class="mv-row__main">${main}</div>`
     : `<button type="button" class="mv-row__main" data-edit="${r.id}">${main}</button>`;
@@ -49,10 +51,11 @@ function blockHTML(section, rows, total, readOnly) {
 function summaryHTML(month, totals, prevMonth, prev) {
   const dash = `<span class="mv-dash">${esc(t('sum.none'))}</span>`;
   const rows = [
-    ['income',   'sum.income'],
-    ['fixed',    'sum.fixed'],
-    ['variable', 'sum.variable'],
-    ['savings',  'sum.savings'],
+    ['income',     'sum.income'],
+    ['fixed',      'sum.fixed'],
+    ['variable',   'sum.variable'],
+    ['commission', 'sum.commission'],
+    ['savings',    'sum.savings'],
   ].map(([key, label]) => `
       <tr>
         <th scope="row">${esc(t(label))}</th>
@@ -123,10 +126,23 @@ async function guarded(fn) {
   }
 }
 
+/** Turn an engine refusal into a plain message. Returns true if it was an error. */
+function reportError(res) {
+  if (!res || !res.error) return false;
+  const map = {
+    'end-before-start': 'line.toastEndBeforeStart',
+    'start-after-end':  'line.toastStartAfterEnd',
+    'date-month':       'line.toastBadDate',
+  };
+  showToast(t(map[res.error] || 'line.toastFailed'), 'error');
+  return true;
+}
+
 /**
  * ctx = { mode:'add'|'edit', section, month, lineId, defaultOnce }
  * The "Once" box decides whether Save / Duplicate / Remove touch this month only
- * or this month and every month after.
+ * or this month and every month after. Dates (Fixed, Variable, Bank Commission):
+ *   Forward → Start date + End date;   Once → one date inside this month.
  */
 function openLineEditor(ctx) {
   const modal = ensureModal();
@@ -138,6 +154,45 @@ function openLineEditor(ctx) {
 
   const monthText = monthLong(ctx.month);
   const section = isEdit ? cur.section : ctx.section;
+  const dated = E.DATED_SECTIONS.includes(section);
+
+  // what the date boxes start with
+  const initStart = cur && cur.start.day ? E.formatDate({ month: cur.start.month, day: cur.start.day }) : '';
+  const initEnd = cur && cur.end
+    ? E.formatDate({ month: cur.end.month, day: cur.end.day || E.daysInMonth(cur.end.month) })
+    : '';
+  const initDate = cur && cur.dayShown ? E.formatDate({ month: ctx.month, day: cur.dayShown }) : '';
+  const runsInfo = cur
+    ? t('line.runsFrom', {
+        from: monthLong(cur.start.month),
+        until: cur.end ? t('line.untilEnd', { end: monthLong(cur.end.month) }) : t('line.untilFurther'),
+      })
+    : '';
+
+  const dateFields = !dated ? '' : `
+    <div id="lf-forward-dates" class="${ctx.defaultOnce ? 'hidden' : ''}">
+      <div class="form-row">
+        <div class="form-group">
+          <label for="lf-start">${esc(t('line.labelStart'))}</label>
+          <input type="text" id="lf-start" inputmode="numeric" autocomplete="off"
+            placeholder="${esc(t('line.phDate'))}" value="${esc(initStart)}" />
+        </div>
+        <div class="form-group">
+          <label for="lf-end">${esc(t('line.labelEnd'))}</label>
+          <input type="text" id="lf-end" inputmode="numeric" autocomplete="off"
+            placeholder="${esc(t('line.phDate'))}" value="${esc(initEnd)}" />
+        </div>
+      </div>
+      <p class="mv-help">${esc(t('line.datesHelp'))}</p>
+      ${isEdit ? `<p class="mv-help mv-help--info">${esc(runsInfo)}</p>` : ''}
+    </div>
+    <div id="lf-once-date" class="${ctx.defaultOnce ? '' : 'hidden'}">
+      <div class="form-group">
+        <label for="lf-date">${esc(t('line.labelDate'))}</label>
+        <input type="text" id="lf-date" inputmode="numeric" autocomplete="off"
+          placeholder="${esc(t('line.phDate'))}" value="${esc(initDate)}" />
+      </div>
+    </div>`;
 
   card.innerHTML = `
     <div class="modal-header">
@@ -163,6 +218,8 @@ function openLineEditor(ctx) {
     </label>
     <p class="mv-hint" id="lf-hint"></p>
 
+    ${dateFields}
+
     <div class="modal-buttons">
       <button type="button" class="btn btn--primary btn--full" id="lf-save">
         ${esc(isEdit ? t('line.updateBtn') : t('line.addBtn'))}
@@ -181,49 +238,96 @@ function openLineEditor(ctx) {
   const onceBox = $('#lf-once');
   const hint = $('#lf-hint');
 
-  const updateHint = () => {
+  const syncMode = () => {
     hint.textContent = onceBox.checked
       ? t('line.hintOnce', { month: monthText })
       : t('line.hintForward', { month: monthText });
+    if (dated) {
+      $('#lf-forward-dates').classList.toggle('hidden', onceBox.checked);
+      $('#lf-once-date').classList.toggle('hidden', !onceBox.checked);
+    }
   };
-  onceBox.addEventListener('change', updateHint);
-  updateHint();
+  onceBox.addEventListener('change', syncMode);
+  syncMode();
 
-  // Read + validate the two fields. Returns null (and shows a toast) when invalid.
+  // Read + validate every box. Returns null (and shows a toast) when something is wrong.
   const readFields = () => {
     const label = labelInput.value.trim();
     if (!label) { showToast(t('line.toastNoLabel'), 'error'); labelInput.focus(); return null; }
     const amount = E.parseAmount(amountInput.value);
     if (amount === null) { showToast(t('line.toastBadAmount'), 'error'); amountInput.focus(); return null; }
-    return { label, amount };
+
+    const out = { label, amount, date: null, start: null, end: null, startChanged: false, endChanged: false };
+    if (!dated) return out;
+
+    if (onceBox.checked) {
+      const text = $('#lf-date').value.trim();
+      if (text) {
+        const d = E.parseDate(text, ctx.month);
+        if (!d) { showToast(t('line.toastBadDate'), 'error'); $('#lf-date').focus(); return null; }
+        if (d.month !== ctx.month) { showToast(t('line.toastDateMonth', { month: monthText }), 'error'); $('#lf-date').focus(); return null; }
+        out.date = d;
+      }
+    } else {
+      const startText = $('#lf-start').value.trim();
+      const endText = $('#lf-end').value.trim();
+      if (startText) {
+        out.start = E.parseDate(startText, ctx.month);
+        if (!out.start) { showToast(t('line.toastBadDate'), 'error'); $('#lf-start').focus(); return null; }
+        out.startChanged = startText !== initStart;
+      }
+      if (endText) {
+        out.end = E.parseDate(endText, ctx.month);
+        if (!out.end) { showToast(t('line.toastBadDate'), 'error'); $('#lf-end').focus(); return null; }
+      }
+      out.endChanged = endText !== initEnd;
+      if (out.start && out.end && out.end.month < out.start.month) {
+        showToast(t('line.toastEndBeforeStart'), 'error');
+        return null;
+      }
+    }
+    return out;
   };
 
   const save = (addAnother) => guarded(async () => {
     const f = readFields();
     if (!f) return;
+    const once = onceBox.checked;
+
     if (isEdit) {
-      const res = await store.editLine(ctx.lineId, ctx.month, f, onceBox.checked);
+      const patch = { label: f.label, amount: f.amount };
+      if (once && f.date) patch.day = f.date.day;
+      const dates = once ? null : { start: f.startChanged ? f.start : null, end: f.end, endChanged: f.endChanged };
+      const res = await store.updateLine(ctx.lineId, ctx.month, patch, once, dates);
+      if (reportError(res)) return;
       closeModal();
       showToast(res.changed.length ? t('line.toastUpdated') : t('line.toastNoChange'));
-    } else {
-      if (addAnother) {
-        // clear the boxes straight away so the next line can be typed while this one saves
-        labelInput.value = '';
-        amountInput.value = '';
-        labelInput.focus();
-      }
-      try {
-        await store.addLine(section, ctx.month, f.label, f.amount, onceBox.checked);
-      } catch (err) {
-        if (addAnother) {                       // saving failed — put the text back
-          labelInput.value = f.label;
-          amountInput.value = f.amount ? plainAmount(f.amount) : '';
-        }
-        throw err;
-      }
-      if (!addAnother) closeModal();
-      showToast(t('line.toastAdded'));
+      return;
     }
+
+    // add
+    const dates = once ? { start: f.date } : { start: f.start, end: f.end };
+    if (addAnother) {
+      // clear the boxes straight away so the next line can be typed while this one saves
+      labelInput.value = '';
+      amountInput.value = '';
+      if (dated) { $('#lf-start').value = ''; $('#lf-end').value = ''; $('#lf-date').value = ''; }
+      labelInput.focus();
+    }
+    let res;
+    try {
+      res = await store.addLine(section, ctx.month, f.label, f.amount, once, dates);
+    } catch (err) {
+      if (addAnother) {                       // saving failed — put the text back
+        labelInput.value = f.label;
+        amountInput.value = f.amount ? plainAmount(f.amount) : '';
+      }
+      throw err;
+    }
+    if (reportError(res)) return;
+    if (!addAnother) closeModal();
+    const later = !once && f.start && f.start.month > ctx.month;
+    showToast(later ? t('line.toastAddedLater', { month: monthLong(f.start.month) }) : t('line.toastAdded'));
   });
 
   $('#lf-save').addEventListener('click', () => save(false));
@@ -236,6 +340,7 @@ function openLineEditor(ctx) {
   if (isEdit) {
     $('#lf-duplicate').addEventListener('click', () => guarded(async () => {
       const res = await store.duplicateLine(ctx.lineId, ctx.month, onceBox.checked);
+      if (reportError(res)) return;
       closeModal();
       showToast(t('line.toastDuplicated'));
       if (res.newId) openLineEditor({ ...ctx, mode: 'edit', lineId: res.newId });
@@ -245,14 +350,16 @@ function openLineEditor(ctx) {
       const once = onceBox.checked;
       const msg = t(once ? 'line.confirmRemoveOnce' : 'line.confirmRemoveForward', { label: cur.label, month: monthText });
       if (!confirm(msg)) return;
-      await store.deleteLine(ctx.lineId, ctx.month, once);
+      const res = await store.deleteLine(ctx.lineId, ctx.month, once);
+      if (reportError(res)) return;
       closeModal();
       showToast(t('line.toastRemoved'));
     }));
   }
 
   modal.classList.add('open');
-  setTimeout(() => labelInput.focus(), 50);
+  // focus the description — unless the person has already tapped into another box
+  setTimeout(() => { if (!card.contains(document.activeElement)) labelInput.focus(); }, 50);
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -260,10 +367,10 @@ function openLineEditor(ctx) {
 // ═══════════════════════════════════════════════════════════════
 /**
  * cfg = {
- *   bounds():      { min, maxStart }   first month / last allowed first-tab month
- *   initial():     { viewStart, selected }
- *   readOnly(m):   boolean
- *   defaultOnce(m):boolean             pre-tick "Once" in the editor
+ *   bounds():            { min, maxStart }   first month / last allowed first-tab month
+ *   initial():           { viewStart, selected }
+ *   readOnly(m):         boolean
+ *   defaultOnce(m, sec): boolean             pre-tick "Once" in the editor
  * }
  */
 export function createMonthView(root, cfg) {
@@ -284,11 +391,6 @@ export function createMonthView(root, cfg) {
     const s = store.getState();
     const b = cfg.bounds();
     const win = E.windowFor(viewStart);
-    const readOnly = cfg.readOnly(selected);
-    const totals = E.monthTotals(s.lines, selected);
-    const prevMonth = E.addMonths(selected, -12);
-    const prev = E.monthTotals(s.lines, prevMonth);
-    const rows = section => E.monthLines(s.lines, section, selected);
 
     const tabs = win.map(m => `
       <button type="button" class="mv-tab${m === selected ? ' mv-tab--active' : ''}${m === s.today ? ' mv-tab--current' : ''}"
@@ -297,18 +399,41 @@ export function createMonthView(root, cfg) {
         <span class="mv-tab__y">${E.yearOf(m)}</span>
       </button>`).join('');
 
+    const head = `
+      <div class="mv-strip">
+        <button type="button" class="mv-arrow" data-dir="-1" aria-label="${esc(t('month.prev'))}" ${viewStart <= b.min ? 'disabled' : ''}>‹</button>
+        <div class="mv-tabs">${tabs}</div>
+        <button type="button" class="mv-arrow" data-dir="1" aria-label="${esc(t('month.next'))}" ${viewStart >= b.maxStart ? 'disabled' : ''}>›</button>
+      </div>
+
+      <div class="mv-title">
+        <span>${esc(monthLong(selected))}</span>
+        ${selected === s.today ? `<span class="mv-now">${esc(t('month.thisMonthTag'))}</span>` : ''}
+      </div>`;
+
+    // A month that has not started stays empty — nothing is added ahead of time.
+    if (E.isFutureMonth(selected, s.today)) {
+      root.innerHTML = `
+        <div class="mv">
+          ${head}
+          <div class="card mv-notice">
+            <div class="mv-notice__icon" aria-hidden="true">🗓️</div>
+            <div class="mv-notice__title">${esc(t('month.notStarted'))}</div>
+            <p>${esc(t('month.notStartedText', { date: dateLong(selected, 1) }))}</p>
+          </div>
+        </div>`;
+      return;
+    }
+
+    const readOnly = cfg.readOnly(selected);
+    const totals = E.monthTotals(s.lines, selected);
+    const prevMonth = E.addMonths(selected, -12);
+    const prev = E.monthTotals(s.lines, prevMonth);
+    const rows = section => E.monthLines(s.lines, section, selected);
+
     root.innerHTML = `
       <div class="mv">
-        <div class="mv-strip">
-          <button type="button" class="mv-arrow" data-dir="-1" aria-label="${esc(t('month.prev'))}" ${viewStart <= b.min ? 'disabled' : ''}>‹</button>
-          <div class="mv-tabs">${tabs}</div>
-          <button type="button" class="mv-arrow" data-dir="1" aria-label="${esc(t('month.next'))}" ${viewStart >= b.maxStart ? 'disabled' : ''}>›</button>
-        </div>
-
-        <div class="mv-title">
-          <span>${esc(monthLong(selected))}</span>
-          ${selected === s.today ? `<span class="mv-now">${esc(t('month.thisMonthTag'))}</span>` : ''}
-        </div>
+        ${head}
 
         <div class="mv-grid">
           <div class="mv-col">
@@ -318,6 +443,7 @@ export function createMonthView(root, cfg) {
           <div class="mv-col">
             ${blockHTML('fixed', rows('fixed'), totals.fixed, readOnly)}
             ${blockHTML('variable', rows('variable'), totals.variable, readOnly)}
+            ${blockHTML('commission', rows('commission'), totals.commission, readOnly)}
           </div>
         </div>
 
@@ -340,13 +466,20 @@ export function createMonthView(root, cfg) {
       render();
       return;
     }
-    if (cfg.readOnly(selected)) return;
+    if (cfg.readOnly(selected) || E.isFutureMonth(selected, store.getState().today)) return;
 
-    const base = { month: selected, defaultOnce: cfg.defaultOnce(selected) };
     if (el.dataset.add) {
-      openLineEditor({ ...base, mode: 'add', section: el.dataset.add });
+      openLineEditor({
+        mode: 'add', section: el.dataset.add, month: selected,
+        defaultOnce: cfg.defaultOnce(selected, el.dataset.add),
+      });
     } else if (el.dataset.edit) {
-      openLineEditor({ ...base, mode: 'edit', lineId: el.dataset.edit });
+      const line = store.getState().lines.find(l => l.id === el.dataset.edit);
+      if (!line) return;
+      openLineEditor({
+        mode: 'edit', lineId: line.id, month: selected,
+        defaultOnce: cfg.defaultOnce(selected, line.section),
+      });
     } else if (el.dataset.check) {
       const done = el.getAttribute('aria-pressed') !== 'true';
       store.setChecked(el.dataset.check, selected, done).catch(() => showToast(t('line.toastFailed'), 'error'));
@@ -388,6 +521,9 @@ export function initPlanner(root) {
       const s = store.getState();
       return E.isMonthLocked(m, s.today, s.unlockedYears);
     },
-    defaultOnce: m => E.isYearClosed(E.yearOf(m), store.getState().today),
+    // Variable + Bank Commission lines are mostly one-offs → "Once" pre-ticked.
+    // Corrections in a closed year also default to "Once".
+    defaultOnce: (m, section) =>
+      E.ONCE_BY_DEFAULT.includes(section) || E.isYearClosed(E.yearOf(m), store.getState().today),
   });
 }

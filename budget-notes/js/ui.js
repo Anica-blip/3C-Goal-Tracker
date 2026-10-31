@@ -52,3 +52,14 @@ export function monthShort(key) {  // "Oct"
 export function monthName(key) {   // "October"
   return new Intl.DateTimeFormat(getLocale(), { timeZone: 'UTC', month: 'long' }).format(monthDate(key));
 }
+
+export function dateLong(key, day = 1) {   // "1 November 2026"
+  const [y, m] = key.split('-').map(Number);
+  return new Intl.DateTimeFormat(getLocale(), { timeZone: 'UTC', day: 'numeric', month: 'long', year: 'numeric' })
+    .format(new Date(Date.UTC(y, m - 1, day)));
+}
+
+/** "05" — the day badge text */
+export function dayText(day) {
+  return String(day).padStart(2, '0');
+}

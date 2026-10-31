@@ -22,7 +22,8 @@ export function initSummary(root) {
     if (year === null || !years.includes(year)) year = E.yearOf(s.today);
     const idx = years.indexOf(year);
 
-    const cur = E.yearTotals(s.lines, year);
+    // months that have not started stay blank — nothing is added ahead of time
+    const cur = E.yearTotals(s.lines, year, year === E.yearOf(s.today) ? s.today : null);
     const prev = E.yearTotals(s.lines, year - 1);
     const dash = `<span class="mv-dash">${esc(t('year.none'))}</span>`;
     const cell = (tt, key) => (tt.hasFigures ? money(tt[key]) : dash);
@@ -36,6 +37,7 @@ export function initSummary(root) {
         <td>${cell(m, 'income')}</td>
         <td>${cell(m, 'fixed')}</td>
         <td>${cell(m, 'variable')}</td>
+        <td>${cell(m, 'commission')}</td>
         <td>${cell(m, 'savings')}</td>
         <td>${left(m)}</td>
       </tr>`).join('');
@@ -46,6 +48,7 @@ export function initSummary(root) {
         <td>${cell(tt, 'income')}</td>
         <td>${cell(tt, 'fixed')}</td>
         <td>${cell(tt, 'variable')}</td>
+        <td>${cell(tt, 'commission')}</td>
         <td>${cell(tt, 'savings')}</td>
         <td>${left(tt)}</td>
       </tr>`;
@@ -65,6 +68,7 @@ export function initSummary(root) {
                 <th scope="col">${esc(t('year.income'))}</th>
                 <th scope="col">${esc(t('year.fixed'))}</th>
                 <th scope="col">${esc(t('year.variable'))}</th>
+                <th scope="col">${esc(t('year.commission'))}</th>
                 <th scope="col">${esc(t('year.savings'))}</th>
                 <th scope="col">${esc(t('year.left'))}</th>
               </tr>

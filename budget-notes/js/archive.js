@@ -84,8 +84,10 @@ export function initArchive(root) {
         const s = store.getState();
         return E.isMonthLocked(m, s.today, s.unlockedYears);
       },
-      // corrections in a closed year default to "Once" so later years stay untouched
-      defaultOnce: m => E.isYearClosed(E.yearOf(m), store.getState().today),
+      // Variable + Bank Commission are mostly one-offs; corrections in a closed year
+      // also default to "Once" so later years stay untouched
+      defaultOnce: (m, section) =>
+        E.ONCE_BY_DEFAULT.includes(section) || E.isYearClosed(E.yearOf(m), store.getState().today),
     });
   }
 

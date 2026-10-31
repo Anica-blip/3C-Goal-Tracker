@@ -32,6 +32,11 @@ export function getState() {
   return state;
 }
 
+/** Re-draw every view (used when the language changes). */
+export function refresh() {
+  emit();
+}
+
 async function reload() {
   state.lines = await db.getAllLines();
   state.unlockedYears = await db.getMeta('unlockedYears', []);
@@ -72,6 +77,7 @@ export function refreshToday() {
 
 // ── Persist an engine result, then tell the views ──────────
 async function persist(result) {
+  if (result.error) return result;   // refused by the engine — nothing to save
   try {
     if (result.changed && result.changed.length) await db.putLines(result.changed);
     if (result.removed && result.removed.length) await db.deleteLines(result.removed);
@@ -85,12 +91,17 @@ async function persist(result) {
 }
 
 // ── Changes (all take the month being viewed) ──────────────
-export function addLine(section, month, label, amount, once) {
-  return persist(E.addLine(state.lines, { section, month, label, amount, once }));
+/** dates = { start:{day,month}|null, end:{day,month}|null } */
+export function addLine(section, month, label, amount, once, dates = {}) {
+  return persist(E.addLine(state.lines, {
+    section, month, label, amount, once,
+    start: dates.start || null, end: dates.end || null,
+  }));
 }
 
-export function editLine(id, month, patch, once) {
-  return persist(E.editLine(state.lines, id, month, patch, once));
+/** patch = { label, amount, day? }, dates = { start, end, endChanged } (Forward edits only) */
+export function updateLine(id, month, patch, once, dates = null) {
+  return persist(E.updateLine(state.lines, id, month, patch, once, dates));
 }
 
 export function deleteLine(id, month, once) {
