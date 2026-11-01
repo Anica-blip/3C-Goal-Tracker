@@ -93,6 +93,43 @@
     }
     .lang-option:hover  { background: var(--bg-glass); color: var(--text-primary); }
     .lang-option.active { color: var(--cyan); background: var(--cyan-subtle); }
+
+    /* ── Invitation links to the sister apps (BUDGET Notes, DIARY Notes) ──
+       Quiet, transparent, no border: an invitation, not a call to action. */
+    .top-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-top: 8px;
+      margin-bottom: 8px;
+    }
+    .top-row .ts { flex: 1; min-width: 0; }
+    .invite-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      flex-shrink: 0;
+      padding: 5px 14px;
+      border: none;
+      border-radius: 20px;
+      background: rgba(0, 229, 212, 0.07);
+      color: var(--cyan-dim);
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+      white-space: nowrap;
+      text-decoration: none;
+      transition: background var(--transition), color var(--transition);
+    }
+    .invite-link:hover,
+    .invite-link:focus-visible {
+      background: rgba(0, 229, 212, 0.16);
+      color: var(--text-primary);
+      outline: none;
+    }
+    .invite-link__arrow { font-size: 0.78rem; opacity: 0.7; }
   </style>
 </head>
 <body>
@@ -226,7 +263,10 @@
 
       <!-- ── GOALS ──────────────────────────────────── -->
       <section id="section-goals" class="app-section active">
-        <div id="ts-goals" style="font-size:0.68rem; font-weight:600; color:var(--text-muted); letter-spacing:0.07em; text-transform:uppercase; margin-bottom:8px;"></div>
+        <div class="top-row">
+          <div id="ts-goals" class="ts" style="font-size:0.68rem; font-weight:600; color:var(--text-muted); letter-spacing:0.07em; text-transform:uppercase;"></div>
+          <a class="invite-link" href="https://anica-blip.github.io/3C-Goal-Tracker/budget-notes/index.html" target="_blank" rel="noopener">BUDGET Notes <span class="invite-link__arrow" aria-hidden="true">↗</span></a>
+        </div>
         <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; flex-wrap:wrap; gap:10px;">
           <div>
             <div data-i18n="goals.title" class="section__title">Goals</div>
@@ -255,7 +295,10 @@
 
       <!-- ── MATRIX ─────────────────────────────────── -->
       <section id="section-matrix" class="app-section">
-        <div id="ts-matrix" style="font-size:0.68rem; font-weight:600; color:var(--text-muted); letter-spacing:0.07em; text-transform:uppercase; margin-bottom:8px;"></div>
+        <div class="top-row">
+          <div id="ts-matrix" class="ts" style="font-size:0.68rem; font-weight:600; color:var(--text-muted); letter-spacing:0.07em; text-transform:uppercase;"></div>
+          <a class="invite-link" href="https://anica-blip.github.io/3C-Goal-Tracker/diary-notes/index.html" target="_blank" rel="noopener">DIARY Notes <span class="invite-link__arrow" aria-hidden="true">↗</span></a>
+        </div>
         <div data-i18n="matrix.title" class="section__title" style="margin-bottom:4px;">Eisenhower Matrix</div>
         <p data-i18n="matrix.subtitle" style="font-size:0.82rem; margin-bottom:16px;">
           Decide before you react. Drag tasks between quadrants.
