@@ -472,3 +472,80 @@ input[type="time"]:focus {
   .rt-b { width: 36px; height: 36px; }
   .rt-scale { gap: 5px; }
 }
+
+/* ── Renewals (cards, subscriptions, insurance) ──────────── */
+.rn { margin-top: 26px; }
+.rn-block { padding: 16px; }
+.rn-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 4px; }
+.rn-head .section__title { margin-bottom: 0; }
+.rn-manage { padding: 7px 12px; font-size: 0.76rem; flex-shrink: 0; }
+.rn-sub { margin: 4px 0 12px; font-size: 0.78rem; }
+.rn-none { margin: 0 0 6px; font-size: 0.86rem; color: var(--text-muted); }
+.rn-rows { display: flex; flex-direction: column; gap: 10px; margin-bottom: 8px; }
+.rn-row {
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--bg-glass);
+}
+.rn-row.is-soon { border-color: rgba(251, 191, 36, 0.55); background: rgba(251, 191, 36, 0.07); }
+.rn-row.is-late { border-color: rgba(239, 68, 68, 0.6); background: rgba(239, 68, 68, 0.09); }
+.rn-top { display: flex; align-items: center; gap: 8px; }
+.rn-name {
+  flex: 1;
+  min-width: 0;
+  padding: 7px 8px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 8px;
+}
+.rn-name:hover { border-color: var(--border); }
+.rn-name:focus { border-color: var(--purple-mid); background: rgba(124, 58, 237, 0.08); }
+.rn-meta, .rn-renew, .rn-add__row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 6px; }
+.rn-meta__label { font-size: 0.7rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-muted); }
+.rn-row select, .rn-add select { width: auto; min-width: 0; padding: 7px 10px; font-size: 0.85rem; }
+.rn-badge {
+  margin-left: auto;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 0.74rem;
+  font-weight: 800;
+  white-space: nowrap;
+  background: rgba(251, 191, 36, 0.18);
+  color: #fcd34d;
+}
+.rn-row.is-late .rn-badge { background: rgba(239, 68, 68, 0.2); color: #fca5a5; }
+.rn-renewed { margin-top: 10px; padding: 8px 14px; font-size: 0.82rem; display: inline-flex; align-items: center; gap: 6px; }
+.rn-renewed svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+.rn-renew { margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--border); }
+.rn-renew__buttons { display: flex; gap: 8px; width: 100%; }
+.rn-renew__buttons .btn { padding: 8px 14px; font-size: 0.82rem; }
+.rn-manage-panel { margin-top: 10px; padding-top: 12px; border-top: 1px solid var(--border); }
+.rn-later-title { margin: 0 0 8px; font-size: 0.7rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-muted); }
+.rn-add { margin-top: 6px; }
+.rn-add > input { width: 100%; padding: 9px 12px; font-size: 0.88rem; }
+.rn-add__row .btn { margin-left: auto; padding: 9px 14px; font-size: 0.8rem; }
+.rn-privacy { margin: 10px 0 0; font-size: 0.74rem; line-height: 1.55; color: var(--text-muted); }
+
+/* ── Language selector (same as BUDGET Notes and Dash Notes) ── */
+.lang-option {
+  display: block;
+  width: 100%;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  padding: 9px 14px;
+  text-align: left;
+  font-family: var(--font);
+  letter-spacing: 0.02em;
+  transition: background var(--transition);
+  white-space: nowrap;
+}
+.lang-option:hover  { background: var(--bg-glass); color: var(--text-primary); }
+.lang-option.active { color: var(--cyan); background: var(--cyan-subtle); }
+@media (max-width: 420px) { #lang-btn { padding: 4px 7px !important; } }
