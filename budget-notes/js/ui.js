@@ -46,7 +46,9 @@ export function monthLong(key) {   // "October 2026"
 }
 
 export function monthShort(key) {  // "Oct"
-  return new Intl.DateTimeFormat(getLocale(), { timeZone: 'UTC', month: 'short' }).format(monthDate(key)).replace('.', '');
+  const s = new Intl.DateTimeFormat(getLocale(), { timeZone: 'UTC', month: 'short' }).format(monthDate(key)).replace('.', '');
+  // British English writes "Sept"; the tabs use the three-letter "Sep"
+  return getLocale().startsWith('en') && s === 'Sept' ? 'Sep' : s;
 }
 
 export function monthName(key) {   // "October"
