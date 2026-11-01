@@ -1,130 +1,162 @@
-// store.js — in-memory budget state + persistence + change notifications
-// BUDGET Notes · 3C Thread To Success™
-//
-// Views read from getState() and re-render when subscribe() callbacks fire.
-// Every change goes: engine (logic) → storage (save) → notify views.
+// storage.js — IndexedDB foundation
+// Dash Notes · 3C Thread To Success™
 
-import * as E from './engine.js';
-import * as db from './storage.js';
-import { t } from './i18n.js';
+const DB_NAME    = 'dash-notes';
+const DB_VERSION = 1;
 
-const state = {
-  lines: [],
-  today: E.currentMonthKey(),
-  ready: false,
+const STORES = {
+  GOALS:  'goals',
+  TASKS:  'tasks',
+  NOTES:  'notes',
 };
 
-const listeners = new Set();
-
-export function subscribe(fn) {
-  listeners.add(fn);
-  return () => listeners.delete(fn);
-}
-
-function emit() {
-  listeners.forEach(fn => {
-    try { fn(); } catch (err) { console.error('[budget-notes] view error', err); }
+// ── Open DB ────────────────────────────────────────────────
+function openDB() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(DB_NAME, DB_VERSION);
+    req.onupgradeneeded = (e) => {
+      const db = e.target.result;
+      if (!db.objectStoreNames.contains(STORES.GOALS))
+        db.createObjectStore(STORES.GOALS, { keyPath: 'id' });
+      if (!db.objectStoreNames.contains(STORES.TASKS))
+        db.createObjectStore(STORES.TASKS, { keyPath: 'id' });
+      if (!db.objectStoreNames.contains(STORES.NOTES))
+        db.createObjectStore(STORES.NOTES, { keyPath: 'id' });
+    };
+    req.onsuccess = () => resolve(req.result);
+    req.onerror   = () => reject(req.error);
   });
 }
 
-export function getState() {
-  return state;
+// ── Write helper — waits for tx.oncomplete before resolving ──
+function txWrite(db, storeName, record) {
+  return new Promise((resolve, reject) => {
+    const tx    = db.transaction(storeName, 'readwrite');
+    const store = tx.objectStore(storeName);
+    store.put(record);
+    tx.oncomplete = () => { db.close(); resolve(record); };
+    tx.onerror    = () => { db.close(); reject(tx.error); };
+    tx.onabort    = () => { db.close(); reject(new Error('Transaction aborted')); };
+  });
 }
 
-/** Re-draw every view (used when the language changes). */
-export function refresh() {
-  emit();
+// ── Delete helper ──────────────────────────────────────────
+function txDelete(db, storeName, id) {
+  return new Promise((resolve, reject) => {
+    const tx    = db.transaction(storeName, 'readwrite');
+    const store = tx.objectStore(storeName);
+    store.delete(id);
+    tx.oncomplete = () => { db.close(); resolve(); };
+    tx.onerror    = () => { db.close(); reject(tx.error); };
+  });
 }
 
-async function reload() {
-  state.lines = await db.getAllLines();
+// ── Read helper ────────────────────────────────────────────
+function txRead(db, storeName) {
+  return new Promise((resolve, reject) => {
+    const tx    = db.transaction(storeName, 'readonly');
+    const store = tx.objectStore(storeName);
+    const req   = store.getAll();
+    req.onsuccess = () => { db.close(); resolve(req.result); };
+    req.onerror   = () => { db.close(); reject(req.error); };
+  });
 }
 
-// ── Start-up ───────────────────────────────────────────────
-export async function init() {
-  state.today = E.currentMonthKey();
-  await reload();
-
-  const seeded = await db.getMeta('seeded', false);
-  if (!seeded) {
-    if (state.lines.length === 0) {
-      // First run: income + savings rows apply to every month of this year (amounts at 0)
-      const year = E.yearOf(state.today);
-      const lines = E.seedDefaults(`${year}-01`, {
-        income:  t('seed.income'),
-        savings: t('seed.savings'),
-      });
-      await db.putLines(lines);
-      state.lines = lines;
-    }
-    await db.setMeta('seeded', true);
-  }
-
-  state.ready = true;
-  emit();
+// ── ID generator ───────────────────────────────────────────
+function genId() {
+  return `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
 }
 
-/** Called on a timer / when the tab becomes visible again. Returns true if the Lisbon month changed. */
-export function refreshToday() {
-  const key = E.currentMonthKey();
-  if (key === state.today) return false;
-  state.today = key;
-  emit();
-  return true;
+// ── Goals ──────────────────────────────────────────────────
+async function saveGoal(goal) {
+  const db = await openDB();
+  return txWrite(db, STORES.GOALS, {
+    id:         goal.id         || genId(),
+    title:      goal.title      || '',
+    why:        goal.why        || '',
+    milestones: goal.milestones || [],
+    reflection: goal.reflection || '',
+    progress:   goal.progress   || 0,
+    created:    goal.created    || new Date().toISOString(),
+    updated:    new Date().toISOString(),
+  });
 }
 
-// ── Persist an engine result, then tell the views ──────────
-async function persist(result) {
-  if (result.error) return result;   // refused by the engine — nothing to save
-  try {
-    if (result.changed && result.changed.length) await db.putLines(result.changed);
-    if (result.removed && result.removed.length) await db.deleteLines(result.removed);
-  } catch (err) {
-    await reload();   // memory and disk disagree — trust the disk
-    emit();
-    throw err;
-  }
-  emit();
-  return result;
+async function getGoals() {
+  const db   = await openDB();
+  const data = await txRead(db, STORES.GOALS);
+  return data.sort((a, b) => new Date(b.created) - new Date(a.created));
 }
 
-// ── Changes (all take the month being viewed) ──────────────
-/** dates = { start:{day,month}|null, end:{day,month}|null } */
-export function addLine(section, month, label, amount, once, dates = {}) {
-  return persist(E.addLine(state.lines, {
-    section, month, label, amount, once,
-    start: dates.start || null, end: dates.end || null,
-  }));
+async function deleteGoal(id) {
+  const db = await openDB();
+  return txDelete(db, STORES.GOALS, id);
 }
 
-/** patch = { label, amount, day? }, dates = { start, end, endChanged } (Forward edits only) */
-export function updateLine(id, month, patch, once, dates = null) {
-  return persist(E.updateLine(state.lines, id, month, patch, once, dates));
+// ── Tasks ──────────────────────────────────────────────────
+async function saveTask(task) {
+  const db = await openDB();
+  return txWrite(db, STORES.TASKS, {
+    id:       task.id       || genId(),
+    text:     task.text     || '',
+    quadrant: task.quadrant || 'q1',
+    created:  task.created  || new Date().toISOString(),
+    updated:  new Date().toISOString(),
+  });
 }
 
-export function deleteLine(id, month, once) {
-  return persist(E.deleteLine(state.lines, id, month, once));
+async function getTasks() {
+  const db = await openDB();
+  return txRead(db, STORES.TASKS);
 }
 
-export function duplicateLine(id, month, once) {
-  return persist(E.duplicateLine(state.lines, id, month, once));
+async function deleteTask(id) {
+  const db = await openDB();
+  return txDelete(db, STORES.TASKS, id);
 }
 
-export function setChecked(id, month, done) {
-  return persist(E.setChecked(state.lines, id, month, done));
+// ── Notes ──────────────────────────────────────────────────
+async function saveNote(note) {
+  const db = await openDB();
+  return txWrite(db, STORES.NOTES, {
+    id:      note.id      || genId(),
+    text:    note.text    || '',
+    subject: note.subject || '',
+    type:    note.type    || 'text',
+    created: note.created || new Date().toISOString(),
+  });
 }
 
-// ── Backup / restore ───────────────────────────────────────
-export function exportData() {
-  return db.exportAll();
+async function getNotes() {
+  const db   = await openDB();
+  const data = await txRead(db, STORES.NOTES);
+  return data.sort((a, b) => new Date(b.created) - new Date(a.created));
 }
 
-/** Replaces ALL current data with the backup. Throws 'bad-file' if it is not a Budget Notes backup. */
-export async function restoreData(data) {
-  if (!data || data.app !== 'budget-notes' || !Array.isArray(data.lines)) throw new Error('bad-file');
-  const lines = data.lines.map(E.normaliseLine).filter(Boolean);
-  await db.replaceAll(lines, { seeded: true });
-  await reload();
-  emit();
-  return lines.length;
+async function deleteNote(id) {
+  const db = await openDB();
+  return txDelete(db, STORES.NOTES, id);
 }
+
+// ── Export all ─────────────────────────────────────────────
+async function exportAll() {
+  const [goals, tasks, notes] = await Promise.all([
+    getGoals(), getTasks(), getNotes()
+  ]);
+  return { goals, tasks, notes, exportedAt: new Date().toISOString() };
+}
+
+// ── Import from backup ─────────────────────────────────────
+async function importAll(data) {
+  if (data.goals) for (const g of data.goals) await saveGoal(g);
+  if (data.tasks) for (const t of data.tasks) await saveTask(t);
+  if (data.notes) for (const n of data.notes) await saveNote(n);
+}
+
+export {
+  saveGoal, getGoals, deleteGoal,
+  saveTask, getTasks, deleteTask,
+  saveNote, getNotes, deleteNote,
+  exportAll, importAll,
+  genId,
+};
