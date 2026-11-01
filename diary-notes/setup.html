@@ -19,12 +19,41 @@
         <span style="line-height:1;"><span class="logo-dash">DIARY</span><span class="logo-notes">Notes</span></span>
       </div>
 
+      <div style="display:flex; align-items:center; gap:8px;">
+
+        <!-- ── Language selector ───────────────────────── -->
+        <div id="lang-selector" style="position:relative;">
+          <button id="lang-btn" style="
+            background:none; border:1px solid rgba(255,255,255,0.12); cursor:pointer;
+            color:var(--text-muted); padding:4px 7px; border-radius:6px;
+            display:flex; align-items:center; gap:3px;
+            transition:all var(--transition);"
+            aria-label="Language"
+            onmouseover="this.style.borderColor='rgba(0,229,212,0.7)'"
+            onmouseout="this.style.borderColor='rgba(255,255,255,0.12)'">
+            <span id="lang-flag" style="font-size:0.95rem; line-height:1;">🇬🇧</span>
+            <span style="font-size:0.5rem; opacity:0.5;">▾</span>
+          </button>
+          <div id="lang-dropdown" style="
+            display:none; position:absolute; right:0; top:calc(100% + 6px);
+            background:var(--bg-card); border:1px solid var(--border-strong);
+            border-radius:var(--radius-md); overflow:hidden; z-index:300;
+            box-shadow:0 8px 28px rgba(0,0,0,0.5); min-width:90px;">
+            <button class="lang-option" data-lang="en" data-flag="🇬🇧" data-code="EN">🇬🇧 EN</button>
+            <button class="lang-option" data-lang="fr" data-flag="🇫🇷" data-code="FR">🇫🇷 FR</button>
+            <button class="lang-option" data-lang="de" data-flag="🇩🇪" data-code="DE">🇩🇪 DE</button>
+            <button class="lang-option" data-lang="el" data-flag="🇬🇷" data-code="EL">🇬🇷 EL</button>
+            <button class="lang-option" data-lang="pt" data-flag="🇵🇹" data-code="PT">🇵🇹 PT</button>
+          </div>
+        </div>
+
       <a href="index.html"
         data-i18n="setup.leaveBtn"
         style="font-size:0.78rem; font-weight:700; letter-spacing:0.06em;
           text-transform:uppercase; color:var(--text-muted); text-decoration:none;">
         Leave
       </a>
+      </div>
     </div>
   </nav>
 
@@ -42,6 +71,12 @@
       <div class="card" style="margin-bottom:16px;">
         <div data-i18n="setup.plannerTitle" class="section__title" style="margin-bottom:12px;">Day Planner</div>
         <p data-i18n="setup.plannerText"
+          style="font-size:0.88rem; color:var(--text-secondary); line-height:1.7; margin-bottom:0;"></p>
+      </div>
+
+      <div class="card" style="margin-bottom:16px;">
+        <div data-i18n="setup.renewalsTitle" class="section__title" style="margin-bottom:12px;">Renewals</div>
+        <p data-i18n="setup.renewalsText"
           style="font-size:0.88rem; color:var(--text-secondary); line-height:1.7; margin-bottom:0;"></p>
       </div>
 
@@ -103,10 +138,37 @@
   </main>
 
   <script type="module">
-    import { initI18n } from './js/i18n.js';
+    import { initI18n, setLanguage, getCurrentLang, getLangMeta } from './js/i18n.js';
 
     // ── Apply language on load (also renders Q&A) ──
     initI18n();
+
+    // ── Language selector UI ───────────────────────────
+    const langBtn      = document.getElementById('lang-btn');
+    const langDropdown = document.getElementById('lang-dropdown');
+    const langFlagEl   = document.getElementById('lang-flag');
+
+    function updateLangBtn() {
+      langFlagEl.textContent = getLangMeta().flag;
+      document.querySelectorAll('.lang-option').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.lang === getCurrentLang());
+      });
+    }
+    updateLangBtn();
+
+    langBtn?.addEventListener('click', e => {
+      e.stopPropagation();
+      langDropdown.style.display = langDropdown.style.display === 'block' ? 'none' : 'block';
+    });
+    document.addEventListener('click', () => { langDropdown.style.display = 'none'; });
+    langDropdown?.addEventListener('click', e => e.stopPropagation());
+    document.querySelectorAll('.lang-option').forEach(btn => {
+      btn.addEventListener('click', () => {
+        setLanguage(btn.dataset.lang);
+        langDropdown.style.display = 'none';
+        updateLangBtn();
+      });
+    });
 
     // ── Q&A panel open / close ─────────────────────────
     const qaPanel = document.getElementById('qa-panel');

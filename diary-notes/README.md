@@ -38,10 +38,10 @@ diary-notes/
     ├── engine.js     pure logic: Lisbon dates, calendar grid, time order, data repair
     ├── storage.js    IndexedDB — the ONLY file that knows where data lives
     ├── store.js      in-memory state, the chosen day, saving, change notifications
-    ├── i18n.js       all text (English now; FR / DE / EL / PT can be added later)
+    ├── i18n.js       all text: English, French, German, Greek, Portuguese (language dropdown in the top bar)
     ├── ui.js         escaping, toast, date formatting
     ├── datebar.js    the calendar bar shared by the first three tabs
-    ├── planner.js    Day Planner entries + Reminder (Work / Personal)
+    ├── planner.js    Day Planner entries + Renewals + Reminder (Work / Personal)
     ├── journal.js    your thoughts + 1 to 5 ratings (editable list)
     ├── selfcare.js   six blocks of bullet points
     └── backup.js     share a day, download backup, restore
@@ -52,7 +52,7 @@ Shared with the other apps (unchanged): `../css/style.css`, `../assets/favicon.p
 ### How it works
 
 - One calendar bar (three month tabs, a Monday-first month grid) picks the day for Day Planner, Journal and Self-Care. The diary runs from January 2026; future days are open for planning.
-- **Day Planner:** entries in time order, each with a done box, a time badge, a title and a note or a to-do list. Edit, duplicate, save and delete on every title. Work and Personal reminders sit underneath.
+- **Day Planner:** entries in time order, each with a done box, a time badge, a title and a note or a to-do list. Edit, duplicate, save and delete on every title. **Renewals** (cards, subscriptions, insurance: a nickname and an expiry month, never card numbers) sit above the reminders and show from 30 days before the end of the expiry month until marked Renewed; Work and Personal reminders sit underneath.
 - **Journal:** your own thoughts (saved automatically), then a 1 to 5 rating for each habit on an editable list. Ratings are stored per day and per habit, ready for a monthly self-regulation page.
 - **Self-Care:** Affirmation, Reward, Gratitude, Fun, Health and Sleep, each a bullet list for the day.
 - Times and "today" follow Europe/Lisbon. Everything is stored on the device (IndexedDB). Swap `js/storage.js` to move to Cloudflare later.

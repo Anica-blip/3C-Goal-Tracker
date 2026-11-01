@@ -5,7 +5,7 @@
 //
 // Updating the app: just upload the new files. Bumping CACHE is optional but harmless.
 
-const CACHE = 'diary-notes-v1';
+const CACHE = 'diary-notes-v2';
 
 const ASSETS = [
   './',
