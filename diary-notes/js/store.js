@@ -15,6 +15,7 @@ const today0 = E.todayISO();
 const state = {
   entries: [],
   reminders: [],
+  renewals: [],
   journal: [],
   ratings: [],
   categories: [],
@@ -175,6 +176,32 @@ export async function deleteReminder(id) {
   if (i === -1) return;
   state.reminders.splice(i, 1);
   await write(() => db.remove('reminders', id));
+}
+
+// ── Renewals (not tied to a day) ───────────────────────────
+/** fields = { name, expiry:'YYYY-MM' } */
+export async function addRenewal({ name, expiry }) {
+  const seq = state.renewals.length ? Math.max(...state.renewals.map(r => r.seq)) + 10 : 10;
+  const rec = E.makeRenewal({ name, expiry, seq });
+  state.renewals.push(rec);
+  await write(() => db.put('renewals', rec));
+  return rec;
+}
+
+/** patch = { name } and/or { expiry }. Renewing a card = giving it its new expiry month. */
+export async function updateRenewal(id, patch, { quiet = false } = {}) {
+  const rec = byId(state.renewals, id);
+  if (!rec) return;
+  if ('name' in patch) rec.name = String(patch.name).trim();
+  if ('expiry' in patch && E.isValidMonth(patch.expiry)) rec.expiry = patch.expiry;
+  await write(() => db.put('renewals', rec), quiet);
+}
+
+export async function deleteRenewal(id) {
+  const i = state.renewals.findIndex(r => r.id === id);
+  if (i === -1) return;
+  state.renewals.splice(i, 1);
+  await write(() => db.remove('renewals', id));
 }
 
 // ── Journal text (one per day) ─────────────────────────────

@@ -44,7 +44,16 @@ export function monthShort(key) {  // "Nov"
   return getLocale().startsWith('en') && s === 'Sept' ? 'Sep' : s;
 }
 
-/** Weekday name for column i of a Monday-first week: 0 → "Mon". */
+/** Weekday name for column i of a Monday-first week: 0 → "Mon". Always at most three letters
+ *  (Portuguese "short" is the full word, so it is cut to "seg", "ter" … ). */
 export function weekdayShort(i) {
-  return new Intl.DateTimeFormat(getLocale(), { timeZone: 'UTC', weekday: 'short' }).format(new Date(Date.UTC(2024, 0, 1 + i)));
+  const s = new Intl.DateTimeFormat(getLocale(), { timeZone: 'UTC', weekday: 'short' }).format(new Date(Date.UTC(2024, 0, 1 + i))).replace('.', '');
+  return s.length > 3 ? s.slice(0, 3) : s;
+}
+
+/** Month name for a month number 1–12, with a capital letter: "November" / "Novembre". */
+export function monthName(m) {
+  const loc = getLocale();
+  const n = new Intl.DateTimeFormat(loc, { timeZone: 'UTC', month: 'long' }).format(new Date(Date.UTC(2024, m - 1, 1)));
+  return n.charAt(0).toLocaleUpperCase(loc) + n.slice(1);
 }

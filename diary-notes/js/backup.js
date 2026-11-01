@@ -4,7 +4,7 @@
 import * as E from './engine.js';
 import * as store from './store.js';
 import { t, getLocale } from './i18n.js';
-import { dayLong, showToast } from './ui.js';
+import { dayLong, monthLong, showToast } from './ui.js';
 
 // ── Readable text version of the day being viewed ──────────
 function formatAsText() {
@@ -26,6 +26,15 @@ function formatAsText() {
       if (e.kind === 'todo') e.items.forEach(i => lines.push(`     ${i.done ? '☑' : '☐'} ${i.text}`));
       else if (e.text.trim()) e.text.trim().split('\n').forEach(l => lines.push(`     ${l}`));
     });
+  }
+
+  // Renewals showing on this day
+  const due = E.dueRenewals(s.renewals, day);
+  if (due.length) {
+    lines.push('');
+    lines.push(t('renewals.title').toUpperCase());
+    lines.push('-'.repeat(20));
+    due.forEach(r => lines.push(`  ${r.name} — ${monthLong(r.expiry)}`));
   }
 
   // Reminders

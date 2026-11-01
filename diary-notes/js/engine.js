@@ -131,6 +131,61 @@ export function clampDay(iso, todayDay) {
   return iso;
 }
 
+// ── Day arithmetic ─────────────────────────────────────────
+const dayMs = iso => { const { year, month, day } = parseDay(iso); return Date.UTC(year, month - 1, day); };
+
+/** A day moved forward (or back, with a negative n) by whole days. */
+export function addDays(iso, n) {
+  const d = new Date(dayMs(iso) + n * 86400000);
+  return `${d.getUTCFullYear()}-${pad2(d.getUTCMonth() + 1)}-${pad2(d.getUTCDate())}`;
+}
+
+/** Whole days from a to b (positive when b is later). */
+export function daysBetween(a, b) {
+  return Math.round((dayMs(b) - dayMs(a)) / 86400000);
+}
+
+// ── Renewals (card expiry, subscriptions, insurance …) ─────
+// A renewal is { id, name, expiry:'YYYY-MM', seq }. It is not tied to one day: it appears on
+// the planner from RENEWAL_WINDOW_DAYS before the END of its expiry month, and stays there
+// (marked as expired) until it is renewed or deleted. NEVER store card numbers here.
+export const RENEWAL_WINDOW_DAYS = 30;
+
+export function isValidMonth(key) {
+  return typeof key === 'string' && /^\d{4}-(0[1-9]|1[0-2])$/.test(key);
+}
+
+/** The last day of the expiry month: the day the card or plan runs out. */
+export function renewalLastDay(expiry) {
+  return dayISO(expiry, daysInMonth(expiry));
+}
+
+/** The first day the renewal shows on the planner. */
+export function renewalWindowStart(expiry) {
+  return addDays(renewalLastDay(expiry), -RENEWAL_WINDOW_DAYS);
+}
+
+/** Days left from `today` to the end of the expiry month (negative once expired). */
+export function renewalDaysLeft(renewal, today) {
+  return daysBetween(today, renewalLastDay(renewal.expiry));
+}
+
+const byExpiry = (a, b) => (a.expiry !== b.expiry ? (a.expiry < b.expiry ? -1 : 1) : (a.seq - b.seq) || (a.id < b.id ? -1 : 1));
+
+/** Renewals that should show on the planner when looking at `day`. */
+export function dueRenewals(list, day) {
+  return list.filter(r => day >= renewalWindowStart(r.expiry)).sort(byExpiry);
+}
+
+/** Renewals still waiting for their window (kept in the Manage list). */
+export function laterRenewals(list, day) {
+  return list.filter(r => day < renewalWindowStart(r.expiry)).sort(byExpiry);
+}
+
+export function makeRenewal({ name, expiry, seq = 0 }) {
+  return { id: newId(), name: String(name).trim(), expiry, seq };
+}
+
 // ── Times ──────────────────────────────────────────────────
 export function isValidTime(str) {
   return /^([01]\d|2[0-3]):[0-5]\d$/.test(str);
@@ -223,6 +278,11 @@ function normaliseReminder(r) {
   return { id: r.id, date: r.date, group: r.group, text: str(r.text, 500), done: !!r.done, seq: Number.isFinite(r.seq) ? r.seq : 0 };
 }
 
+function normaliseRenewal(r) {
+  if (!r || typeof r.id !== 'string' || !isValidMonth(r.expiry) || !str(r.name, 200).trim()) return null;
+  return { id: r.id, name: str(r.name, 200).trim(), expiry: r.expiry, seq: Number.isFinite(r.seq) ? r.seq : 0 };
+}
+
 function normaliseJournal(r) {
   if (!r || !isValidDay(r.date)) return null;
   return { date: r.date, text: str(r.text, MAX_TEXT), updated: str(r.updated, 40) || nowISO() };
@@ -250,6 +310,7 @@ export function normaliseData(data) {
   return {
     entries:    list(data.entries, normaliseEntry),
     reminders:  list(data.reminders, normaliseReminder),
+    renewals:   list(data.renewals, normaliseRenewal),
     journal:    list(data.journal, normaliseJournal),
     ratings:    list(data.ratings, normaliseRating),
     categories: list(data.categories, normaliseCategory),

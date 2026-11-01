@@ -167,6 +167,9 @@ export function initJournal(root) {
     if (e.key === 'Enter' && e.target.matches('[data-cat-new]')) { e.preventDefault(); addCat(); }
   });
 
+  // a new language: save what is typed, then draw the page again in that language
+  window.addEventListener('diary-lang-changed', () => { flush(); renderedDay = null; render(); });
+
   // don't lose the last words when the tab is closed or hidden
   window.addEventListener('pagehide', flush);
   document.addEventListener('visibilitychange', () => { if (document.hidden) flush(); });

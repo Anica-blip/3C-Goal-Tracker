@@ -1,4 +1,4 @@
-// planner.js — Day Planner (entries in time order) + Reminder (Work / Personal)
+// planner.js — Day Planner (entries in time order) + Renewals + Reminder (Work / Personal)
 // DIARY Notes · 3C Thread To Success™
 //
 // Each entry: a done box, a time badge, a title, and a note or a to-do list.
@@ -7,7 +7,7 @@
 import * as E from './engine.js';
 import * as store from './store.js';
 import { t } from './i18n.js';
-import { esc, showToast } from './ui.js';
+import { esc, showToast, monthName } from './ui.js';
 
 const svg = path => `<svg viewBox="0 0 24 24" aria-hidden="true">${path}</svg>`;
 const ICON = {
@@ -21,6 +21,8 @@ const ICON = {
 
 export function initPlanner(root) {
   let draft = null;          // the entry being written or edited: { id:'new'|entryId, date, title, time, kind, text, items }
+  let rnOpen = false;        // the "Manage renewals" panel is open
+  let rnRenewing = null;     // id of the renewal whose new expiry month is being chosen
   let focus = null;          // what to focus after the next draw: 'title' | 'item' | 'text' | { reminder:id } | { group }
 
   const blankDraft = day => {
@@ -127,6 +129,94 @@ export function initPlanner(root) {
       </section>`;
   }
 
+  // ═════════════════════ renewals ═════════════════════
+  const monthOptions = sel => Array.from({ length: 12 }, (_, i) =>
+    `<option value="${String(i + 1).padStart(2, '0')}"${i + 1 === sel ? ' selected' : ''}>${esc(monthName(i + 1))}</option>`).join('');
+
+  function yearOptions(sel) {
+    const first = Math.min(E.yearOf(E.MIN_MONTH), sel);
+    const last = Math.max(E.yearOf(store.getState().today) + 15, sel);
+    let out = '';
+    for (let y = first; y <= last; y++) out += `<option value="${y}"${y === sel ? ' selected' : ''}>${y}</option>`;
+    return out;
+  }
+
+  function daysLeftText(left) {
+    if (left < 0) return t('renewals.expired');
+    if (left === 0) return t('renewals.lastDay');
+    if (left === 1) return t('renewals.dayLeft');
+    return t('renewals.daysLeft', { n: left });
+  }
+
+  function renewalRow(r, due) {
+    const s = store.getState();
+    const { year, month } = E.parseMonth(r.expiry);
+    const left = E.renewalDaysLeft(r, s.today);
+    const state = !due ? '' : left < 0 ? ' is-late' : ' is-soon';
+    const renewing = rnRenewing === r.id;
+    let nextYear = year + 1, nextMonth = month;
+    return `
+      <div class="rn-row${state}" data-rn-row="${r.id}">
+        <div class="rn-top">
+          <input type="text" class="rn-name" data-rn-name="${r.id}" maxlength="200" value="${esc(r.name)}"
+            aria-label="${esc(t('renewals.nameAria'))}" />
+          <button type="button" class="ic ic--del ic--sm" data-rn-del="${r.id}" aria-label="${esc(t('renewals.deleteAria'))}">${ICON.x}</button>
+        </div>
+        <div class="rn-meta">
+          <span class="rn-meta__label">${esc(t('renewals.expires'))}</span>
+          <select data-rn-month="${r.id}" aria-label="${esc(t('renewals.monthAria'))}">${monthOptions(month)}</select>
+          <select data-rn-year="${r.id}" aria-label="${esc(t('renewals.yearAria'))}">${yearOptions(year)}</select>
+          ${due ? `<span class="rn-badge">${esc(daysLeftText(left))}</span>` : ''}
+        </div>
+        ${due && !renewing ? `<button type="button" class="btn btn--glass rn-renewed" data-rn-renewed="${r.id}">${ICON.check} ${esc(t('renewals.renewedBtn'))}</button>` : ''}
+        ${renewing ? `
+          <div class="rn-renew">
+            <span class="rn-meta__label">${esc(t('renewals.newExpiry'))}</span>
+            <select data-rn-nm aria-label="${esc(t('renewals.monthAria'))}">${monthOptions(nextMonth)}</select>
+            <select data-rn-ny aria-label="${esc(t('renewals.yearAria'))}">${yearOptions(nextYear)}</select>
+            <div class="rn-renew__buttons">
+              <button type="button" class="btn btn--primary" data-rn-confirm="${r.id}">${esc(t('renewals.confirmBtn'))}</button>
+              <button type="button" class="btn btn--ghost" data-rn-cancel>${esc(t('renewals.cancelBtn'))}</button>
+            </div>
+          </div>` : ''}
+      </div>`;
+  }
+
+  function renewalsBlock(day) {
+    const s = store.getState();
+    const due = E.dueRenewals(s.renewals, day);
+    const later = E.laterRenewals(s.renewals, day);
+    const total = s.renewals.length;
+    const open = rnOpen || total === 0;
+    const { year: ty, month: tm } = E.parseMonth(E.monthOfDay(s.today));
+    return `
+      <section class="card rn-block">
+        <div class="rn-head">
+          <div class="section__title">${esc(t('renewals.title'))}</div>
+          ${total ? `<button type="button" class="btn btn--glass rn-manage" data-rn-manage aria-expanded="${open}">${esc(t('renewals.manageBtn', { n: total }))}</button>` : ''}
+        </div>
+        <p class="subtle rn-sub">${esc(t('renewals.subtitle', { days: E.RENEWAL_WINDOW_DAYS }))}</p>
+        ${due.length
+          ? `<div class="rn-rows">${due.map(r => renewalRow(r, true)).join('')}</div>`
+          : `<p class="rn-none">${esc(t(total ? 'renewals.nothingSoon' : 'renewals.none', { days: E.RENEWAL_WINDOW_DAYS }))}</p>`}
+        ${open ? `
+          <div class="rn-manage-panel">
+            ${later.length ? `<div class="rn-later-title">${esc(t('renewals.laterTitle'))}</div>
+              <div class="rn-rows">${later.map(r => renewalRow(r, false)).join('')}</div>` : ''}
+            <div class="rn-add">
+              <div class="rn-later-title">${esc(t('renewals.addTitle'))}</div>
+              <input type="text" data-rn-new-name maxlength="200" autocomplete="off" placeholder="${esc(t('renewals.phName'))}" />
+              <div class="rn-add__row">
+                <select data-rn-add-month aria-label="${esc(t('renewals.monthAria'))}">${monthOptions(tm)}</select>
+                <select data-rn-add-year aria-label="${esc(t('renewals.yearAria'))}">${yearOptions(ty)}</select>
+                <button type="button" class="btn btn--glass" data-rn-add>${esc(t('renewals.addBtn'))}</button>
+              </div>
+              <p class="rn-privacy">${esc(t('renewals.privacy'))}</p>
+            </div>
+          </div>` : ''}
+      </section>`;
+  }
+
   // ═════════════════════ draw ═════════════════════
   function render() {
     const s = store.getState();
@@ -146,6 +236,8 @@ export function initPlanner(root) {
       <p class="subtle">${esc(t('planner.subtitle'))}</p>
       <div class="en-list">${cards.length ? cards.join('') : `<div class="empty">${esc(t('planner.empty'))}</div>`}</div>
 
+      <div class="rn">${renewalsBlock(day)}</div>
+
       <div class="rm">
         <div class="section__title rm-title">${esc(t('reminders.title'))}</div>
         <div class="rm-grid">${reminderBlock(day, 'work')}${reminderBlock(day, 'personal')}</div>
@@ -156,6 +248,7 @@ export function initPlanner(root) {
       if (focus === 'title') el = root.querySelector('[data-f="title"]');
       else if (focus === 'text') el = root.querySelector('[data-f="text"]');
       else if (focus === 'item') el = root.querySelector('[data-new-item]');
+      else if (focus === 'rn-name') el = root.querySelector('[data-rn-new-name]');
       else if (focus.reminder) el = root.querySelector(`[data-rm-text="${focus.reminder}"]`);
       else if (focus.group) el = root.querySelector(`[data-rm-new="${focus.group}"]`);
       if (el) {
@@ -219,8 +312,43 @@ export function initPlanner(root) {
         focus = { reminder: rec.id };
         render();
       }
+
+      // — renewals —
+      else if ('rnManage' in d) { rnOpen = !rnOpen; render(); }
+      else if (d.rnRenewed) { rnRenewing = d.rnRenewed; render(); }
+      else if ('rnCancel' in d) { rnRenewing = null; render(); }
+      else if (d.rnConfirm) {
+        const row = el.closest('.rn-renew');
+        const month = row.querySelector('[data-rn-nm]').value;
+        const year = row.querySelector('[data-rn-ny]').value;
+        rnRenewing = null;
+        await store.updateRenewal(d.rnConfirm, { expiry: `${year}-${month}` });
+        showToast(t('renewals.toastRenewed'));
+      }
+      else if (d.rnDel) {
+        const r = s.renewals.find(x => x.id === d.rnDel);
+        if (r && confirm(t('renewals.confirmDelete', { name: r.name }))) {
+          if (rnRenewing === r.id) rnRenewing = null;
+          await store.deleteRenewal(r.id);
+          showToast(t('renewals.toastDeleted'));
+        }
+      }
+      else if ('rnAdd' in d) await addRenewal();
     } catch (err) { fail(err); }
   });
+
+  async function addRenewal() {
+    const input = root.querySelector('[data-rn-new-name]');
+    const name = input ? input.value.trim() : '';
+    if (!name) { showToast(t('renewals.toastNoName'), 'error'); input?.focus(); return; }
+    const month = root.querySelector('[data-rn-add-month]').value;
+    const year = root.querySelector('[data-rn-add-year]').value;
+    await store.addRenewal({ name, expiry: `${year}-${month}` });
+    rnOpen = true;
+    focus = 'rn-name';
+    showToast(t('renewals.toastAdded'));
+    render();
+  }
 
   function addDraftItem() {
     const input = root.querySelector('[data-new-item]');
@@ -267,8 +395,23 @@ export function initPlanner(root) {
   // text typed into an existing reminder is saved quietly (no redraw)
   root.addEventListener('change', async e => {
     const el = e.target;
-    if (!el.dataset.rmText) return;
     try {
+      if (el.dataset.rnName) {                       // renewal name: saved quietly; blank puts the old name back
+        const r = store.getState().renewals.find(x => x.id === el.dataset.rnName);
+        if (!r) return;
+        if (!el.value.trim()) el.value = r.name;
+        else await store.updateRenewal(r.id, { name: el.value }, { quiet: true });
+        return;
+      }
+      const rid = el.dataset.rnMonth || el.dataset.rnYear;   // renewal expiry month or year changed
+      if (rid) {
+        const row = el.closest('[data-rn-row]');
+        const month = row.querySelector('[data-rn-month]').value;
+        const year = row.querySelector('[data-rn-year]').value;
+        await store.updateRenewal(rid, { expiry: `${year}-${month}` });
+        return;
+      }
+      if (!el.dataset.rmText) return;
       if (!el.value.trim()) await store.deleteReminder(el.dataset.rmText);
       else await store.updateReminder(el.dataset.rmText, { text: el.value }, { quiet: true });
     } catch (err) { fail(err); }
@@ -280,6 +423,8 @@ export function initPlanner(root) {
     try {
       if (el.matches('[data-new-item]')) { e.preventDefault(); addDraftItem(); }
       else if (el.dataset.rmNew) { e.preventDefault(); await addReminder(el.dataset.rmNew); }
+      else if (el.matches('[data-rn-new-name]')) { e.preventDefault(); await addRenewal(); }
+      else if (el.dataset.rnName) { e.preventDefault(); el.blur(); }
       else if (el.dataset.f === 'title') { e.preventDefault(); await saveDraft(); }
       else if (el.dataset.rmText || el.dataset.ei !== undefined) { e.preventDefault(); el.blur(); }
     } catch (err) { fail(err); }

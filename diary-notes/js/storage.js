@@ -5,12 +5,13 @@
 // Cloudflare Worker + D1 later, replace the functions below and nothing else changes.
 
 const DB_NAME    = 'diary-notes';
-const DB_VERSION = 1;
+const DB_VERSION = 2;   // 2: added the renewals store (older diaries upgrade automatically)
 
 // store name → key field
 const STORES = {
   entries:    'id',     // day planner entries (title + note or to-do list + time)
   reminders:  'id',     // Work / Personal reminder lines
+  renewals:   'id',     // Renewals: card expiry, subscriptions, insurance (name + expiry month)
   journal:    'date',   // one journal text per day
   ratings:    'id',     // 1–5 ratings, id = `${date}|${categoryId}`
   categories: 'id',     // the rating list (Eating, Water, …)
@@ -18,7 +19,7 @@ const STORES = {
   meta:       'key',    // seeded flag
 };
 
-export const DATA_STORES = ['entries', 'reminders', 'journal', 'ratings', 'categories', 'selfcare'];
+export const DATA_STORES = ['entries', 'reminders', 'renewals', 'journal', 'ratings', 'categories', 'selfcare'];
 
 // ── Open DB ────────────────────────────────────────────────
 function openDB() {
@@ -93,7 +94,7 @@ export function setMeta(key, value) {
 
 // ── Export / import ────────────────────────────────────────
 export async function exportAll() {
-  const out = { app: 'diary-notes', version: 1, exportedAt: new Date().toISOString() };
+  const out = { app: 'diary-notes', version: 2, exportedAt: new Date().toISOString() };
   for (const name of DATA_STORES) out[name] = await getAll(name);
   return out;
 }
