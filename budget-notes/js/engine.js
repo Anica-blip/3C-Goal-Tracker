@@ -16,6 +16,7 @@
 //               A LATER start date never removes or rewrites existing months.
 // End date    → the last month the line appears in; it is gone from the next month.
 // Months that have not started yet are NOT shown or filled ahead of time (see isFutureMonth).
+// Nothing is ever locked: any month of any year can be edited at any time.
 //
 // Amounts are stored as integer CENTS to avoid floating-point drift.
 // Months are 'YYYY-MM' strings.
@@ -27,12 +28,15 @@
 export const SECTIONS = ['income', 'savings', 'fixed', 'variable', 'commission'];
 
 /** Sections whose lines can carry a date (start / end / day badge). */
-export const DATED_SECTIONS = ['fixed', 'variable', 'commission'];
+export const DATED_SECTIONS = ['income', 'fixed', 'variable', 'commission'];
 
 /** Sections where "Once" is pre-ticked (they are mostly one-offs). */
 export const ONCE_BY_DEFAULT = ['variable', 'commission'];
 
 export const TIMEZONE = 'Europe/Lisbon';
+
+/** Earliest month the planner can show — nothing is ever locked, any year can be filled in. */
+export const MIN_MONTH = '2000-01';
 
 // Money Left = Income − Fixed − Variable − Bank Commission.
 // Set to true to ALSO deduct the Savings & Investments total.
@@ -92,10 +96,9 @@ export function isFutureMonth(month, todayKey) {
   return month > todayKey;
 }
 
-/** Planner: Jan of the current year → the first tab never goes past the current month. */
+/** Planner: any year back to MIN_MONTH; the first tab never goes past the current month. */
 export function plannerBounds(todayKey) {
-  const y = yearOf(todayKey);
-  return { min: `${y}-01`, maxStart: todayKey };
+  return { min: MIN_MONTH, maxStart: todayKey };
 }
 
 /** Archive viewer for one year: Jan → Dec of that year (window never leaves the year). */
@@ -129,15 +132,10 @@ export function formatDate({ day, month }) {
   return `${String(day).padStart(2, '0')}/${String(mm).padStart(2, '0')}/${String(year).slice(2)}`;
 }
 
-// ── Year lock / archive ────────────────────────────────────
-/** A year is closed once the Lisbon calendar has moved past 31 December. */
+// ── Years ──────────────────────────────────────────────────
+/** True once the Lisbon calendar has moved past 31 December of `year` (only used to label it). */
 export function isYearClosed(year, todayKey) {
   return year < yearOf(todayKey);
-}
-
-export function isMonthLocked(month, todayKey, unlockedYears = []) {
-  const y = yearOf(month);
-  return isYearClosed(y, todayKey) && !unlockedYears.includes(y);
 }
 
 /** Years (up to and including the current one) in which at least one line was active. */
@@ -481,6 +479,12 @@ export function setEnd(lines, id, end) {
  * One save from the editor: label/amount/day first, then (Forward only) start and end.
  * Either everything is applied or nothing is.
  *   dates = { start: {day,month}|null, end: {day,month}|null, endChanged: boolean }
+ *
+ * A changed START date means "these values apply from that date":
+ *   - the new start month is where the typed label/amount begin (earlier months fill in,
+ *     later months leave everything before them untouched);
+ *   - if the line is being viewed in a later month, the values are applied there too.
+ * Without a changed start date, the values apply from the month being viewed.
  */
 export function updateLine(lines, id, month, patch, once = false, dates = null) {
   const line = lines.find(l => l.id === id);
@@ -492,11 +496,17 @@ export function updateLine(lines, id, month, patch, once = false, dates = null) 
     r.changed.forEach(l => changed.add(l));
   };
   try {
-    run(editLine(lines, id, month, patch, once));
-    if (!once && dates) {
-      if (dates.start) run(setStart(lines, id, dates.start));
-      if (dates.endChanged) run(setEnd(lines, id, dates.end || null));
+    const first = line.versions[0].from;
+    if (!once && dates && dates.start && dates.start.month !== first) {
+      const s = dates.start.month;
+      run(setStart(lines, id, dates.start));
+      run(editLine(lines, id, s, patch, false));
+      if (month > s) run(editLine(lines, id, month, patch, false));
+    } else {
+      if (!once && dates && dates.start) run(setStart(lines, id, dates.start));   // same month: day only
+      run(editLine(lines, id, month, patch, once));
     }
+    if (!once && dates && dates.endChanged) run(setEnd(lines, id, dates.end || null));
   } catch (err) {
     for (const k of Object.keys(line)) delete line[k];
     Object.assign(line, snapshot);

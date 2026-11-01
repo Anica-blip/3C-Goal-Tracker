@@ -4,6 +4,7 @@
 // createMonthView() is shared: the Planner tab uses it for the rolling months,
 // the Archive tab uses it for one past year. Both read the same data from store.js.
 // Months that have not started yet stay empty — nothing is shown or added ahead of time.
+// Nothing is ever locked: every month of every year can be edited.
 
 import * as E from './engine.js';
 import * as store from './store.js';
@@ -16,10 +17,10 @@ const CHECK_SVG = '<svg viewBox="0 0 24 24"><polyline points="5 12 10 17 19 7"/>
 // ═══════════════════════════════════════════════════════════════
 //  HTML builders
 // ═══════════════════════════════════════════════════════════════
-function rowHTML(r, readOnly) {
+function rowHTML(r) {
   const check = r.section === 'savings'
     ? `<button type="button" class="mv-check${r.done ? ' is-done' : ''}" data-check="${r.id}"
-         aria-pressed="${r.done}" aria-label="${esc(t('line.doneAria'))}" ${readOnly ? 'disabled' : ''}>${CHECK_SVG}</button>`
+         aria-pressed="${r.done}" aria-label="${esc(t('line.doneAria'))}">${CHECK_SVG}</button>`
     : '';
   const amount = r.amount === 0
     ? `<span class="mv-row__amt mv-row__amt--zero">${esc(t('sum.none'))}</span>`
@@ -27,21 +28,19 @@ function rowHTML(r, readOnly) {
   const day = r.dayShown ? `<span class="mv-day">${dayText(r.dayShown)}</span>` : '';
   const badge = r.once ? ` <span class="mv-pill">${esc(t('line.onceBadge'))}</span>` : '';
   const main = `<span class="mv-row__label">${day}${esc(r.label)}${badge}</span>${amount}`;
-  const body = readOnly
-    ? `<div class="mv-row__main">${main}</div>`
-    : `<button type="button" class="mv-row__main" data-edit="${r.id}">${main}</button>`;
+  const body = `<button type="button" class="mv-row__main" data-edit="${r.id}">${main}</button>`;
   return `<div class="mv-row${r.done ? ' mv-row--done' : ''}${check ? ' mv-row--check' : ''}">${check}${body}</div>`;
 }
 
-function blockHTML(section, rows, total, readOnly) {
+function blockHTML(section, rows, total) {
   const rowsHTML = rows.length
-    ? rows.map(r => rowHTML(r, readOnly)).join('')
+    ? rows.map(r => rowHTML(r)).join('')
     : `<div class="mv-empty">${esc(t('block.empty'))}</div>`;
   return `
     <section class="card mv-block" data-section="${section}">
       <div class="mv-block__head">
         <div class="section__title">${esc(t('block.' + section))}</div>
-        ${readOnly ? '' : `<button type="button" class="btn btn--glass mv-add" data-add="${section}">${esc(t('block.add'))}</button>`}
+        <button type="button" class="btn btn--glass mv-add" data-add="${section}">${esc(t('block.add'))}</button>
       </div>
       <div class="mv-rows">${rowsHTML}</div>
       <div class="mv-total"><span>${esc(t('total.' + section))}</span><strong>${money(total)}</strong></div>
@@ -365,11 +364,22 @@ function openLineEditor(ctx) {
 // ═══════════════════════════════════════════════════════════════
 //  Month view
 // ═══════════════════════════════════════════════════════════════
+/** Year dropdown: from 20 years back (never before 2000) up to the current year. */
+function yearBox(selected, todayKey) {
+  const nowYear = E.yearOf(todayKey);
+  const first = Math.max(2000, nowYear - 20);
+  const chosen = E.yearOf(selected);
+  let opts = '';
+  for (let y = nowYear; y >= first; y--) opts += `<option value="${y}"${y === chosen ? ' selected' : ''}>${y}</option>`;
+  return `<label class="mv-year"><span class="sr-only">${esc(t('month.year'))}</span>
+    <select data-year-jump aria-label="${esc(t('month.year'))}">${opts}</select></label>`;
+}
+
 /**
  * cfg = {
  *   bounds():            { min, maxStart }   first month / last allowed first-tab month
  *   initial():           { viewStart, selected }
- *   readOnly(m):         boolean
+ *   yearJump:            boolean            show the year box (Planner only)
  *   defaultOnce(m, sec): boolean             pre-tick "Once" in the editor
  * }
  */
@@ -409,6 +419,7 @@ export function createMonthView(root, cfg) {
       <div class="mv-title">
         <span>${esc(monthLong(selected))}</span>
         ${selected === s.today ? `<span class="mv-now">${esc(t('month.thisMonthTag'))}</span>` : ''}
+        ${cfg.yearJump ? yearBox(selected, s.today) : ''}
       </div>`;
 
     // A month that has not started stays empty — nothing is added ahead of time.
@@ -425,7 +436,6 @@ export function createMonthView(root, cfg) {
       return;
     }
 
-    const readOnly = cfg.readOnly(selected);
     const totals = E.monthTotals(s.lines, selected);
     const prevMonth = E.addMonths(selected, -12);
     const prev = E.monthTotals(s.lines, prevMonth);
@@ -437,13 +447,13 @@ export function createMonthView(root, cfg) {
 
         <div class="mv-grid">
           <div class="mv-col">
-            ${blockHTML('income', rows('income'), totals.income, readOnly)}
-            ${blockHTML('savings', rows('savings'), totals.savings, readOnly)}
+            ${blockHTML('income', rows('income'), totals.income)}
+            ${blockHTML('savings', rows('savings'), totals.savings)}
           </div>
           <div class="mv-col">
-            ${blockHTML('fixed', rows('fixed'), totals.fixed, readOnly)}
-            ${blockHTML('variable', rows('variable'), totals.variable, readOnly)}
-            ${blockHTML('commission', rows('commission'), totals.commission, readOnly)}
+            ${blockHTML('fixed', rows('fixed'), totals.fixed)}
+            ${blockHTML('variable', rows('variable'), totals.variable)}
+            ${blockHTML('commission', rows('commission'), totals.commission)}
           </div>
         </div>
 
@@ -466,7 +476,7 @@ export function createMonthView(root, cfg) {
       render();
       return;
     }
-    if (cfg.readOnly(selected) || E.isFutureMonth(selected, store.getState().today)) return;
+    if (E.isFutureMonth(selected, store.getState().today)) return;
 
     if (el.dataset.add) {
       openLineEditor({
@@ -486,6 +496,17 @@ export function createMonthView(root, cfg) {
     }
   }
 
+  function onChange(e) {
+    const sel = e.target.closest('[data-year-jump]');
+    if (!sel || !root.contains(sel)) return;
+    const b = cfg.bounds();
+    const mm = E.parseMonth(selected).month;
+    const target = E.clampMonth(E.monthKey(Number(sel.value), mm), b.min, b.maxStart);
+    viewStart = target;
+    selected = target;
+    render();
+  }
+
   function reset() {
     const init = cfg.initial();
     viewStart = init.viewStart;
@@ -494,6 +515,7 @@ export function createMonthView(root, cfg) {
   }
 
   root.addEventListener('click', onClick);
+  root.addEventListener('change', onChange);
   const unsubscribe = store.subscribe(render);
   reset();
 
@@ -502,6 +524,7 @@ export function createMonthView(root, cfg) {
     destroy() {
       unsubscribe();
       root.removeEventListener('click', onClick);
+      root.removeEventListener('change', onChange);
       root.innerHTML = '';
     },
   };
@@ -512,18 +535,13 @@ export function createMonthView(root, cfg) {
 // ═══════════════════════════════════════════════════════════════
 export function initPlanner(root) {
   return createMonthView(root, {
+    yearJump: true,
     bounds: () => E.plannerBounds(store.getState().today),
     initial: () => {
       const today = store.getState().today;
       return { viewStart: today, selected: today };
     },
-    readOnly: m => {
-      const s = store.getState();
-      return E.isMonthLocked(m, s.today, s.unlockedYears);
-    },
     // Variable + Bank Commission lines are mostly one-offs → "Once" pre-ticked.
-    // Corrections in a closed year also default to "Once".
-    defaultOnce: (m, section) =>
-      E.ONCE_BY_DEFAULT.includes(section) || E.isYearClosed(E.yearOf(m), store.getState().today),
+    defaultOnce: (m, section) => E.ONCE_BY_DEFAULT.includes(section),
   });
 }

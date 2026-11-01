@@ -1,8 +1,8 @@
-// archive.js — one button per year; closed years are read-only until unlocked
+// archive.js — your years, newest first. Nothing is ever locked.
 // BUDGET Notes · 3C Thread To Success™
 //
-// A year closes automatically once the Lisbon calendar passes 31 December.
-// Opening a year shows its LAST three months (Oct · Nov · Dec) with ‹ › to browse all 12.
+// Open any year to see its LAST three months (Oct · Nov · Dec) with ‹ › to browse all 12.
+// Past years stay fully editable. "Add an earlier year" starts a year before your first one.
 
 import * as E from './engine.js';
 import * as store from './store.js';
@@ -14,51 +14,39 @@ export function initArchive(root) {
   let openYear = null;   // null → list of years
   let view = null;       // month view for the open year
 
-  function statusOf(year) {
-    const s = store.getState();
-    if (!E.isYearClosed(year, s.today)) return 'live';
-    return s.unlockedYears.includes(year) ? 'unlocked' : 'archived';
-  }
+  const isLive = year => year === E.yearOf(store.getState().today);
+  const statusLabel = year => t(isLive(year) ? 'archive.inProgress' : 'archive.pastYear');
 
-  const statusLabel = st => t(st === 'live' ? 'archive.inProgress' : st === 'unlocked' ? 'archive.unlocked' : 'archive.archived');
+  function listedYears() {
+    const s = store.getState();
+    const years = E.yearsWithData(s.lines, s.today).slice().reverse();   // newest first
+    const nowYear = E.yearOf(s.today);
+    if (!years.includes(nowYear)) years.unshift(nowYear);
+    return years;
+  }
 
   // ── Year list ──────────────────────────────────────────
   function renderList() {
-    const s = store.getState();
-    const years = E.yearsWithData(s.lines, s.today).slice().reverse();   // newest first
-    if (!years.includes(E.yearOf(s.today))) years.unshift(E.yearOf(s.today));
+    const years = listedYears();
+    const earliest = Math.min(...years);
 
     root.innerHTML = `
       <div class="section__title">${esc(t('archive.title'))}</div>
       <p class="subtle">${esc(t('archive.subtitle'))}</p>
       <div class="ar-list">
-        ${years.length ? years.map(y => {
-          const st = statusOf(y);
-          return `
-            <button type="button" class="ar-year ar-year--${st}" data-year="${y}" aria-label="${esc(t('archive.openAria', { year: y }))}">
-              <span class="ar-year__num">${y}</span>
-              <span class="ar-year__tag">${esc(statusLabel(st))}</span>
-              <span class="ar-year__go">›</span>
-            </button>`;
-        }).join('') : `<div class="mv-empty">${esc(t('archive.empty'))}</div>`}
+        ${years.map(y => `
+          <button type="button" class="ar-year ar-year--${isLive(y) ? 'live' : 'past'}" data-year="${y}" aria-label="${esc(t('archive.openAria', { year: y }))}">
+            <span class="ar-year__num">${y}</span>
+            <span class="ar-year__tag">${esc(statusLabel(y))}</span>
+            <span class="ar-year__go">›</span>
+          </button>`).join('')}
+        ${earliest > 2000
+          ? `<button type="button" class="btn btn--glass ar-add" data-addyear="${earliest - 1}">${esc(t('archive.addYear'))}</button>`
+          : ''}
       </div>`;
   }
 
   // ── One year ───────────────────────────────────────────
-  function renderLockBar() {
-    const bar = root.querySelector('#ar-lock');
-    if (!bar || openYear === null) return;
-    const st = statusOf(openYear);
-    const note = st === 'live' ? t('archive.liveNote') : st === 'unlocked' ? t('archive.unlockedNote') : t('archive.lockedNote');
-    bar.className = `card ar-lock ar-lock--${st}`;
-    bar.innerHTML = `
-      <p>${esc(note)}</p>
-      ${st === 'archived' ? `<button type="button" class="btn btn--glass" data-unlock>${esc(t('archive.unlockBtn'))}</button>` : ''}
-      ${st === 'unlocked' ? `<button type="button" class="btn btn--ghost" data-lock>${esc(t('archive.lockBtn'))}</button>` : ''}`;
-    const tag = root.querySelector('#ar-tag');
-    if (tag) { tag.textContent = statusLabel(st); tag.className = `ar-year__tag ar-year__tag--${st}`; }
-  }
-
   function openYearView(year) {
     if (view) { view.destroy(); view = null; }
     openYear = year;
@@ -66,11 +54,10 @@ export function initArchive(root) {
       <div class="ar-bar">
         <button type="button" class="btn btn--ghost ar-back" data-back>${esc(t('archive.back'))}</button>
         <span class="ar-title">${year}</span>
-        <span id="ar-tag" class="ar-year__tag"></span>
+        <span class="ar-year__tag ar-year__tag--${isLive(year) ? 'live' : 'past'}">${esc(statusLabel(year))}</span>
       </div>
-      <div id="ar-lock"></div>
+      ${isLive(year) ? '' : `<p class="ar-note">${esc(t('archive.openNote'))}</p>`}
       <div id="ar-view"></div>`;
-    renderLockBar();
 
     const bounds = E.yearBounds(year);
     view = createMonthView(root.querySelector('#ar-view'), {
@@ -80,14 +67,7 @@ export function initArchive(root) {
         const inLastThree = E.yearOf(today) === year && today >= bounds.maxStart;
         return { viewStart: bounds.maxStart, selected: inLastThree ? today : `${year}-12` };
       },
-      readOnly: m => {
-        const s = store.getState();
-        return E.isMonthLocked(m, s.today, s.unlockedYears);
-      },
-      // Variable + Bank Commission are mostly one-offs; corrections in a closed year
-      // also default to "Once" so later years stay untouched
-      defaultOnce: (m, section) =>
-        E.ONCE_BY_DEFAULT.includes(section) || E.isYearClosed(E.yearOf(m), store.getState().today),
+      defaultOnce: (m, section) => E.ONCE_BY_DEFAULT.includes(section),
     });
   }
 
@@ -99,19 +79,12 @@ export function initArchive(root) {
 
   // ── Events ─────────────────────────────────────────────
   root.addEventListener('click', e => {
-    const yearBtn = e.target.closest('[data-year]');
-    if (yearBtn) { openYearView(Number(yearBtn.dataset.year)); return; }
-    if (e.target.closest('[data-back]')) { closeYearView(); return; }
-    if (e.target.closest('[data-unlock]')) {
-      if (confirm(t('archive.confirmUnlock', { year: openYear }))) store.setYearUnlocked(openYear, true);
-      return;
-    }
-    if (e.target.closest('[data-lock]')) { store.setYearUnlocked(openYear, false); }
+    const yearBtn = e.target.closest('[data-year],[data-addyear]');
+    if (yearBtn) { openYearView(Number(yearBtn.dataset.year || yearBtn.dataset.addyear)); return; }
+    if (e.target.closest('[data-back]')) closeYearView();
   });
 
-  store.subscribe(() => {
-    if (openYear === null) renderList(); else renderLockBar();
-  });
+  store.subscribe(() => { if (openYear === null) renderList(); });
 
   renderList();
 

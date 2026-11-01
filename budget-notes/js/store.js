@@ -10,7 +10,6 @@ import { t } from './i18n.js';
 
 const state = {
   lines: [],
-  unlockedYears: [],
   today: E.currentMonthKey(),
   ready: false,
 };
@@ -39,7 +38,6 @@ export function refresh() {
 
 async function reload() {
   state.lines = await db.getAllLines();
-  state.unlockedYears = await db.getMeta('unlockedYears', []);
 }
 
 // ── Start-up ───────────────────────────────────────────────
@@ -116,15 +114,6 @@ export function setChecked(id, month, done) {
   return persist(E.setChecked(state.lines, id, month, done));
 }
 
-// ── Archive: unlock / re-lock a closed year ────────────────
-export async function setYearUnlocked(year, unlocked) {
-  const set = new Set(state.unlockedYears);
-  if (unlocked) set.add(year); else set.delete(year);
-  state.unlockedYears = [...set].sort();
-  await db.setMeta('unlockedYears', state.unlockedYears);
-  emit();
-}
-
 // ── Backup / restore ───────────────────────────────────────
 export function exportData() {
   return db.exportAll();
@@ -134,10 +123,7 @@ export function exportData() {
 export async function restoreData(data) {
   if (!data || data.app !== 'budget-notes' || !Array.isArray(data.lines)) throw new Error('bad-file');
   const lines = data.lines.map(E.normaliseLine).filter(Boolean);
-  const unlocked = Array.isArray(data.meta?.unlockedYears)
-    ? data.meta.unlockedYears.filter(Number.isInteger)
-    : [];
-  await db.replaceAll(lines, { seeded: true, unlockedYears: unlocked });
+  await db.replaceAll(lines, { seeded: true });
   await reload();
   emit();
   return lines.length;
