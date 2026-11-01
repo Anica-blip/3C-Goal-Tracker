@@ -1,10 +1,12 @@
 // sw.js — BUDGET Notes Service Worker
-// Cache-first strategy — app works fully offline after first load
+// Network-first: whenever there is internet the app always loads the NEWEST files,
+// and keeps a copy for offline use. With no internet it serves that copy.
+// (The first version was cache-first, which could keep showing an old copy after an update.)
 // 3C Thread To Success™
 //
-// When you change ANY file below, bump CACHE (v1 → v2) so phones pick up the update.
+// Updating the app: just upload the new files. Bumping CACHE is optional but harmless.
 
-const CACHE = 'budget-notes-v3';
+const CACHE = 'budget-notes-v4';
 
 const ASSETS = [
   './',
@@ -27,15 +29,21 @@ const ASSETS = [
   '../assets/budget-notes-cover.png',
 ];
 
-// ── Install — cache all assets ─────────────────────────────
+// ── Install — fetch every file fresh from the server (never from the browser's HTTP cache) ──
 self.addEventListener('install', e => {
   e.waitUntil(
-    caches.open(CACHE).then(cache => cache.addAll(ASSETS))
+    caches.open(CACHE).then(cache =>
+      Promise.all(ASSETS.map(async url => {
+        const res = await fetch(new Request(url, { cache: 'reload' }));
+        if (!res.ok) throw new Error(`${url} → ${res.status}`);
+        await cache.put(url, res);
+      }))
+    )
   );
   self.skipWaiting();
 });
 
-// ── Activate — clear old Budget Notes caches only ──────────
+// ── Activate — remove older Budget Notes caches only ───────
 self.addEventListener('activate', e => {
   e.waitUntil(
     caches.keys().then(keys =>
@@ -49,27 +57,26 @@ self.addEventListener('activate', e => {
   self.clients.claim();
 });
 
-// ── Fetch — serve from cache, fall back to network ─────────
+// ── Fetch — network first, cached copy when offline ────────
 self.addEventListener('fetch', e => {
   // Only handle same-origin GET requests
   if (e.request.method !== 'GET') return;
   if (!e.request.url.startsWith(self.location.origin)) return;
 
   e.respondWith(
-    caches.match(e.request).then(cached => {
-      if (cached) return cached;
-      return fetch(e.request).then(response => {
-        if (response && response.status === 200) {
+    fetch(e.request, { cache: 'no-cache' })          // always ask the server for the newest version
+      .then(response => {
+        if (response && response.status === 200 && response.type === 'basic') {
           const copy = response.clone();
           caches.open(CACHE).then(cache => cache.put(e.request, copy));
         }
         return response;
-      }).catch(() => {
-        // Offline fallback — return app shell
-        if (e.request.destination === 'document') {
-          return caches.match('./app.html');
-        }
-      });
-    })
+      })
+      .catch(async () => {
+        const cached = await caches.match(e.request, { ignoreSearch: true });
+        if (cached) return cached;
+        if (e.request.destination === 'document') return caches.match('./app.html');
+        return Response.error();
+      })
   );
 });
