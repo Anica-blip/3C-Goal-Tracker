@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en-GB" translate="no">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#080b1a" />
+  <title>DIARY Notes — Start Here</title>
+  <link rel="icon" type="image/png" href="../assets/favicon.png" />
+  <link rel="stylesheet" href="../css/style.css" />
+  <link rel="stylesheet" href="css/diary.css" />
+</head>
+<body>
+
+  <nav class="nav">
+    <div class="nav__inner">
+      <div class="nav__logo">
+        <img src="../assets/favicon.png" alt="DIARY Notes" width="28" height="28"
+          style="border-radius:6px;" onerror="this.style.display='none'" />
+        <span style="line-height:1;"><span class="logo-dash">DIARY</span><span class="logo-notes">Notes</span></span>
+      </div>
+
+      <a href="index.html"
+        data-i18n="setup.leaveBtn"
+        style="font-size:0.78rem; font-weight:700; letter-spacing:0.06em;
+          text-transform:uppercase; color:var(--text-muted); text-decoration:none;">
+        Leave
+      </a>
+    </div>
+  </nav>
+
+  <main style="padding-top:70px; padding-bottom:40px;">
+    <div class="container" style="max-width:480px;">
+
+      <!-- Header -->
+      <div style="text-align:center; padding: 36px 0 28px;">
+        <h2 data-i18n="setup.title" style="color:var(--cyan); margin-bottom:8px;">Start Here</h2>
+        <p data-i18n="setup.subtitle" style="font-size:0.9rem; color:var(--text-muted);">
+          A calm place for your day: plan it, reflect on it and look after yourself.
+        </p>
+      </div>
+
+      <div class="card" style="margin-bottom:16px;">
+        <div data-i18n="setup.plannerTitle" class="section__title" style="margin-bottom:12px;">Day Planner</div>
+        <p data-i18n="setup.plannerText"
+          style="font-size:0.88rem; color:var(--text-secondary); line-height:1.7; margin-bottom:0;"></p>
+      </div>
+
+      <div class="card" style="margin-bottom:16px;">
+        <div data-i18n="setup.journalTitle" class="section__title" style="margin-bottom:12px;">Journal</div>
+        <p data-i18n="setup.journalText"
+          style="font-size:0.88rem; color:var(--text-secondary); line-height:1.7; margin-bottom:0;"></p>
+      </div>
+
+      <div class="card" style="margin-bottom:16px;">
+        <div data-i18n="setup.selfcareTitle" class="section__title" style="margin-bottom:12px;">Self-Care</div>
+        <p data-i18n="setup.selfcareText"
+          style="font-size:0.88rem; color:var(--text-secondary); line-height:1.7; margin-bottom:0;"></p>
+      </div>
+
+      <div class="card" style="margin-bottom:28px; border-color:rgba(0,229,212,0.1);">
+        <div data-i18n="setup.safeTitle" class="section__title" style="margin-bottom:12px;">Keeping Your Data Safe</div>
+        <p data-i18n-html="setup.safeText"
+          style="font-size:0.88rem; color:var(--text-secondary); line-height:1.7; margin-bottom:0;"></p>
+      </div>
+
+      <!-- Q&A Button -->
+      <div style="text-align:center; margin-bottom:28px;">
+        <button id="qa-btn" data-i18n="setup.qaBtn" class="btn btn--glass" style="padding:10px 24px; font-size:0.88rem;">
+          Q &amp; A
+        </button>
+      </div>
+
+      <!-- Q&A Panel -->
+      <div id="qa-panel" style="display:none; position:fixed; inset:0; z-index:200;
+        background:rgba(20,5,77,0.92); backdrop-filter:blur(12px);
+        align-items:flex-end; justify-content:center; padding:20px;">
+        <div style="width:100%; max-width:480px; max-height:85vh; overflow-y:auto;
+          background:rgba(255,255,255,0.04); border:1px solid var(--border-strong);
+          border-radius:var(--radius-lg); padding:28px;">
+
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:24px;">
+            <span data-i18n="setup.qaTitle" style="font-size:0.78rem; font-weight:700; letter-spacing:0.08em;
+              text-transform:uppercase; color:var(--cyan);">Questions &amp; Answers</span>
+            <button id="qa-close" style="background:none; border:none; cursor:pointer;
+              color:var(--text-muted); font-size:1.1rem; padding:4px 8px;" aria-label="Close">&#x2715;</button>
+          </div>
+
+          <!-- Rendered by i18n.js renderSetupQA() -->
+          <div id="qa-list" style="display:flex; flex-direction:column; gap:20px;"></div>
+
+        </div>
+      </div>
+
+      <!-- Close / back to app -->
+      <div style="text-align:center; padding-bottom:40px;">
+        <a href="app.html" data-i18n="setup.closeBtn" class="btn btn--ghost"
+          style="padding:10px 28px; font-size:0.88rem; border-radius:20px; display:inline-block;">
+          Close
+        </a>
+      </div>
+
+    </div>
+  </main>
+
+  <script type="module">
+    import { initI18n } from './js/i18n.js';
+
+    // ── Apply language on load (also renders Q&A) ──
+    initI18n();
+
+    // ── Q&A panel open / close ─────────────────────────
+    const qaPanel = document.getElementById('qa-panel');
+
+    document.getElementById('qa-btn')?.addEventListener('click', () => {
+      qaPanel.style.display = 'flex';
+    });
+
+    document.getElementById('qa-close')?.addEventListener('click', () => {
+      qaPanel.style.display = 'none';
+    });
+
+    qaPanel?.addEventListener('click', e => {
+      if (e.target === qaPanel) qaPanel.style.display = 'none';
+    });
+  </script>
+
+</body>
+</html>

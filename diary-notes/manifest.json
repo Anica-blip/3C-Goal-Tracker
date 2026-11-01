@@ -1,0 +1,19 @@
+{
+  "name": "DIARY Notes",
+  "short_name": "DIARY Notes",
+  "description": "A day planner, journal and self-care diary.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#080b1a",
+  "theme_color": "#080b1a",
+  "icons": [
+    {
+      "src": "../assets/favicon.png",
+      "sizes": "any",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}

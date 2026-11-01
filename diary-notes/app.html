@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en-GB" translate="no">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="DIARY Notes — plan your day, write your thoughts and look after yourself." />
+  <meta name="theme-color" content="#080b1a" />
+  <title>DIARY Notes</title>
+  <link rel="icon" type="image/png" href="../assets/favicon.png" />
+  <link rel="apple-touch-icon" href="../assets/favicon.png" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="stylesheet" href="../css/style.css" />
+  <link rel="stylesheet" href="css/diary.css" />
+</head>
+<body>
+
+  <!-- Toast -->
+  <div id="toast" class="toast" role="alert" aria-live="polite"></div>
+
+  <!-- Nav -->
+  <nav class="nav">
+    <div class="nav__inner">
+      <div class="nav__logo">
+        <img src="../assets/favicon.png" alt="DIARY Notes" width="26" height="26"
+          style="border-radius:6px;" onerror="this.style.display='none'" />
+        <span style="line-height:1;"><span class="logo-dash">DIARY</span><span class="logo-notes">Notes</span></span>
+      </div>
+      <div style="display:flex; gap:8px; align-items:center;">
+        <button onclick="window.location.href='setup.html'"
+          data-i18n-html="nav.startHere"
+          style="
+            background:none; border:none; cursor:pointer;
+            font-size:0.78rem; font-weight:700; letter-spacing:0.06em;
+            text-transform:uppercase; color:var(--text-muted); text-align:center;
+            line-height:1.2; padding:6px 8px; border-radius:6px;
+            transition:all var(--transition);"
+          onmouseover="this.style.color='var(--text-primary)'"
+          onmouseout="this.style.color='var(--text-muted)'">
+          <span style="display:block;">Start</span><span style="display:block;">Here</span>
+        </button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ════════════════════════════════════════════════════
+       MAIN CONTENT
+  ═══════════════════════════════════════════════════════ -->
+  <main class="page-content">
+    <div class="diary-wrap">
+
+      <!-- Calendar bar: shared by Day Planner, Journal and Self-Care -->
+      <div id="datebar-wrap" class="datebar">
+        <div id="datebar-root"></div>
+      </div>
+
+      <!-- ── DAY PLANNER ────────────────────────────── -->
+      <section id="section-planner" class="app-section active">
+        <div id="planner-root"></div>
+      </section>
+
+      <!-- ── JOURNAL ────────────────────────────────── -->
+      <section id="section-journal" class="app-section">
+        <div id="journal-root"></div>
+      </section>
+
+      <!-- ── SELF-CARE ──────────────────────────────── -->
+      <section id="section-selfcare" class="app-section">
+        <div id="selfcare-root"></div>
+      </section>
+
+      <!-- ── SAVE ───────────────────────────────────── -->
+      <section id="section-backup" class="app-section">
+        <div data-i18n="backup.title" class="section__title" style="margin-bottom:4px;">Save &amp; Restore</div>
+        <p data-i18n="backup.subtitle" class="subtle" style="margin-bottom:20px;">
+          Keep your diary safe. Share a day to your favourite app or save a backup file.
+        </p>
+
+        <div class="card" style="margin-bottom:14px;">
+          <div data-i18n="backup.storeTitle" class="bk-title">Share This Day</div>
+          <p data-i18n="backup.storeDesc" class="bk-desc">
+            Send the day you are viewing to any app on your device.
+          </p>
+          <button id="share-all-btn" data-i18n="backup.storeBtn" class="btn btn--primary btn--full">Share This Day</button>
+        </div>
+
+        <div class="card" style="margin-bottom:14px;">
+          <div data-i18n="backup.downloadTitle" class="bk-title">💾 Download Backup File</div>
+          <p data-i18n="backup.downloadDesc" class="bk-desc">
+            Downloads a complete copy of your whole diary to your device.
+          </p>
+          <button id="json-download-btn" data-i18n="backup.downloadBtn" class="btn btn--glass btn--full">Download Backup</button>
+        </div>
+
+        <div class="card" style="margin-bottom:14px;">
+          <div data-i18n="backup.restoreTitle" class="bk-title">🔁 Restore from Backup</div>
+          <p data-i18n="backup.restoreDesc" class="bk-desc">
+            Previously downloaded a backup file? Tap below to restore it.
+          </p>
+          <button id="restore-btn" data-i18n="backup.restoreBtn" class="btn btn--ghost btn--full">Choose Backup File</button>
+          <input type="file" id="restore-input" accept=".json,application/json" style="display:none;" aria-hidden="true" />
+        </div>
+
+        <div class="card" style="margin-bottom:14px; border-color:rgba(0,229,212,0.2);">
+          <div data-i18n="backup.bestPracticeTitle"
+            style="font-size:0.82rem; font-weight:700; color:var(--cyan); margin-bottom:8px; text-transform:uppercase; letter-spacing:0.06em;">Best Practice</div>
+          <p data-i18n="backup.bestPracticeText" style="font-size:0.82rem; color:var(--text-secondary); line-height:1.7; margin:0;">
+            Download a backup at the end of every month and keep the newest file.
+          </p>
+        </div>
+
+        <div class="card" style="border-color:rgba(0,229,212,0.15);">
+          <p data-i18n-html="backup.privacyNote" style="font-size:0.8rem; color:var(--text-muted); line-height:1.65; margin:0;">
+            🔒 <strong style="color:var(--text-secondary);">Important:</strong>
+            Clearing your browser's site data will permanently delete your DIARY Notes data.
+          </p>
+        </div>
+      </section>
+
+    </div><!-- /diary-wrap -->
+  </main>
+
+  <!-- ════════════════════════════════════════════════════
+       TAB BAR — bottom navigation
+  ═══════════════════════════════════════════════════════ -->
+  <nav class="tab-bar" role="navigation" aria-label="Main navigation">
+    <button data-i18n="tabs.planner"  class="tab-bar__item active" data-section="planner">Day Planner</button>
+    <button data-i18n="tabs.journal"  class="tab-bar__item" data-section="journal">Journal</button>
+    <button data-i18n="tabs.selfcare" class="tab-bar__item" data-section="selfcare">Self-Care</button>
+    <button data-i18n="tabs.backup"   class="tab-bar__item" data-section="backup">Save</button>
+  </nav>
+
+  <!-- ════════════════════════════════════════════════════
+       SCRIPTS
+  ═══════════════════════════════════════════════════════ -->
+  <script type="module">
+    import { initI18n } from './js/i18n.js';
+    import * as store from './js/store.js';
+    import { initDateBar } from './js/datebar.js';
+    import { initPlanner } from './js/planner.js';
+    import { initJournal } from './js/journal.js';
+    import { initSelfcare } from './js/selfcare.js';
+    import { initBackup } from './js/backup.js';
+
+    // ── Translations (static text) ─────────────────────
+    initI18n();
+
+    // ── Tab navigation (the calendar bar hides on Save) ─
+    const tabs     = document.querySelectorAll('.tab-bar__item');
+    const sections = document.querySelectorAll('.app-section');
+    const dateBar  = document.getElementById('datebar-wrap');
+    tabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        tabs.forEach(t => t.classList.remove('active'));
+        sections.forEach(s => s.classList.remove('active'));
+        tab.classList.add('active');
+        document.getElementById(`section-${tab.dataset.section}`)?.classList.add('active');
+        dateBar.classList.toggle('hidden', tab.dataset.section === 'backup');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      });
+    });
+
+    // ── Start ──────────────────────────────────────────
+    try {
+      await store.init();
+      initDateBar(document.getElementById('datebar-root'));
+      initPlanner(document.getElementById('planner-root'));
+      initJournal(document.getElementById('journal-root'));
+      initSelfcare(document.getElementById('selfcare-root'));
+      initBackup();
+    } catch (err) {
+      console.error('[diary-notes] start-up failed', err);
+      document.getElementById('planner-root').innerHTML =
+        '<div class="card" style="margin-top:16px;"><p style="margin:0;">Storage is not available in this browser (private mode can block it). Please open DIARY Notes in a normal browser window.</p></div>';
+    }
+
+    // ── Keep "today" right when the Lisbon calendar moves on ──
+    function tick() { store.refreshToday(); }
+    setInterval(tick, 60000);
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) tick(); });
+  </script>
+
+  <!-- Service Worker registration — enables offline use -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('./sw.js').catch(err => {
+        console.warn('Service Worker registration failed:', err);
+      });
+    }
+  </script>
+
+</body>
+</html>
