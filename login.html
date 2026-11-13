@@ -1,108 +1,67 @@
-// ─── SOURCE Notes — entry page, toolbar and router ───────────────────────────
-// One page, one entry point. Hash routes: (none) entry · #ws · #rs · #as · #os · #os/<folder> · #os/locked · #os/bin
+<!DOCTYPE html>
+<html lang="en-GB" translate="no">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex, nofollow">
+    <meta name="theme-color" content="#080b1a">
+    <title>3C Goal Tracker — Sign in</title>
+    <link rel="icon" type="image/png" href="assets/favicon.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;600&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { min-height: 100vh; min-height: 100dvh; display: flex; align-items: center; justify-content: center; padding: 20px;
+               background: radial-gradient(ellipse at 50% 0%, #1a0f3d 0%, #080b1a 62%); color: #e9e6f7;
+               font-family: 'Open Sans', system-ui, sans-serif; }
+        .card { width: 100%; max-width: 360px; text-align: center; padding: 38px 30px; background: rgba(15,10,40,.86);
+                border: 1px solid rgba(168,85,247,.28); border-radius: 16px; box-shadow: 0 25px 60px rgba(0,0,0,.5); }
+        .crest { width: 72px; height: 72px; border-radius: 50%; border: 2px solid rgba(168,85,247,.35); margin: 0 auto 14px; display: block; object-fit: cover; }
+        h1 { font-size: 1.35rem; font-weight: 600; line-height: 1.2; margin-bottom: 4px; }
+        .subtitle { color: rgba(168,85,247,.85); font-size: .78rem; letter-spacing: .12em; text-transform: uppercase; margin-bottom: 22px; }
+        .btn { width: 100%; display: flex; align-items: center; justify-content: center; gap: 10px; padding: 13px 16px; border: 0; border-radius: 10px;
+               background: #00e5d4; color: #06101a; font: 600 .95rem 'Open Sans', system-ui, sans-serif; cursor: pointer; }
+        .btn:disabled { opacity: .6; cursor: default; }
+        .status { min-height: 1.4em; margin-top: 14px; font-size: .82rem; color: #ffb3b3; }
+        .tagline { margin-top: 18px; font-size: .74rem; color: rgba(233,230,247,.5); }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <img src="assets/favicon.png" alt="" class="crest" onerror="this.style.display='none'">
+        <h1>3C Goal Tracker</h1>
+        <p class="subtitle">Private · Chef only</p>
+        <button class="btn" id="btnLogin" type="button">
+            <svg viewBox="0 0 16 16" width="20" height="20" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+            <span>Sign in with GitHub</span>
+        </button>
+        <p class="status" id="statusMsg" role="status"></p>
+        <p class="tagline">Think it. Do it. Own it.</p>
+    </div>
 
-import { getSession, signOut, LOGIN_URL } from './api.js';
-import { h, icon, openModal, fail } from './ui.js';
-import { SHELF, loadShelfData, renderShelf, setRefreshHook, openIndex, redrawOpenBox } from './shelves.js';
-import { renderOffice, appGate } from './office.js';
-import * as vault from './vault.js';
+    <script type="module">
+        import { SUPABASE_URL, SUPABASE_ANON_KEY } from './auth-config.js';
 
-const root = document.getElementById('view');
+        // Where to go after signing in: ?next=<page inside this repo>, e.g. source-notes/app.html.
+        // Only plain relative .html paths are accepted; anything else falls back to the DASH Notes cover.
+        const asked = new URLSearchParams(location.search).get('next') || '';
+        const safe = /^[A-Za-z0-9_-]+(\/[A-Za-z0-9_-]+)*\.html$/.test(asked) ? asked : 'index.html';
+        const target = new URL(safe, location.href).href;
 
-function renderEntry() {
-    const squares = ['WS', 'RS', 'AS', 'OS'].map(k => {
-        const meta = SHELF[k];
-        const btn = h('button', { class: 'square', type: 'button', style: `--sq:${meta.colour}`, 'aria-label': `${meta.title} (${k})` },
-            h('span', { class: 'sq-title' }, `${meta.title} (${k})`),
-            h('span', { class: 'sq-line' }, meta.line));
-        btn.addEventListener('click', () => {
-            btn.classList.add('pressed');                       // button motion + highlight, then open
-            document.querySelectorAll('.square').forEach(s => { if (s !== btn) s.classList.add('dim'); });
-            setTimeout(() => { location.hash = '#' + k.toLowerCase(); }, 360);
+        const client = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        const msg = document.getElementById('statusMsg');
+        const btn = document.getElementById('btnLogin');
+
+        // Already signed in on this browser → straight to the page asked for
+        client.auth.getSession().then(({ data }) => { if (data && data.session) location.replace(target); });
+
+        btn.addEventListener('click', async () => {
+            btn.disabled = true; msg.style.color = 'rgba(233,230,247,.7)'; msg.textContent = 'Opening secure access…';
+            const { error } = await client.auth.signInWithOAuth({ provider: 'github', options: { redirectTo: target } });
+            if (error) { msg.style.color = '#ffb3b3'; msg.textContent = '❌ ' + error.message; btn.disabled = false; }
         });
-        return btn;
-    });
-    root.replaceChildren(h('section', { class: 'entry' }, h('div', { class: 'squares' }, squares)));
-}
-
-function route() {
-    const parts = location.hash.replace(/^#\/?/, '').split('/').filter(Boolean);
-    const first = (parts[0] || '').toLowerCase();
-    const key = first.toUpperCase();
-    document.body.dataset.view = ['ws', 'rs', 'as', 'os'].includes(first) ? first : 'entry';
-    window.scrollTo(0, 0);
-    if (['WS', 'RS', 'AS'].includes(key)) renderShelf(root, key);
-    else if (key === 'OS') renderOffice(root, parts.slice(1));
-    else renderEntry();
-}
-
-function about() {
-    openModal({
-        title: 'About SOURCE Notes', cls: 'small',
-        body: h('div', { class: 'about' },
-            h('p', { class: 'about-lead' }, 'Chef’s private filing app for project material.'),
-            h('p', {}, 'Shelves 1–3 — Working, Reference and Archive — hold your own filing in box files, with a record card for every note. The Office shelf holds brand storage files and is the only part the AI agent can reach.'),
-            h('p', {}, 'Private use only. You sign in with GitHub, and everything is stored in your own Cloudflare storage behind the Notes Worker. Your 8-digit PIN opens the app and also locks the Locked folder, whose files are encrypted in this browser.'),
-            h('p', { class: 'about-tag' }, 'Think it. Do it. Own it.'))
-    });
-}
-
-function denied(message) {
-    root.replaceChildren(h('section', { class: 'entry' },
-        h('div', { class: 'gate-card' },
-            h('h2', {}, 'No access'),
-            h('p', {}, message),
-            h('button', { class: 'btn primary', type: 'button', onclick: leave }, 'Sign out'))));
-}
-
-const IN_KEY = 'source-notes-in';        // this browser session has entered with the PIN
-const entered = () => { try { return sessionStorage.getItem(IN_KEY) === '1'; } catch { return false; } };
-const markEntered = on => { try { on ? sessionStorage.setItem(IN_KEY, '1') : sessionStorage.removeItem(IN_KEY); } catch { /* ignore */ } };
-const leave = async () => { markEntered(false); await signOut(); };
-
-async function start() {
-    try {
-        await loadShelfData();
-    } catch (e) {
-        if (e.status === 403) { denied('This account does not have access to SOURCE Notes.'); return; }
-        fail(e);
-    }
-
-    setRefreshHook(async () => {
-        try { await loadShelfData(); } catch (e) { fail(e); }
-        route();
-        redrawOpenBox();
-    });
-    window.addEventListener('hashchange', route);
-    // The Worker said the lock is no longer valid (token changed, PIN reset elsewhere) → back to the PIN screen
-    window.addEventListener('source-locked', async () => {
-        await vault.lockDevice(); markEntered(false); location.reload();
-    });
-    route();
-}
-
-async function boot() {
-    const session = await getSession();
-    if (!session) { location.replace(LOGIN_URL); return; }
-
-    const meta = (session.user && session.user.user_metadata) || {};
-    document.getElementById('userBadge').textContent = meta.user_name ? '@' + meta.user_name : (session.user.email || '');
-    document.getElementById('btnIndex').addEventListener('click', openIndex);
-    document.getElementById('btnAbout').addEventListener('click', about);
-    document.getElementById('btnExit').addEventListener('click', leave);
-    document.getElementById('brand').addEventListener('click', e => { e.preventDefault(); location.hash = ''; route(); });
-
-    // PIN first: no toolbar and no shelves until it is entered (once per browser session)
-    const bar = document.querySelector('.toolbar');
-    if (!(entered() && await vault.isUnlocked())) {
-        bar.style.display = 'none';
-        await new Promise(resolve => {
-            appGate(root, () => { markEntered(true); resolve(); });
-        });
-        bar.style.display = '';
-        location.hash = '';
-    }
-    await start();
-}
-
-boot();
+    </script>
+</body>
+</html>
