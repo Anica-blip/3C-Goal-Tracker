@@ -5,7 +5,7 @@
 //
 // Updating the app: just upload the new files. Bumping CACHE is optional but harmless.
 
-const CACHE = 'diary-notes-v2';
+const CACHE = 'diary-notes-v3';
 
 const ASSETS = [
   './',
@@ -24,6 +24,7 @@ const ASSETS = [
   './js/journal.js',
   './js/selfcare.js',
   './js/backup.js',
+  '../cloud/cloud-sync.js',
   '../css/style.css',
   '../assets/favicon.png',
   '../assets/diary-notes-cover.png',
