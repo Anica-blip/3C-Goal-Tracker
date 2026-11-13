@@ -11,6 +11,19 @@
   <link rel="manifest" href="manifest.json" />
   <link rel="stylesheet" href="../css/style.css" />
   <link rel="stylesheet" href="css/budget.css" />
+  <style>
+    /* cloud icon — shown only when Chef is signed in (cloud/cloud-sync.js sets data-state) */
+    #cloud-mark { display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; color: var(--text-muted); }
+    #cloud-mark[hidden] { display: none; }
+    #cloud-mark svg { width: 20px; height: 20px; }
+    #cloud-mark .cm-tick, #cloud-mark .cm-bang { display: none; }
+    #cloud-mark[data-state="saved"]   { color: var(--cyan); }
+    #cloud-mark[data-state="saved"] .cm-tick { display: inline; }
+    #cloud-mark[data-state="saving"]  { color: var(--cyan); animation: cloud-pulse 1.1s ease-in-out infinite; }
+    #cloud-mark[data-state="unsaved"] { color: #f59e0b; }
+    #cloud-mark[data-state="unsaved"] .cm-bang { display: inline; }
+    @keyframes cloud-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
+  </style>
 </head>
 <body>
 
@@ -26,6 +39,14 @@
         <span style="line-height:1;"><span class="logo-dash">BUDGET</span><span class="logo-notes">Notes</span></span>
       </div>
       <div style="display:flex; gap:8px; align-items:center;">
+
+        <span id="cloud-mark" hidden data-state="saving" role="img" aria-label="Saving to the cloud…" title="Saving to the cloud…">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M7 18a4 4 0 0 1-.6-7.96A6 6 0 0 1 18 9.5a4.25 4.25 0 0 1-.5 8.5H7z"/>
+            <path class="cm-tick" d="M9.2 13.6l2.2 2.2 4.1-4.2"/>
+            <path class="cm-bang" d="M12 11.2v3.2M12 16.6v.1"/>
+          </svg>
+        </span>
 
         <!-- ── Language selector ───────────────────────── -->
         <div id="lang-selector" style="position:relative;">
