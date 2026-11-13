@@ -9,6 +9,8 @@
 import * as E from './engine.js';
 import * as db from './storage.js';
 import { t } from './i18n.js';
+// Cloud saving (Chef only): does nothing unless she is signed in on this browser.
+import { connect, changed } from '../../cloud/cloud-sync.js';
 
 const today0 = E.todayISO();
 
@@ -51,6 +53,35 @@ async function reload() {
   for (const name of db.DATA_STORES) state[name] = await db.getAll(name);
 }
 
+// ── Cloud saving connection ────────────────────────────────
+// A device holding nothing written (only the rating list it was set up with) counts as empty, so a new
+// device takes the cloud copy without asking. Any other content, or a changed rating list, is asked about.
+function isEmptyDiary(d) {
+  const written = ['entries', 'reminders', 'renewals', 'journal', 'ratings', 'selfcare'];
+  if (written.some(name => (d[name] || []).length)) return false;
+  const names = (d.categories || []).map(c => c.name).sort();
+  const seed = [].concat(t('seed.categories') || []).slice().sort();
+  return names.length === 0 || (names.length === seed.length && names.every((n, i) => n === seed[i]));
+}
+
+/** Replace this device's diary with the cloud copy (same checks as a backup restore). */
+async function cloudReplace(raw) {
+  const data = E.normaliseData(raw);
+  if (!data) throw new Error('bad-copy');
+  await db.replaceAll(data, { seeded: true });
+  await reload();
+}
+
+function startCloud() {
+  connect({
+    app:          'diary-notes',
+    exportFn:     db.exportAll,
+    replaceFn:    cloudReplace,
+    isEmpty:      isEmptyDiary,
+    afterReplace: () => { emit(); },
+  });
+}
+
 // ── Start-up ───────────────────────────────────────────────
 export async function init() {
   state.today = E.todayISO();
@@ -66,6 +97,7 @@ export async function init() {
   }
 
   state.ready = true;
+  startCloud();   // only after the first-run set-up above, so it can never clash with it
   emit();
 }
 
@@ -97,6 +129,7 @@ async function write(fn, quiet = false) {
     emit();
     throw err;
   }
+  changed('diary-notes');
   if (!quiet) emit();
 }
 
@@ -287,6 +320,7 @@ export async function restoreData(raw) {
   if (!data) throw new Error('bad-file');
   await db.replaceAll(data, { seeded: true });
   await reload();
+  changed('diary-notes');
   emit();
   return data.entries.length + data.journal.length;
 }
