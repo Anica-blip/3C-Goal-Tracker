@@ -2,7 +2,7 @@
 // Cache-first strategy — app works fully offline after first load
 // 3C Thread To Success™
 
-const CACHE = 'dash-notes-v4';
+const CACHE = 'dash-notes-v5';
 
 const ASSETS = [
   './',
@@ -20,6 +20,7 @@ const ASSETS = [
   './js/camera.js',
   './js/backup.js',
   './js/prefs.js',
+  './cloud/cloud-sync.js',
   './assets/favicon.png',
   './assets/dash-notes-cover.png',
 ];
