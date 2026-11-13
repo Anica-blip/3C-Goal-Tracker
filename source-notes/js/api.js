@@ -23,7 +23,7 @@ export async function signInAgain() {
     try { sessionStorage.setItem(RECOVER_KEY, String(Date.now())); } catch { /* ignore */ }
     const { error } = await sb.auth.signInWithOAuth({
         provider: 'github',
-        options: { redirectTo: new URL('index.html', location.href).href }
+        options: { redirectTo: new URL('app.html', location.href).href }
     });
     if (error) throw new ApiError(0, error.message);
 }
