@@ -4,7 +4,7 @@
 // so it never touches the Dash Notes app's cache or service worker scope.
 // 3C Thread To Success™
 
-const CACHE = 'key-notes-v17';
+const CACHE = 'key-notes-v18';
 
 const ASSETS = [
   './',
@@ -17,6 +17,7 @@ const ASSETS = [
   './js/storage.js',
   './js/prefs.js',
   './js/icons.js',
+  '../cloud/cloud-sync.js',
   '../assets/favicon.png',
   '../assets/key-notes.png',
 ];
