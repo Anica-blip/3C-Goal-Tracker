@@ -271,15 +271,21 @@ const pinField = (placeholder, auto) => {
 const phraseField = (placeholder, auto) => h('input', { class: 'field', type: 'password', autocomplete: auto, placeholder, spellcheck: 'false', autocapitalize: 'none' });
 const PIN_OK = v => /^\d{8}$/.test(v);
 
-async function renderGate(root, token) {
+// The same PIN screen also guards the whole app (appGate): same PIN, same Worker-checked lock.
+export function appGate(root, onDone) {
+    return renderGate(root, ++renderToken, { appMode: true, done: onDone });
+}
+
+async function renderGate(root, token, opts = {}) {
+    const appMode = !!opts.appMode;
     root.replaceChildren(h('section', { class: 'office-page locked' }, h('p', { class: 'empty' }, 'Loading…')));
     let st;
     try { st = await vault.status(); } catch (e) { root.replaceChildren(h('section', { class: 'office-page locked' }, h('p', { class: 'empty err' }, e.message))); return; }
     if (token !== renderToken) return;
 
     const show = card => { root.replaceChildren(h('section', { class: 'office-page locked gate' }, card)); };
-    const done = () => renderOffice(root, lastParts);
-    const back = h('button', { class: 'btn ghost sm', type: 'button', onclick: () => { clearRecover(); location.hash = '#os'; } }, 'Back to Office');
+    const done = opts.done || (() => renderOffice(root, lastParts));
+    const back = appMode ? null : h('button', { class: 'btn ghost sm', type: 'button', onclick: () => { clearRecover(); location.hash = '#os'; } }, 'Back to Office');
 
     // one form: fields → check → run → show the Worker's message if it refuses
     const card = ({ title, intro, fields, label, check, run, extra }) => {
@@ -304,8 +310,8 @@ async function renderGate(root, token) {
         const pin = pinField('8-digit PIN', 'new-password'), pin2 = pinField('Repeat the PIN', 'new-password');
         const ph = phraseField('Emergency phrase (4 or more words)', 'off'), ph2 = phraseField('Repeat the phrase', 'off');
         return show(card({
-            title: 'Set up the Locked Folder',
-            intro: 'Choose an 8-digit PIN for daily use, and an emergency phrase of four or more words that you will remember. The phrase is only for a forgotten PIN. Neither is stored anywhere in readable form; your files are encrypted in this browser.',
+            title: appMode ? 'Set up SOURCE Notes' : 'Set up the Locked Folder',
+            intro: 'Choose an 8-digit PIN for daily use, and an emergency phrase of four or more words that you will remember. The phrase is only for a forgotten PIN. ' + (appMode ? 'The PIN opens SOURCE Notes and also locks the Locked folder. ' : '') + 'Neither is stored anywhere in readable form; the Locked folder’s files are encrypted in this browser.',
             fields: [pin, pin2, ph, ph2], label: 'Create',
             check: () => !PIN_OK(pin.value) ? 'The PIN is exactly 8 digits'
                 : pin.value !== pin2.value ? 'The two PINs do not match'
@@ -334,8 +340,8 @@ async function renderGate(root, token) {
     // 2 · every day: PIN
     const pin = pinField('8-digit PIN', 'current-password');
     return show(card({
-        title: 'Locked Folder',
-        intro: 'Enter your PIN to open the Locked folder on this device. You will be asked again only if this browser’s data is cleared or you open it on another device.',
+        title: appMode ? 'SOURCE Notes' : 'Locked Folder',
+        intro: appMode ? 'Enter your PIN to open SOURCE Notes.' : 'Enter your PIN to open the Locked folder on this device. You will be asked again only if this browser’s data is cleared or you open it on another device.',
         fields: [pin], label: 'Unlock',
         check: () => PIN_OK(pin.value) ? '' : 'The PIN is exactly 8 digits',
         run: () => vault.unlock(pin.value, st),
