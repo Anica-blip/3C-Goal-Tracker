@@ -6,7 +6,7 @@
 //
 // Updating the app: just upload the new files. Bumping CACHE is optional but harmless.
 
-const CACHE = 'budget-notes-v4';
+const CACHE = 'budget-notes-v5';
 
 const ASSETS = [
   './',
@@ -24,6 +24,7 @@ const ASSETS = [
   './js/summary.js',
   './js/archive.js',
   './js/backup.js',
+  '../cloud/cloud-sync.js',
   '../css/style.css',
   '../assets/favicon.png',
   '../assets/budget-notes-cover.png',
