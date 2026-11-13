@@ -4,38 +4,57 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="robots" content="noindex, nofollow">
-    <meta name="theme-color" content="#14054d">
+    <meta name="theme-color" content="#0b0820">
     <title>SOURCE Notes</title>
     <link rel="icon" type="image/png" href="../assets/favicon.png">
-    <link rel="stylesheet" href="css/source.css">
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="https://cdn.jsdelivr.net/npm/marked@12/marked.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/dompurify@3/dist/purify.min.js"></script>
-</head>
-<body data-view="entry">
+    <style>
+        html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; background: #0b0820; font-family: 'Open Sans', system-ui, sans-serif; }
 
-    <!-- Watermark — above the toolbar, before the header element (entry page) -->
+        /* Phones: the cover fills the screen, enter button at the bottom */
+        .cover-image { position: fixed; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center top; display: block; }
+        .cover-wrap { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; padding-bottom: max(64px, env(safe-area-inset-bottom)); }
+
+        .enter-btn {
+            position: relative; z-index: 10; width: 56px; height: 56px; border-radius: 50%;
+            border: 1.5px solid rgba(0, 229, 212, 0.5); background: rgba(8, 11, 26, 0.55);
+            backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+            display: flex; align-items: center; justify-content: center; cursor: pointer; text-decoration: none;
+            transition: all 0.25s ease;
+        }
+        .enter-btn:hover, .enter-btn:focus { background: rgba(0, 229, 212, 0.15); border-color: rgba(0, 229, 212, 0.9); transform: scale(1.06); outline: none; }
+        .enter-btn svg { width: 22px; height: 22px; fill: none; stroke: #00e5d4; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+        /* Watermark: this page has no toolbar, so it sits at the bottom */
+        .watermark { position: fixed; left: 0; right: 0; bottom: max(10px, env(safe-area-inset-bottom)); z-index: 10; text-align: center; padding: 0 12px;
+            font-size: .62rem; line-height: 1.35; letter-spacing: .02em; color: rgba(226, 217, 243, 0.6); }
+
+        /* Desktop: a contained cover card instead of full-bleed (same idea as Dash Notes) */
+        @media (min-width: 768px) {
+            body { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; padding: 24px; box-sizing: border-box; }
+            #cover-root {
+                position: relative; height: min(calc(100vh - 96px), 880px); height: min(calc(100dvh - 96px), 880px);
+                aspect-ratio: 9 / 16; border-radius: 20px; overflow: hidden;
+                border: 1px solid rgba(255, 255, 255, 0.08); box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            }
+            .cover-image { position: absolute; inset: 0; }
+            .cover-wrap { position: absolute; inset: 0; padding-bottom: 32px; }
+            .watermark { position: static; padding: 0; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="cover-root">
+        <img src="../assets/sources-notes-cover.png" alt="SOURCE Notes" class="cover-image" onerror="this.style.background='#0b0820'">
+        <div class="cover-wrap">
+            <a href="app.html" class="enter-btn" aria-label="Enter SOURCE Notes">
+                <svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"></polyline></svg>
+            </a>
+        </div>
+    </div>
+
+    <!-- Watermark — bottom of the landing page (no toolbar here) -->
     <div class="watermark" id="watermark">Designed and Built with ❤ by Claude (Anthropic) × Chef Anica · 3C Thread To Success™ Cooking Lab 🧪👨🍳</div>
 
-    <!-- Toolbar — same information as the other notes apps; British English only, so no language switch -->
-    <header class="toolbar">
-        <a class="brand" id="brand" href="#" aria-label="SOURCE Notes — shelves">
-            <img src="../assets/favicon.png" alt="" width="26" height="26" style="border-radius:6px;" onerror="this.style.display='none'">
-            <span class="brand-text"><span class="logo-dash">SOURCE</span><span class="logo-notes">Notes</span></span>
-        </a>
-        <div class="tool-right">
-            <button class="tool-btn" id="btnIndex" type="button">Index</button>
-            <button class="tool-btn muted" id="btnAbout" type="button">About</button>
-            <span class="lang-chip" title="British English">🇬🇧 EN</span>
-            <span class="user-badge" id="userBadge"></span>
-            <button class="icon-btn gold" id="btnExit" type="button" title="Sign out" aria-label="Sign out">
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-            </button>
-        </div>
-    </header>
-
-    <main id="view"></main>
-
-    <script type="module" src="js/app.js"></script>
 </body>
 </html>
