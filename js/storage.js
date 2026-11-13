@@ -1,6 +1,9 @@
 // storage.js — IndexedDB foundation
 // Dash Notes · 3C Thread To Success™
 
+// Cloud saving (Chef only): does nothing unless she is signed in on this browser.
+import { connect, changed } from '../cloud/cloud-sync.js';
+
 const DB_NAME    = 'dash-notes';
 const DB_VERSION = 1;
 
@@ -34,7 +37,7 @@ function txWrite(db, storeName, record) {
     const tx    = db.transaction(storeName, 'readwrite');
     const store = tx.objectStore(storeName);
     store.put(record);
-    tx.oncomplete = () => { db.close(); resolve(record); };
+    tx.oncomplete = () => { db.close(); resolve(record); changed('dash-notes'); };
     tx.onerror    = () => { db.close(); reject(tx.error); };
     tx.onabort    = () => { db.close(); reject(new Error('Transaction aborted')); };
   });
@@ -46,7 +49,7 @@ function txDelete(db, storeName, id) {
     const tx    = db.transaction(storeName, 'readwrite');
     const store = tx.objectStore(storeName);
     store.delete(id);
-    tx.oncomplete = () => { db.close(); resolve(); };
+    tx.oncomplete = () => { db.close(); resolve(); changed('dash-notes'); };
     tx.onerror    = () => { db.close(); reject(tx.error); };
   });
 }
@@ -153,10 +156,43 @@ async function importAll(data) {
   if (data.notes) for (const n of data.notes) await saveNote(n);
 }
 
+// ── Replace everything (used by cloud saving) ──────────────
+// Unlike importAll, this removes what is not in `data`, so a note deleted
+// on one device is deleted on the other. All three stores change in one step.
+async function replaceAll(data) {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction([STORES.GOALS, STORES.TASKS, STORES.NOTES], 'readwrite');
+    const sets = [
+      [STORES.GOALS, data && data.goals],
+      [STORES.TASKS, data && data.tasks],
+      [STORES.NOTES, data && data.notes],
+    ];
+    for (const [name, rows] of sets) {
+      const store = tx.objectStore(name);
+      store.clear();
+      for (const row of (Array.isArray(rows) ? rows : [])) store.put(row);
+    }
+    tx.oncomplete = () => { db.close(); resolve(); };
+    tx.onerror    = () => { db.close(); reject(tx.error); };
+    tx.onabort    = () => { db.close(); reject(tx.error || new Error('Transaction aborted')); };
+  });
+}
+
+// ── Cloud saving connection ────────────────────────────────
+// dash-data-restored is the event app.html already listens for to redraw every screen.
+connect({
+  app:          'dash-notes',
+  exportFn:     exportAll,
+  replaceFn:    replaceAll,
+  isEmpty:      d => !((d.goals && d.goals.length) || (d.tasks && d.tasks.length) || (d.notes && d.notes.length)),
+  afterReplace: () => window.dispatchEvent(new CustomEvent('dash-data-restored')),
+});
+
 export {
   saveGoal, getGoals, deleteGoal,
   saveTask, getTasks, deleteTask,
   saveNote, getNotes, deleteNote,
-  exportAll, importAll,
+  exportAll, importAll, replaceAll,
   genId,
 };
