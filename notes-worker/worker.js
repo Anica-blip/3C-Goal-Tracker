@@ -12,6 +12,8 @@
 //                                                list folders, list files, read file, write .md file.
 //                                                No delete, no move, no Bin, no Locked folder,
 //                                                nothing on shelves 1–3.
+//   Chef only: GET /apps/<app>/data → the app's cloud copy, version and save time (dash-notes, key-notes, budget-notes, diary-notes)
+//   Chef only: PUT /apps/<app>/data?base=<version> → saves if base matches, else 409; the replaced copy is kept as data-previous.json
 //
 // R2 LAYOUT (inside the bucket)
 //   Notes/source-notes/shelves/<record id>/<file name>
@@ -203,6 +205,8 @@ async function route(request, env, auth) {
             (method === 'PUT' && seg[1] === 'file'    && seg.length === 2);
         if (!ok) return refuse('Key refused on this route', 403);
     }
+
+    if (seg[0] === 'apps') return appsData(ctx, seg);
 
     if (seg[0] === 'source') {
         if (seg[1] === 'folders') return shelfFolders(ctx, seg);
@@ -871,4 +875,99 @@ async function lockChangePin(ctx) {
     await setSetting(env, 'lock_failsA', 0);
     await setSetting(env, 'lock_untilA', 0);
     return json({ token: await issueToken(env) });
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// NOTES APPS CLOUD COPY  (DASH / KEY / BUDGET / DIARY Notes)
+// One whole-app copy per app, saved by the browser after each change.
+//   GET /apps/<app>/data              → { exists, version, saved_at, data }
+//   PUT /apps/<app>/data?base=<n>     → saves only if <n> is the current version (0 = no copy yet)
+// The version and save time live in the settings table, one row per app (key 'apps:<app>').
+// The Worker never reads inside a copy beyond checking it is valid JSON (KEY Notes arrives encrypted).
+// Chef only: the agent is already stopped at the agent wall in route(); checked again here.
+// ═════════════════════════════════════════════════════════════════════════════
+
+const APP_NAMES = ['dash-notes', 'key-notes', 'budget-notes', 'diary-notes'];
+
+const appKey     = app => 'Notes/' + app + '/data.json';
+const appPrevKey = app => 'Notes/' + app + '/data-previous.json';
+
+// The stored row is JSON text: { version, saved_at }. Returns the raw text and the parsed values.
+async function readAppMeta(env, app) {
+    const raw = await getSetting(env, 'apps:' + app);
+    if (raw == null) return { raw: null, version: 0, saved_at: null };
+    try {
+        const m = JSON.parse(raw);
+        return { raw, version: Number(m.version) || 0, saved_at: m.saved_at || null };
+    } catch {
+        return { raw, version: 0, saved_at: null };
+    }
+}
+
+async function appsData(ctx, seg) {
+    const { env, method, q } = ctx;
+    if (ctx.auth.role !== 'chef') return refuse('Key refused on this route', 403);
+
+    const app = seg[1];
+    if (!APP_NAMES.includes(app) || seg[2] !== 'data' || seg.length !== 3) return refuse('Not found', 404);
+
+    if (method === 'GET') {
+        const meta = await readAppMeta(env, app);
+        if (!meta.version) return json({ exists: false, version: 0 });
+        const obj = await env.BUCKET.get(appKey(app));
+        if (!obj) return json({ exists: false, version: meta.version });
+        let data;
+        try { data = JSON.parse(await obj.text()); } catch { return refuse('The saved copy could not be read', 500); }
+        return json({ exists: true, version: meta.version, saved_at: meta.saved_at, data });
+    }
+
+    if (method === 'PUT') {
+        const baseRaw = q.get('base');
+        if (baseRaw === null || !/^\d{1,12}$/.test(baseRaw)) return refuse('The base version is required', 400);
+        const base = Number(baseRaw);
+
+        const body = await readBody(ctx.request);
+        if (body.error) return body.error;
+        if (!body.buf.byteLength) return refuse('Nothing to save', 400);
+        const text = new TextDecoder().decode(body.buf);
+        let parsed;
+        try { parsed = JSON.parse(text); } catch { return refuse('The copy is not valid JSON', 400); }
+        if (parsed === null || typeof parsed !== 'object') return refuse('The copy must be a JSON object or list', 400);
+
+        const meta = await readAppMeta(env, app);
+        if (base !== meta.version) {
+            return json({ error: 'Newer notes exist in the cloud', version: meta.version, saved_at: meta.saved_at }, 409);
+        }
+
+        // Claim the next version first. If two devices race, only one claim succeeds.
+        const t = nowIso();
+        const next = meta.version + 1;
+        const newRaw = JSON.stringify({ version: next, saved_at: t });
+        const skey = 'apps:' + app;
+        let claim;
+        if (meta.raw === null) {
+            claim = await env.DB.prepare('INSERT INTO settings (key, value) VALUES (?,?) ON CONFLICT(key) DO NOTHING').bind(skey, newRaw).run();
+        } else {
+            claim = await env.DB.prepare('UPDATE settings SET value=? WHERE key=? AND value=?').bind(newRaw, skey, meta.raw).run();
+        }
+        if (!claim || !claim.meta || claim.meta.changes !== 1) {
+            const now = await readAppMeta(env, app);
+            return json({ error: 'Newer notes exist in the cloud', version: now.version, saved_at: now.saved_at }, 409);
+        }
+
+        try {
+            const old = await env.BUCKET.get(appKey(app));
+            if (old) {
+                await env.BUCKET.put(appPrevKey(app), await old.arrayBuffer(), { httpMetadata: { contentType: 'application/json' } });
+            }
+            await env.BUCKET.put(appKey(app), body.buf, { httpMetadata: { contentType: 'application/json' } });
+        } catch (err) {
+            // Put the version back so the next push is not turned away for a save that never happened.
+            if (meta.raw === null) await env.DB.prepare('DELETE FROM settings WHERE key=? AND value=?').bind(skey, newRaw).run();
+            else await env.DB.prepare('UPDATE settings SET value=? WHERE key=? AND value=?').bind(meta.raw, skey, newRaw).run();
+            return refuse('Could not save to storage. Try again.', 500);
+        }
+        return json({ ok: true, version: next, saved_at: t });
+    }
+    return refuse('Not found', 404);
 }
