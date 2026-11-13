@@ -62,19 +62,6 @@
       outline: none;
     }
 
-    /* Private link: invisible tap area over the diamond in the cover image. Not announced to public users. */
-    .diamond-link {
-      position: fixed;
-      z-index: 5;
-      width: 44px;
-      height: 44px;
-      margin: -22px 0 0 -22px;
-      border-radius: 50%;
-      background: transparent;
-      -webkit-tap-highlight-color: transparent;
-      outline: none;
-    }
-
     .enter-btn svg {
       width: 22px;
       height: 22px;
@@ -131,9 +118,6 @@
       class="cover-image"
       onerror="this.style.background='#080b1a'" />
 
-    <a href="https://anica-blip.github.io/3C-Goal-Tracker/source-notes/index.html"
-       class="diamond-link" id="diamond-link" tabindex="-1" aria-hidden="true" rel="noopener" target="_blank"></a>
-
     <div class="cover-wrap">
       <a href="app.html" class="enter-btn" aria-label="Enter Dash Notes">
         <svg viewBox="0 0 24 24">
@@ -142,29 +126,6 @@
       </a>
     </div>
   </div>
-
-  <script>
-    // Places the private link exactly over the diamond in the cover image (works for the full-bleed
-    // phone layout and the contained desktop card). Diamond centre in the 1080 x 1920 cover: x 385, y 620.
-    (function () {
-      var DX = 385, DY = 620, NW = 1080, NH = 1920;
-      var img = document.querySelector('.cover-image');
-      var link = document.getElementById('diamond-link');
-      if (!img || !link) return;
-      function place() {
-        var r = img.getBoundingClientRect();
-        if (!r.width || !r.height) return;
-        var s = Math.max(r.width / NW, r.height / NH);          // object-fit: cover
-        var ox = (r.width - NW * s) / 2;                         // object-position: center top
-        link.style.left = (r.left + ox + DX * s) + 'px';
-        link.style.top  = (r.top + DY * s) + 'px';
-      }
-      img.addEventListener('load', place);
-      window.addEventListener('resize', place);
-      window.addEventListener('scroll', place, { passive: true });
-      place();
-    })();
-  </script>
 
 </body>
 </html>
