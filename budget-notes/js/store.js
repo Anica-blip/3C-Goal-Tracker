@@ -7,6 +7,8 @@
 import * as E from './engine.js';
 import * as db from './storage.js';
 import { t } from './i18n.js';
+// Cloud saving (Chef only): does nothing unless she is signed in on this browser.
+import { connect, changed } from '../../cloud/cloud-sync.js';
 
 const state = {
   lines: [],
@@ -40,6 +42,31 @@ async function reload() {
   state.lines = await db.getAllLines();
 }
 
+// ── Cloud saving connection ────────────────────────────────
+// A line still in its first-run shape (income/savings row, amount 0, never edited) is not "notes",
+// so a new device holding only those is treated as empty and takes the cloud copy without asking.
+const isPristine = l => !!l && (l.section === 'income' || l.section === 'savings') &&
+  Array.isArray(l.versions) && l.versions.length === 1 && !l.versions[0].patch.amount &&
+  !Object.keys(l.overrides || {}).length && !Object.keys(l.checks || {}).length && !l.endMonth;
+
+/** Replace this device's budget with the cloud copy (same checks as a backup restore). */
+async function cloudReplace(data) {
+  if (!data || !Array.isArray(data.lines)) throw new Error('bad-copy');
+  const lines = data.lines.map(E.normaliseLine).filter(Boolean);
+  await db.replaceAll(lines, Object.assign({}, data.meta, { seeded: true }));
+  await reload();
+}
+
+function startCloud() {
+  connect({
+    app:          'budget-notes',
+    exportFn:     db.exportAll,
+    replaceFn:    cloudReplace,
+    isEmpty:      d => !(d.lines || []).some(l => !isPristine(l)),
+    afterReplace: () => { state.today = E.currentMonthKey(); emit(); },
+  });
+}
+
 // ── Start-up ───────────────────────────────────────────────
 export async function init() {
   state.today = E.currentMonthKey();
@@ -61,6 +88,7 @@ export async function init() {
   }
 
   state.ready = true;
+  startCloud();   // only after the first-run set-up above, so it can never clash with it
   emit();
 }
 
@@ -84,6 +112,7 @@ async function persist(result) {
     emit();
     throw err;
   }
+  if ((result.changed && result.changed.length) || (result.removed && result.removed.length)) changed('budget-notes');
   emit();
   return result;
 }
@@ -125,6 +154,7 @@ export async function restoreData(data) {
   const lines = data.lines.map(E.normaliseLine).filter(Boolean);
   await db.replaceAll(lines, { seeded: true });
   await reload();
+  changed('budget-notes');
   emit();
   return lines.length;
 }
