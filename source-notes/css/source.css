@@ -157,33 +157,13 @@ input[type="date"].field { color-scheme: dark; }
 .toast.err { border-color: rgba(239,68,68,.6); color: #fecaca; }
 
 /* ═══ ENTRY PAGE ═════════════════════════════════════════════ */
-body[data-view="entry"] {
-    background:
-        linear-gradient(180deg, rgba(8,5,25,.15) 0%, rgba(8,5,25,.55) 100%),
-        url('../../assets/sources-notes-cover.png') center top / cover no-repeat fixed,
-        #1a0a3d;
-}
+body[data-view="entry"] { background: radial-gradient(ellipse at 50% 0%, #1a0f3d 0%, var(--bg) 62%) fixed; }
 .entry {
     min-height: calc(100vh - 74px); min-height: calc(100dvh - 74px);
-    display: flex; align-items: flex-end; justify-content: center;
+    display: flex; align-items: center; justify-content: center;
     padding: 24px 16px max(40px, env(safe-area-inset-bottom));
 }
 
-/* Wide screens (desktop, laptop, tablet on its side): the cover is a tall picture, so show ALL of it,
-   fitted to the screen height and centred, with a soft blurred copy filling the sides.
-   Phones (tall screens) keep the full-bleed cover above. */
-@media (min-aspect-ratio: 1/1) {
-    body[data-view="entry"] { background: var(--bg); }
-    body[data-view="entry"]::before,
-    body[data-view="entry"]::after { content: ''; position: fixed; inset: 0; z-index: -1; pointer-events: none; }
-    body[data-view="entry"]::before {
-        background: url('../../assets/sources-notes-cover.png') center / cover no-repeat;
-        filter: blur(48px) brightness(.5) saturate(1.15); transform: scale(1.2);
-    }
-    body[data-view="entry"]::after {
-        background: url('../../assets/sources-notes-cover.png') center top / auto 100% no-repeat;
-    }
-}
 .squares { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; width: 100%; max-width: 420px; }
 @media (min-width: 900px) { .squares { grid-template-columns: repeat(4, 1fr); max-width: 760px; } }
 .square {
