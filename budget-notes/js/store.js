@@ -1,114 +1,130 @@
-// storage.js — IndexedDB foundation
+// store.js — in-memory budget state + persistence + change notifications
 // BUDGET Notes · 3C Thread To Success™
 //
-// This is the ONLY file that knows where data lives. To move Budget Notes to a
-// Cloudflare Worker + D1 later, replace the functions below and nothing else changes.
+// Views read from getState() and re-render when subscribe() callbacks fire.
+// Every change goes: engine (logic) → storage (save) → notify views.
 
-const DB_NAME    = 'budget-notes';
-const DB_VERSION = 1;
+import * as E from './engine.js';
+import * as db from './storage.js';
+import { t } from './i18n.js';
 
-const STORES = {
-  LINES: 'lines',   // one record per budget line (see engine.js)
-  META:  'meta',    // { key, value } — seeded flag, unlocked years
+const state = {
+  lines: [],
+  today: E.currentMonthKey(),
+  ready: false,
 };
 
-// ── Open DB ────────────────────────────────────────────────
-function openDB() {
-  return new Promise((resolve, reject) => {
-    const req = indexedDB.open(DB_NAME, DB_VERSION);
-    req.onupgradeneeded = (e) => {
-      const db = e.target.result;
-      if (!db.objectStoreNames.contains(STORES.LINES))
-        db.createObjectStore(STORES.LINES, { keyPath: 'id' });
-      if (!db.objectStoreNames.contains(STORES.META))
-        db.createObjectStore(STORES.META, { keyPath: 'key' });
-    };
-    req.onsuccess = () => resolve(req.result);
-    req.onerror   = () => reject(req.error);
+const listeners = new Set();
+
+export function subscribe(fn) {
+  listeners.add(fn);
+  return () => listeners.delete(fn);
+}
+
+function emit() {
+  listeners.forEach(fn => {
+    try { fn(); } catch (err) { console.error('[budget-notes] view error', err); }
   });
 }
 
-// ── Run one transaction; resolve only when it has fully committed ──
-async function transact(storeNames, mode, work) {
-  const db = await openDB();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(storeNames, mode);
-    let result;
-    try {
-      result = work(tx);
-    } catch (err) {
-      db.close();
-      reject(err);
-      return;
+export function getState() {
+  return state;
+}
+
+/** Re-draw every view (used when the language changes). */
+export function refresh() {
+  emit();
+}
+
+async function reload() {
+  state.lines = await db.getAllLines();
+}
+
+// ── Start-up ───────────────────────────────────────────────
+export async function init() {
+  state.today = E.currentMonthKey();
+  await reload();
+
+  const seeded = await db.getMeta('seeded', false);
+  if (!seeded) {
+    if (state.lines.length === 0) {
+      // First run: income + savings rows apply to every month of this year (amounts at 0)
+      const year = E.yearOf(state.today);
+      const lines = E.seedDefaults(`${year}-01`, {
+        income:  t('seed.income'),
+        savings: t('seed.savings'),
+      });
+      await db.putLines(lines);
+      state.lines = lines;
     }
-    tx.oncomplete = () => { db.close(); resolve(result && 'result' in result ? result.result : result); };
-    tx.onerror    = () => { db.close(); reject(tx.error); };
-    tx.onabort    = () => { db.close(); reject(tx.error || new Error('Transaction aborted')); };
-  });
+    await db.setMeta('seeded', true);
+  }
+
+  state.ready = true;
+  emit();
 }
 
-// ── Lines ──────────────────────────────────────────────────
-function getAllLines() {
-  return transact(STORES.LINES, 'readonly', tx => tx.objectStore(STORES.LINES).getAll());
+/** Called on a timer / when the tab becomes visible again. Returns true if the Lisbon month changed. */
+export function refreshToday() {
+  const key = E.currentMonthKey();
+  if (key === state.today) return false;
+  state.today = key;
+  emit();
+  return true;
 }
 
-function putLines(lines) {
-  return transact(STORES.LINES, 'readwrite', tx => {
-    const store = tx.objectStore(STORES.LINES);
-    lines.forEach(line => store.put(line));
-  });
+// ── Persist an engine result, then tell the views ──────────
+async function persist(result) {
+  if (result.error) return result;   // refused by the engine — nothing to save
+  try {
+    if (result.changed && result.changed.length) await db.putLines(result.changed);
+    if (result.removed && result.removed.length) await db.deleteLines(result.removed);
+  } catch (err) {
+    await reload();   // memory and disk disagree — trust the disk
+    emit();
+    throw err;
+  }
+  emit();
+  return result;
 }
 
-function deleteLines(ids) {
-  return transact(STORES.LINES, 'readwrite', tx => {
-    const store = tx.objectStore(STORES.LINES);
-    ids.forEach(id => store.delete(id));
-  });
+// ── Changes (all take the month being viewed) ──────────────
+/** dates = { start:{day,month}|null, end:{day,month}|null } */
+export function addLine(section, month, label, amount, once, dates = {}) {
+  return persist(E.addLine(state.lines, {
+    section, month, label, amount, once,
+    start: dates.start || null, end: dates.end || null,
+  }));
 }
 
-// ── Meta ───────────────────────────────────────────────────
-async function getMeta(key, fallback = null) {
-  const rec = await transact(STORES.META, 'readonly', tx => tx.objectStore(STORES.META).get(key));
-  return rec && 'value' in rec ? rec.value : fallback;
+/** patch = { label, amount, day? }, dates = { start, end, endChanged } (Forward edits only) */
+export function updateLine(id, month, patch, once, dates = null) {
+  return persist(E.updateLine(state.lines, id, month, patch, once, dates));
 }
 
-function setMeta(key, value) {
-  return transact(STORES.META, 'readwrite', tx => {
-    tx.objectStore(STORES.META).put({ key, value });
-  });
+export function deleteLine(id, month, once) {
+  return persist(E.deleteLine(state.lines, id, month, once));
 }
 
-// ── Export / import ────────────────────────────────────────
-async function exportAll() {
-  const [lines, metaRecords] = await Promise.all([
-    getAllLines(),
-    transact(STORES.META, 'readonly', tx => tx.objectStore(STORES.META).getAll()),
-  ]);
-  const meta = {};
-  metaRecords.forEach(r => { meta[r.key] = r.value; });
-  return {
-    app: 'budget-notes',
-    version: 1,
-    exportedAt: new Date().toISOString(),
-    lines,
-    meta,
-  };
+export function duplicateLine(id, month, once) {
+  return persist(E.duplicateLine(state.lines, id, month, once));
 }
 
-/** Replace everything (lines + meta) in one transaction. */
-function replaceAll(lines, meta) {
-  return transact([STORES.LINES, STORES.META], 'readwrite', tx => {
-    const lineStore = tx.objectStore(STORES.LINES);
-    const metaStore = tx.objectStore(STORES.META);
-    lineStore.clear();
-    metaStore.clear();
-    lines.forEach(line => lineStore.put(line));
-    Object.entries(meta).forEach(([key, value]) => metaStore.put({ key, value }));
-  });
+export function setChecked(id, month, done) {
+  return persist(E.setChecked(state.lines, id, month, done));
 }
 
-export {
-  getAllLines, putLines, deleteLines,
-  getMeta, setMeta,
-  exportAll, replaceAll,
-};
+// ── Backup / restore ───────────────────────────────────────
+export function exportData() {
+  return db.exportAll();
+}
+
+/** Replaces ALL current data with the backup. Throws 'bad-file' if it is not a Budget Notes backup. */
+export async function restoreData(data) {
+  if (!data || data.app !== 'budget-notes' || !Array.isArray(data.lines)) throw new Error('bad-file');
+  const lines = data.lines.map(E.normaliseLine).filter(Boolean);
+  await db.replaceAll(lines, { seeded: true });
+  await reload();
+  emit();
+  return lines.length;
+}
