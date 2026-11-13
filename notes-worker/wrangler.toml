@@ -1,0 +1,29 @@
+name               = "3c-notes-worker"
+main               = "worker.js"
+compatibility_date = "2024-09-01"
+
+# ── ADDRESS ───────────────────────────────────────────────────────────────────
+routes = [ { pattern = "notes.threadcommand.center", custom_domain = true } ]
+
+# ── CALLS ACCEPTED ONLY FROM THE APP'S OWN ADDRESS (CORS) ─────────────────────
+[vars]
+ALLOWED_ORIGINS = "https://anica-blip.github.io"
+
+# ── R2 BUCKET (shared bucket, SOURCE Notes works inside Notes/source-notes/) ──
+[[r2_buckets]]
+binding     = "BUCKET"
+bucket_name = "3c-boardroom-hq"
+
+# ── D1 DATABASE (record cards, folders, Office file list) ─────────────────────
+# Create it first:  wrangler d1 create 3c-notes   then paste the database_id below.
+[[d1_databases]]
+binding       = "DB"
+database_name = "3c-notes"
+database_id   = "PASTE_DATABASE_ID_HERE"
+
+# ── SECRETS (set with Wrangler — never put values here) ───────────────────────
+# wrangler secret put SUPABASE_URL
+# wrangler secret put SUPABASE_ANON_KEY
+# wrangler secret put ALLOWED_USER_ID
+# wrangler secret put AGENT_KEY
+# wrangler secret put LOCK_SECRET     (keep one offline copy; never change it — see DEPLOY.md)
