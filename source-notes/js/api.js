@@ -6,6 +6,9 @@ import { SUPABASE_URL, SUPABASE_ANON_KEY, WORKER_URL } from './config.js';
 
 export const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+// One GitHub sign-in for the whole repo (login.html at the repo root), then straight back to the app
+export const LOGIN_URL = '../login.html?next=' + encodeURIComponent('source-notes/app.html');
+
 const LOCK_KEY = 'source-notes-lock-token';
 export const getLockToken = () => { try { return localStorage.getItem(LOCK_KEY) || ''; } catch { return ''; } };
 export const setLockToken = t => { try { t ? localStorage.setItem(LOCK_KEY, t) : localStorage.removeItem(LOCK_KEY); } catch { /* ignore */ } };
@@ -30,7 +33,7 @@ export async function signInAgain() {
 
 export async function signOut() {
     await sb.auth.signOut();
-    window.location.href = 'login.html';
+    window.location.href = LOGIN_URL;
 }
 
 export class ApiError extends Error {
@@ -39,7 +42,7 @@ export class ApiError extends Error {
 
 async function send(method, path, { json, body, headers, lock } = {}) {
     const session = await getSession();
-    if (!session) { window.location.href = 'login.html'; throw new ApiError(401, 'Sign in required'); }
+    if (!session) { window.location.href = LOGIN_URL; throw new ApiError(401, 'Sign in required'); }
 
     const h = Object.assign({ 'Authorization': 'Bearer ' + session.access_token }, headers || {});
     if (lock) h['X-Lock-Token'] = getLockToken();
@@ -54,7 +57,7 @@ async function send(method, path, { json, body, headers, lock } = {}) {
     if (!res.ok) {
         let msg = 'Something went wrong';
         try { msg = (await res.json()).error || msg; } catch { /* not json */ }
-        if (res.status === 401) { window.location.href = 'login.html'; }
+        if (res.status === 401) { window.location.href = LOGIN_URL; }
         if (res.status === 423) window.dispatchEvent(new CustomEvent('source-locked'));
         throw new ApiError(res.status, msg);
     }
