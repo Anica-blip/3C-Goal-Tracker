@@ -30,14 +30,14 @@
         const client = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         const msg = document.getElementById('statusMsg');
 
-        // Already signed in on this browser → straight to the shelves
-        client.auth.getSession().then(({ data }) => { if (data && data.session) location.replace('index.html'); });
+        // Already signed in on this browser → straight to the app
+        client.auth.getSession().then(({ data }) => { if (data && data.session) location.replace('app.html'); });
 
         document.getElementById('btnLogin').addEventListener('click', async () => {
             msg.textContent = 'Opening secure access…';
             const { error } = await client.auth.signInWithOAuth({
                 provider: 'github',
-                options: { redirectTo: new URL('index.html', location.href).href }
+                options: { redirectTo: new URL('app.html', location.href).href }
             });
             if (error) msg.textContent = '❌ ' + error.message;
         });
