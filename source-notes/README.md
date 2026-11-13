@@ -33,6 +33,7 @@ Everything you need to file, find and revisit sits in one private place that is 
 ## Technical notes
 
 - Front end: this `source-notes/` folder (GitHub Pages). It holds no data.
+- Pages: `index.html` = cover with the enter button (no toolbar, like Dash Notes) → `app.html` = the four shelves and everything inside (signs in via `login.html` when needed).
 - Worker: `../notes-worker/`, served at `notes.threadcommand.center`. Deployed with Wrangler only.
 - Storage: R2 bucket `3c-boardroom-hq` → `Notes/source-notes/`; cards and folders in D1 (`3c-notes`).
 - Sign-in: GitHub via Supabase, Chef's account only (same account as the Boardroom).
