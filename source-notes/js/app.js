@@ -1,7 +1,7 @@
 // ─── SOURCE Notes — entry page, toolbar and router ───────────────────────────
 // One page, one entry point. Hash routes: (none) entry · #ws · #rs · #as · #os · #os/<folder> · #os/locked · #os/bin
 
-import { getSession, signOut } from './api.js';
+import { getSession, signOut, LOGIN_URL } from './api.js';
 import { h, icon, openModal, fail } from './ui.js';
 import { SHELF, loadShelfData, renderShelf, setRefreshHook, openIndex, redrawOpenBox } from './shelves.js';
 import { renderOffice, appGate } from './office.js';
@@ -83,7 +83,7 @@ async function start() {
 
 async function boot() {
     const session = await getSession();
-    if (!session) { location.replace('login.html'); return; }
+    if (!session) { location.replace(LOGIN_URL); return; }
 
     const meta = (session.user && session.user.user_metadata) || {};
     document.getElementById('userBadge').textContent = meta.user_name ? '@' + meta.user_name : (session.user.email || '');
