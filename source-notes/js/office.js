@@ -3,7 +3,7 @@
 // Same name in the same folder = replace (after a confirm); the version before goes to the Bin.
 // The Locked folder is the same screen behind an 8-digit PIN: files are encrypted in this browser.
 
-import { api, enc, recoverPending, clearRecover, signInAgain } from './api.js';
+import { api, enc, recoverPending, clearRecover, signInAgain, signOut } from './api.js';
 import {
     h, icon, iconBtn, toast, fail, confirmBox, promptBox, openModal,
     fmtSize, fmtDate, extOf, mimeFor, saveBlobAs, validName
@@ -285,7 +285,10 @@ async function renderGate(root, token, opts = {}) {
 
     const show = card => { root.replaceChildren(h('section', { class: 'office-page locked gate' }, card)); };
     const done = opts.done || (() => renderOffice(root, lastParts));
-    const back = appMode ? null : h('button', { class: 'btn ghost sm', type: 'button', onclick: () => { clearRecover(); location.hash = '#os'; } }, 'Back to Office');
+    // Under the button: the app's own PIN screen has no toolbar, so it offers Sign out; the Locked folder's screen goes back to Office.
+    const back = appMode
+        ? h('button', { class: 'btn ghost sm', type: 'button', onclick: async () => { clearRecover(); try { await signOut(); } catch (e) { fail(e); } } }, 'Sign out')
+        : h('button', { class: 'btn ghost sm', type: 'button', onclick: () => { clearRecover(); location.hash = '#os'; } }, 'Back to Office');
 
     // one form: fields → check → run → show the Worker's message if it refuses
     const card = ({ title, intro, fields, label, check, run, extra }) => {
