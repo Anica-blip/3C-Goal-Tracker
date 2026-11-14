@@ -1,16 +1,27 @@
-# mcp-worker/wrangler.toml — 3C SOURCE Notes connector (Stage 1: ping only)
+# mcp-worker/wrangler.toml — 3C SOURCE Notes connector (Stage 2: read-only tools)
 name               = "3c-source-connector"
 main               = "worker.js"
 compatibility_date = "2024-09-01"
 
 # ── ADDRESS ───────────────────────────────────────────────────────────────────
-# Free workers.dev address for the test build: https://3c-source-connector.<your-account-name>.workers.dev
-# No DNS change, no custom domain. Claude connects to it from Anthropic's cloud.
+# Free workers.dev address: https://3c-source-connector.<your-account-name>.workers.dev
+# Claude connects to  <that address>/mcp  from Anthropic's cloud.
 workers_dev = true
 
-# ── NO BINDINGS IN STAGE 1 ────────────────────────────────────────────────────
-# No R2, no D1, no variables. The connector cannot reach any storage yet.
-# (Stage 3 adds the R2 and D1 bindings for the Office shelf only.)
+# ── R2 BUCKET (same shared bucket as the Notes Worker) ────────────────────────
+# Stage 2 only reads from it, and only under Notes/source-notes/office/.
+[[r2_buckets]]
+binding     = "BUCKET"
+bucket_name = "3c-boardroom-hq"
+
+# ── D1 DATABASE (same database as the Notes Worker) ───────────────────────────
+# Stage 2 only SELECTs from it, and only Office rows.
+# Copy the database_id line from your real notes-worker/wrangler.toml and paste it below.
+[[d1_databases]]
+binding       = "DB"
+database_name = "3c-notes"
+database_id   = "PASTE_DATABASE_ID_HERE"
 
 # ── SECRET (set with Wrangler — never put the value here, never commit it) ────
 # wrangler secret put CONNECTOR_KEY     (at least 32 characters, random)
+# Claude sends it as the request header  Authorization: Bearer <key>
