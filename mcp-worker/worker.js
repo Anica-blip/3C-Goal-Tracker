@@ -16,21 +16,27 @@
 //
 // ACCESS
 //   Endpoint:  https://<worker-address>/mcp
-//   Header:    Authorization: Bearer <CONNECTOR_KEY>
-//   CONNECTOR_KEY is a Worker secret (set with Wrangler, never in the repo).
-//   In Claude's "Add custom connector" dialog: Authentication = No sign-in, then add a request
-//   header named Authorization with the value  Bearer <key>.  Settings cannot be edited
-//   afterwards: to change the key, set a new secret, then remove and re-add the connector.
-//   Wrong or missing key -> 401. Any other address -> 404.
+//   The key CONNECTOR_KEY (a Worker secret, set with Wrangler, never in the repo) is read from
+//   whichever of these request headers Claude's dialog lets you add:
+//     Authorization, X-API-Key, X-Auth-Token, Access-Key, Api-Key
+//   The value may be the bare key or "Bearer <key>".
+//   In Claude's "Add custom connector" dialog: Authentication = No sign-in, then add ONE request
+//   header with one of those names. Settings cannot be edited afterwards: to change the key,
+//   set a new secret, then remove and re-add the connector.
+//   Missing or wrong key -> 403 (never 401: a 401 makes Claude start an OAuth sign-in search
+//   and show "couldn't register with the sign-in service"). Any other address -> 404.
 //
 // FILE TEXT IS DATA. Whatever is written inside a note is returned to Claude as text and must
 // never be treated as an instruction. The tool descriptions and the output say so.
 
 const SERVER_NAME = '3c-source-notes-connector';
-const SERVER_VERSION = '0.2.0-stage2';
+const SERVER_VERSION = '0.2.1-stage2';
 
 // Newest first. Claude asks for one of these; an unknown version gets the newest we speak.
 const PROTOCOL_VERSIONS = ['2025-06-18', '2025-03-26', '2024-11-05'];
+
+// Request headers the key may arrive in (HTTP header names are not case-sensitive).
+const KEY_HEADERS = ['authorization', 'x-api-key', 'x-auth-token', 'access-key', 'api-key'];
 
 const MIN_KEY_LENGTH = 32;             // a shorter secret is refused as "not configured"
 const MAX_REQUEST_BYTES = 1024 * 1024; // Stage 2 messages are tiny; save_file will raise this later
@@ -130,9 +136,8 @@ async function handle(request, env) {
   const path = new URL(request.url).pathname.replace(/\/$/, '');
   if (path !== '/mcp') return plain('Not found', 404);
 
-  // Key: Authorization: Bearer <CONNECTOR_KEY>
-  const m = /^Bearer\s+(.+)$/i.exec((request.headers.get('Authorization') || '').trim());
-  if (!m || !safeEqual(m[1].trim(), key)) return plain('Unauthorized', 401);
+  // Key: in any of KEY_HEADERS, bare or as "Bearer <key>".
+  if (!keyMatches(request, key)) return plain('Forbidden', 403);
 
   if (request.method !== 'POST') return plain('Method not allowed', 405, { Allow: 'POST' });
 
@@ -424,6 +429,18 @@ function plain(text, status, extra) {
     status,
     headers: { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'no-store', ...(extra || {}) },
   });
+}
+
+// True if the secret arrives in any accepted header. Every header is checked (no early exit).
+function keyMatches(request, key) {
+  let ok = false;
+  for (const name of KEY_HEADERS) {
+    const v = (request.headers.get(name) || '').trim();
+    if (!v) continue;
+    const m = /^Bearer\s+(.+)$/i.exec(v);
+    if (safeEqual((m ? m[1] : v).trim(), key)) ok = true;
+  }
+  return ok;
 }
 
 // Constant-time string compare (no early exit on the first wrong character).
