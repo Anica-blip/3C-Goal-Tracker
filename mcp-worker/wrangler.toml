@@ -1,0 +1,16 @@
+# mcp-worker/wrangler.toml — 3C SOURCE Notes connector (Stage 1: ping only)
+name               = "3c-source-connector"
+main               = "worker.js"
+compatibility_date = "2024-09-01"
+
+# ── ADDRESS ───────────────────────────────────────────────────────────────────
+# Free workers.dev address for the test build: https://3c-source-connector.<your-account-name>.workers.dev
+# No DNS change, no custom domain. Claude connects to it from Anthropic's cloud.
+workers_dev = true
+
+# ── NO BINDINGS IN STAGE 1 ────────────────────────────────────────────────────
+# No R2, no D1, no variables. The connector cannot reach any storage yet.
+# (Stage 3 adds the R2 and D1 bindings for the Office shelf only.)
+
+# ── SECRET (set with Wrangler — never put the value here, never commit it) ────
+# wrangler secret put CONNECTOR_KEY     (at least 32 characters, random)
