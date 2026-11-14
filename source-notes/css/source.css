@@ -83,6 +83,35 @@ body[data-view="entry"] .watermark { display: block; }
 .user-badge { font-size: .72rem; color: var(--text-3); max-width: 130px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 @media (max-width: 560px) { .user-badge, .lang-chip { display: none; } }
 
+/* link back to DASH Notes (a link that looks like the other toolbar buttons) */
+a.tool-btn { display: inline-flex; align-items: center; gap: 6px; text-decoration: none; }
+a.tool-btn svg { flex-shrink: 0; }
+@media (max-width: 560px) {
+    .toolbar { padding: 10px 8px; gap: 6px; }
+    .brand { gap: 6px; }
+    .logo-dash { font-size: .95rem; }
+    .logo-notes { font-size: .82rem; }
+    .tool-right { gap: 5px; }
+    .tool-btn { padding: 5px 7px; font-size: .66rem; letter-spacing: .03em; }
+    a.tool-btn .dash-text { display: none; }
+    a.tool-btn { padding: 5px 7px; }
+    .icon-btn { width: 30px; height: 30px; }
+    #cloud-mark { width: 22px; }
+}
+@media (max-width: 370px) { .brand img { display: none; } }
+
+/* cloud icon — shows that SOURCE Notes can reach the cloud, where it saves everything straight away */
+#cloud-mark { display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 26px; color: var(--text-3); }
+#cloud-mark[hidden] { display: none; }
+#cloud-mark svg { width: 20px; height: 20px; }
+#cloud-mark .cm-tick, #cloud-mark .cm-bang { display: none; }
+#cloud-mark[data-state="saved"]   { color: var(--cyan); }
+#cloud-mark[data-state="saved"] .cm-tick { display: inline; }
+#cloud-mark[data-state="saving"]  { color: var(--cyan); animation: cloud-pulse 1.1s ease-in-out infinite; }
+#cloud-mark[data-state="unsaved"] { color: #f59e0b; }
+#cloud-mark[data-state="unsaved"] .cm-bang { display: inline; }
+@keyframes cloud-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
+
 /* ── buttons ───────────────────────────────────────────────── */
 .btn {
     display: inline-flex; align-items: center; justify-content: center; gap: 8px;
@@ -166,17 +195,30 @@ body[data-view="entry"] { background: radial-gradient(ellipse at 50% 0%, #1a0f3d
 
 .squares { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; width: 100%; max-width: 420px; }
 @media (min-width: 900px) { .squares { grid-template-columns: repeat(4, 1fr); max-width: 760px; } }
+
+/* Neon glass containers: a see-through tint of the neon colour, a soft glow, no border; the writing takes the same neon colour */
 .square {
-    aspect-ratio: 1 / 1; border: 2px solid transparent; border-radius: 16px;
-    background: var(--sq); color: #1b1240;
+    aspect-ratio: 1 / 1; border: 0; border-radius: 18px; color: var(--sq);
+    background: linear-gradient(150deg, color-mix(in srgb, var(--sq) 38%, transparent) 0%, color-mix(in srgb, var(--sq) 13%, transparent) 100%);
+    -webkit-backdrop-filter: blur(14px) saturate(1.5); backdrop-filter: blur(14px) saturate(1.5);
     display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 8px;
-    padding: 12px; text-align: center; box-shadow: 0 10px 26px rgba(0,0,0,.4);
-    transition: transform .18s ease, box-shadow .18s ease, opacity .25s ease, border-color .2s ease;
+    padding: 12px; text-align: center;
+    text-shadow: 0 0 12px color-mix(in srgb, var(--sq) 60%, transparent);
+    box-shadow: 0 0 30px color-mix(in srgb, var(--sq) 38%, transparent), 0 12px 30px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.10);
+    transition: transform .18s ease, box-shadow .2s ease, opacity .25s ease, background .2s ease;
 }
-.square:hover { transform: translateY(-4px) scale(1.02); box-shadow: 0 16px 34px rgba(0,0,0,.5); }
+.square:hover, .square:focus-visible {
+    transform: translateY(-4px) scale(1.02); outline: none;
+    background: linear-gradient(150deg, color-mix(in srgb, var(--sq) 48%, transparent) 0%, color-mix(in srgb, var(--sq) 18%, transparent) 100%);
+    box-shadow: 0 0 38px color-mix(in srgb, var(--sq) 45%, transparent), 0 16px 34px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.24);
+}
 .sq-title { font-weight: 800; font-size: .95rem; line-height: 1.2; }
-.sq-line  { font-size: .72rem; line-height: 1.35; opacity: .75; }
-.square.pressed { transform: scale(.94); border-color: #fff; box-shadow: 0 0 0 4px rgba(255,255,255,.55), 0 0 32px var(--sq); }
+.sq-line  { font-size: .72rem; line-height: 1.35; opacity: .85; }
+.square.pressed {
+    transform: scale(.94);
+    background: linear-gradient(150deg, color-mix(in srgb, var(--sq) 55%, transparent) 0%, color-mix(in srgb, var(--sq) 22%, transparent) 100%);
+    box-shadow: 0 0 56px color-mix(in srgb, var(--sq) 70%, transparent), 0 8px 24px rgba(0,0,0,.4), inset 0 1px 0 rgba(255,255,255,.3);
+}
 .square.dim { opacity: .35; }
 
 /* ═══ SHELVES 1–3 ════════════════════════════════════════════ */
