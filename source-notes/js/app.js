@@ -9,10 +9,24 @@ import * as vault from './vault.js';
 
 const root = document.getElementById('view');
 
+// Neon colours for the four containers on the entry page (the shelves keep their own colours)
+const NEON = { WS: '#38c8ff', RS: '#4dff9d', AS: '#ffe94d', OS: '#c77dff' };
+
+// Cloud icon: SOURCE Notes saves straight to the cloud, so the icon shows whether the cloud can be reached
+const CLOUD_TEXT = { saved: 'Connected to the cloud', saving: 'Connecting to the cloud…', unsaved: 'Cannot reach the cloud right now' };
+function cloud(state) {
+    const el = document.getElementById('cloud-mark');
+    if (!el) return;
+    el.hidden = false;
+    el.dataset.state = state;
+    el.title = CLOUD_TEXT[state];
+    el.setAttribute('aria-label', CLOUD_TEXT[state]);
+}
+
 function renderEntry() {
     const squares = ['WS', 'RS', 'AS', 'OS'].map(k => {
         const meta = SHELF[k];
-        const btn = h('button', { class: 'square', type: 'button', style: `--sq:${meta.colour}`, 'aria-label': `${meta.title} (${k})` },
+        const btn = h('button', { class: 'square', type: 'button', style: `--sq:${NEON[k]}`, 'aria-label': `${meta.title} (${k})` },
             h('span', { class: 'sq-title' }, `${meta.title} (${k})`),
             h('span', { class: 'sq-line' }, meta.line));
         btn.addEventListener('click', () => {
@@ -61,18 +75,23 @@ const markEntered = on => { try { on ? sessionStorage.setItem(IN_KEY, '1') : ses
 const leave = async () => { markEntered(false); await signOut(); };
 
 async function start() {
+    cloud('saving');
     try {
         await loadShelfData();
+        cloud('saved');
     } catch (e) {
-        if (e.status === 403) { denied('This account does not have access to SOURCE Notes.'); return; }
+        if (e.status === 403) { document.getElementById('cloud-mark').hidden = true; denied('This account does not have access to SOURCE Notes.'); return; }
+        cloud('unsaved');
         fail(e);
     }
 
     setRefreshHook(async () => {
-        try { await loadShelfData(); } catch (e) { fail(e); }
+        try { await loadShelfData(); cloud('saved'); } catch (e) { cloud('unsaved'); fail(e); }
         route();
         redrawOpenBox();
     });
+    window.addEventListener('offline', () => cloud('unsaved'));
+    window.addEventListener('online', () => { loadShelfData().then(() => cloud('saved')).catch(() => cloud('unsaved')); });
     window.addEventListener('hashchange', route);
     // The Worker said the lock is no longer valid (token changed, PIN reset elsewhere) → back to the PIN screen
     window.addEventListener('source-locked', async () => {
