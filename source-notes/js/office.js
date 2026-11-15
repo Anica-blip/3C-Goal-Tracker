@@ -24,6 +24,7 @@ function space(name) {
         folders: async () => (await api.get(base + '/folders', o)).folders,
         files: async id => (await api.get(base + '/files?folder_id=' + enc(id), o)).files,
         createFolder: (n, parent) => api.post(base + '/folders', { name: n, parent_id: parent || null }, o),
+        renameFolder: (id, n) => api.patch(base + '/folders/' + id, { name: n }, o),
         deleteFolder: id => api.del(base + '/folders/' + id, o),
         read: async path => { const b = await api.blob(base + '/file?path=' + enc(path), o); return lock ? vault.decryptBlob(b) : b; },
         write: async (path, blob) => api.put(base + '/file?path=' + enc(path), lock ? await vault.encryptBlob(blob) : blob, o),
@@ -92,6 +93,9 @@ function head(sp, lockedMode, folder) {
             h('button', { class: 'btn ghost', type: 'button', onclick: () => addFolder(sp, null) }, icon('folder', 16), h('span', {}, 'Add Folder')),
             folder
                 ? h('button', { class: 'btn ghost', type: 'button', onclick: () => addFolder(sp, folder.id) }, icon('folder', 16), h('span', {}, 'Add Sub-folder'))
+                : null,
+            folder
+                ? h('button', { class: 'btn danger', type: 'button', title: 'Delete this folder (it must be empty)', onclick: () => deleteFolder(sp, folder) }, icon('trash', 16), h('span', {}, 'Bin folder'))
                 : null));
 }
 
@@ -162,7 +166,7 @@ function openFolderPanel(sp, current, lockedMode, hashFor) {
                 li.append(h('div', { class: 'fs-row tone-' + (tones.get(f.id) || 'blue') + (current && current.id === f.id ? ' active' : '') },
                     h('button', { class: 'fs-name', type: 'button', onclick: () => { panel.close(); location.hash = hashFor(f.id); } },
                         icon('folder', 15), h('span', {}, f.name)),
-                    iconBtn('trash', 'Delete folder', async () => { if (await deleteFolder(sp, f)) await draw(false); }),
+                    iconBtn('edit', 'Edit folder name', async () => { if (await editFolder(sp, f)) await draw(false); }),
                     arrow));
                 if (sub) li.append(sub);
                 return li;
@@ -174,8 +178,22 @@ function openFolderPanel(sp, current, lockedMode, hashFor) {
     return panel;
 }
 
+// Edit (rename) a folder. The files inside, and in its sub-folders, move with it in storage.
+async function editFolder(sp, f) {
+    const n = await promptBox('Folder name', { value: f.name, ok: 'Save', title: 'Edit folder' });
+    if (!n || n === f.name) return false;
+    try {
+        const res = await sp.renameFolder(f.id, n);
+        toast(res && res.moved ? 'Renamed · ' + res.moved + (res.moved === 1 ? ' file' : ' files') + ' moved to the new folder name' : 'Renamed');
+        await refreshOffice();
+        return true;
+    } catch (e) { fail(e); return false; }
+}
+
+// "Bin folder" (red button inside the open folder). Only an empty folder can go: no files, no sub-folders.
+// It is a permanent delete of the empty folder (nothing inside is lost, as nothing is inside).
 async function deleteFolder(sp, f) {
-    if (!(await confirmBox('Delete the folder “' + f.name + '”? It must be empty.', { ok: 'Delete', danger: true }))) return false;
+    if (!(await confirmBox('Bin the folder “' + f.name + '”? It must be empty (no files, no sub-folders). This cannot be undone.', { ok: 'Bin folder', danger: true, title: 'Bin folder' }))) return false;
     try { await sp.deleteFolder(f.id); toast('Folder deleted'); location.hash = lastParts[0] === 'locked' ? '#os/locked' : '#os'; await refreshOffice(); return true; } catch (e) { fail(e); return false; }
 }
 
