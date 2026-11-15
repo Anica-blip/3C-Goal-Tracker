@@ -1,12 +1,13 @@
 // ─── SOURCE Notes — Shelves 1–3 (WS, RS, AS) ─────────────────────────────────
 // One system: same folders, cards and screens. A folder is a box file; every note
 // inside has its own Record Card and carries its number on the shelf (WS0001…).
+// Every note can be moved to the shelf's Bin (and restored, or deleted for good, from there).
 // Also holds the shared Add Folder sidebar and the Index sidebar.
 
 import { api, enc } from './api.js';
 import {
-    h, icon, iconBtn, toast, fail, confirmBox, promptBox, openModal, openSidebar,
-    boxFile, boxColour, fmtDay, fmtSize, todayStr, mimeFor, extOf, validName
+    h, icon, iconBtn, toast, fail, confirmBox, openModal, openSidebar,
+    boxFile, boxColour, fmtDay, fmtDate, fmtSize, todayStr, mimeFor, extOf, validName
 } from './ui.js';
 import { openViewer } from './viewer.js';
 
@@ -18,13 +19,13 @@ export const SHELF = {
 };
 
 // ── data ─────────────────────────────────────────────────────────────────────
-export const data = { folders: [], records: [] };
+export const data = { folders: [], records: [], bin: [] };
 let refreshHook = async () => {};
 export const setRefreshHook = fn => { refreshHook = fn; };
 
 export async function loadShelfData() {
-    const [f, r] = await Promise.all([api.get('/source/folders'), api.get('/source/records')]);
-    data.folders = f.folders; data.records = r.records;
+    const [f, r, b] = await Promise.all([api.get('/source/folders'), api.get('/source/records'), api.get('/source/bin')]);
+    data.folders = f.folders; data.records = r.records; data.bin = b.bin;
 }
 
 const pad = n => String(n).padStart(4, '0');
@@ -52,10 +53,11 @@ export function renderShelf(root, key) {
     const meta = SHELF[key];
     const folders = foldersOf(key);
     const recs = data.records.filter(r => r.shelf === key);
+    const binned = data.bin.filter(r => r.shelf === key).length;
 
     const grid = h('div', { class: 'bf-grid' });
     folders.forEach((f, i) => grid.append(
-        boxFile({ abbr: key, colour: boxColour(i), name: f.name, count: recordsIn(f.id).length || '', onclick: () => openBox(f) })));
+        boxFile({ abbr: key, category: f.category, colour: boxColour(i), name: f.name, count: recordsIn(f.id).length || '', onclick: () => openBox(f) })));
     if (!folders.length) grid.append(h('p', { class: 'empty' }, 'No box files yet. Use Add Folder to make the first one.'));
 
     root.replaceChildren(h('section', { class: 'shelf-page', style: `--accent:${meta.colour}` },
@@ -67,6 +69,8 @@ export function renderShelf(root, key) {
                 h('p', {}, meta.line),
                 h('p', { class: 'shelf-count' }, `${folders.length} ${folders.length === 1 ? 'folder' : 'folders'} · ${recs.length} ${recs.length === 1 ? 'note' : 'notes'}`)),
             h('div', { class: 'shelf-actions' },
+                h('button', { class: 'btn ghost', type: 'button', title: 'Notes put aside from this shelf', onclick: () => openBin(key) },
+                    icon('bin', 16), h('span', {}, 'Bin'), binned ? h('span', { class: 'bin-count' }, binned) : null),
                 h('button', { class: 'btn ghost', type: 'button', onclick: () => openFolderSidebar({ shelf: key }) }, icon('folder', 16), h('span', {}, 'Add Folder')),
                 h('button', { class: 'btn primary', type: 'button', onclick: () => openCard({ mode: 'create', shelf: key }) }, icon('plus', 16), h('span', {}, 'Add Card')))),
         grid));
@@ -93,11 +97,26 @@ export function openBox(folder) {
 
 export function noteRow(r) {
     const due = r.look_again && r.look_again <= todayStr();
-    return h('li', { class: 'note-row' },
+    const bin = iconBtn('trash', 'Move to the Bin', async () => { if (await binNote(r)) li.remove(); });
+    bin.classList.add('danger');
+    const li = h('li', { class: 'note-row' },
         h('span', { class: 'note-id' }, r.file_id),
         h('span', { class: 'note-title' }, r.title, due ? h('span', { class: 'due', title: 'Look again by ' + fmtDay(r.look_again) }, 'look again') : null),
         iconBtn('eye', 'Record card', () => openCard({ mode: 'view', record: r })),
-        iconBtn('search', 'Open full screen', () => openRecord(r)));
+        iconBtn('search', 'Open full screen', () => openRecord(r)),
+        bin);
+    return li;
+}
+
+// Moves one note to its shelf's Bin (nothing is lost; it can be restored). Returns true when done.
+async function binNote(r) {
+    if (!(await confirmBox('Move ' + r.file_id + ' · ' + r.title + ' to the Bin?', { ok: 'Move to Bin', title: 'Move to the Bin' }))) return false;
+    try {
+        await api.post(`/source/records/${r.id}/bin`);
+        toast('Moved to the Bin');
+        await refreshHook();
+        return true;
+    } catch (e) { fail(e); return false; }
 }
 
 export function openRecord(r, startEditing = false) {
@@ -107,7 +126,6 @@ export function openRecord(r, startEditing = false) {
         save: blob => api.put(`/source/records/${r.id}/file`, blob, { headers: { 'Content-Type': mimeFor(r.file_name) } }),
         upload: file => api.put(`/source/records/${r.id}/file`, file, { headers: { 'X-File-Name': enc(file.name), 'Content-Type': file.type || 'application/octet-stream' } }),
         duplicate: () => api.post(`/source/records/${r.id}/duplicate`),
-        remove: () => api.del(`/source/records/${r.id}`),
         onChange: () => refreshHook()
     });
 }
@@ -135,11 +153,13 @@ function drawView(m, r) {
         row('Look again by', fmtDay(r.look_again)),
         row('File', r.file_name + ' · ' + fmtSize(r.size)),
         h('div', { class: 'btn-row' },
+            h('button', { class: 'btn danger', type: 'button', onclick: async () => { if (await binNote(r)) m.close(); } }, icon('trash', 16), h('span', {}, 'Move to Bin')),
             h('button', { class: 'btn ghost', type: 'button', onclick: () => drawForm(m, { mode: 'edit', record: r }) }, icon('edit', 16), h('span', {}, 'Edit card')),
             h('button', { class: 'btn primary', type: 'button', onclick: () => m.close() }, 'Close'))));
 }
 
 const KEYS = ['WS', 'RS', 'AS', 'OS'];
+const cleanCategory = t => String(t).toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 5);
 const cleanFileName = t => String(t).trim().replace(/[\/\\\u0000-\u001f]+/g, '-').replace(/^\.+/, '').slice(0, 110);
 
 function drawForm(m, { mode, record, shelf, folderId }) {
@@ -240,7 +260,7 @@ function drawForm(m, { mode, record, shelf, folderId }) {
         aboutBlock,
         h('div', {}, folderLbl, folder),
         whyBlock, lookBlock,
-        editing ? h('p', { class: 'hint' }, 'The note itself is edited from the magnifying glass. Changing the shelf moves this note to the next number on the new shelf; the stored file stays where it is.') :
+        editing ? h('p', { class: 'hint' }, 'The note itself is edited from the magnifying glass. Changing the shelf or the folder moves this note, and its stored file, to the new place; a new shelf also gives it the next number there.') :
             h('div', {},
                 h('label', { class: 'lbl' }, 'Content'),
                 h('div', { class: 'format-row' }, h('span', { class: 'lbl inline' }, 'Written as'), format),
@@ -305,6 +325,43 @@ function drawForm(m, { mode, record, shelf, folderId }) {
     setTimeout(() => title.focus(), 40);
 }
 
+// ── shelf Bin: notes put aside, restored or deleted for good from here ───────
+export function openBin(shelfKey) {
+    const meta = SHELF[shelfKey];
+    const list = h('div');
+    const m = openModal({ title: 'Bin · ' + meta.title, wide: true, body: list });
+
+    const draw = () => {
+        const items = data.bin.filter(r => r.shelf === shelfKey);
+        list.replaceChildren(
+            h('p', { class: 'bin-hint' }, 'Notes in the Bin have no File ID. A restored note goes back to its box file at the end of the shelf and takes the next number.'),
+            items.length
+                ? h('ul', { class: 'note-list' }, ...items.map(binRow))
+                : h('p', { class: 'empty' }, 'The Bin is empty.'));
+    };
+    const after = async () => { await refreshHook(); draw(); };
+
+    const binRow = r => h('li', { class: 'note-row' },
+        h('span', { class: 'note-title' }, r.title,
+            h('span', { class: 'note-meta' }, r.file_name + ' · from ' + (folderPath(r.folder_id) || 'a removed folder') + ' · binned ' + fmtDate(r.bin_at))),
+        h('span', { class: 'bin-actions' },
+            iconBtn('search', 'Open (read only)', () => openViewer({
+                title: r.title, sub: 'In the Bin · ' + r.file_name, name: r.file_name,
+                load: () => api.blob(`/source/records/${r.id}/file`),
+                save: async () => { throw new Error('This note is in the Bin. Restore it first.'); }
+            })),
+            h('button', { class: 'btn ghost sm', type: 'button', onclick: async () => {
+                try { await api.post(`/source/records/${r.id}/restore`); toast('Restored'); await after(); } catch (e) { fail(e); }
+            } }, icon('move', 16), h('span', {}, 'Restore')),
+            h('button', { class: 'btn danger sm', type: 'button', onclick: async () => {
+                if (!(await confirmBox('Delete “' + r.title + '” for good? This cannot be undone.', { ok: 'Delete for good', danger: true }))) return;
+                try { await api.del(`/source/records/${r.id}`); toast('Deleted for good'); await after(); } catch (e) { fail(e); }
+            } }, icon('trash', 16), h('span', {}, 'Delete'))));
+
+    draw();
+    return m;
+}
+
 // ── Index sidebar: File IDs and titles ───────────────────────────────────────
 export async function openIndex() {
     const list = h('div', { class: 'index-list' }, h('p', { class: 'empty' }, 'Loading…'));
@@ -341,12 +398,16 @@ export function openFolderSidebar({ shelf = 'WS' } = {}) {
     });
     const parent = h('select', { class: 'field' });
     const name = h('input', { class: 'field', type: 'text', maxlength: '60', placeholder: 'Folder name' });
+    const cat = h('input', { class: 'field caps', type: 'text', maxlength: '5', placeholder: 'e.g. DASH', autocomplete: 'off' });
+    cat.addEventListener('input', () => { cat.value = cleanCategory(cat.value); });
+    const catBlock = h('div', {}, h('label', { class: 'lbl' }, 'Category on the spine (up to 5 capital letters, optional)'), cat);
     const treeBox = h('div', { class: 'ftree-box' });
 
     const body = h('div', {},
         h('label', { class: 'lbl' }, 'Shelf'), h('div', { class: 'ticks' }, ticks),
         h('label', { class: 'lbl' }, 'Make it inside'), parent,
         h('label', { class: 'lbl' }, 'Folder name'), name,
+        catBlock,
         h('div', { class: 'btn-row' }, h('button', { class: 'btn primary', type: 'button', onclick: create }, icon('plus', 16), h('span', {}, 'Create folder'))),
         h('div', { class: 'divider' }),
         h('div', { class: 'lbl' }, 'Folders'), treeBox);
@@ -355,8 +416,8 @@ export function openFolderSidebar({ shelf = 'WS' } = {}) {
     const s = openSidebar({ title: 'Add Folder', body });
 
     const current = () => sel === 'OS'
-        ? office.map(f => ({ id: f.id, parent_id: f.parent_id, name: f.name }))
-        : foldersOf(sel).map(f => ({ id: f.id, parent_id: f.parent_id, name: f.name }));
+        ? office.map(f => ({ id: f.id, parent_id: f.parent_id, name: f.name, category: '' }))
+        : foldersOf(sel).map(f => ({ id: f.id, parent_id: f.parent_id, name: f.name, category: f.category || '' }));
 
     function pathOf(list, id) {
         const parts = []; let cur = list.find(f => f.id === id); let g = 0;
@@ -366,6 +427,7 @@ export function openFolderSidebar({ shelf = 'WS' } = {}) {
 
     async function draw() {
         if (sel === 'OS') { try { office = (await api.get('/office/folders')).folders; } catch (e) { fail(e); office = []; } }
+        catBlock.style.display = sel === 'OS' ? 'none' : '';      // the Office shelf has no categories
         const list = current();
         parent.replaceChildren(h('option', { value: '' }, 'Nothing — a main folder'),
             ...list.map(f => ({ id: f.id, label: pathOf(list, f.id) })).sort((a, b) => a.label.localeCompare(b.label))
@@ -382,8 +444,8 @@ export function openFolderSidebar({ shelf = 'WS' } = {}) {
             const toggle = () => { if (sub) sub.hidden = !sub.hidden; else openFolder(f); };
             const rowEl = h('div', { class: 'ftree-row' },
                 h('button', { class: 'ftree-name', type: 'button', onclick: toggle },
-                    icon('folder', 15), h('span', {}, f.name), sub ? h('span', { class: 'chev' }, '▾') : null),
-                sel !== 'OS' ? iconBtn('edit', 'Rename', () => rename(f)) : null,
+                    icon('folder', 15), h('span', {}, f.name), f.category ? h('span', { class: 'cat-tag' }, f.category) : null, sub ? h('span', { class: 'chev' }, '▾') : null),
+                sel !== 'OS' ? iconBtn('edit', 'Rename or change category', () => editFolder(f)) : null,
                 iconBtn('trash', 'Delete folder', () => remove(f)));
             return h('li', {}, rowEl, sub);
         }));
@@ -402,8 +464,8 @@ export function openFolderSidebar({ shelf = 'WS' } = {}) {
         if (!n) { toast('Give the folder a name', 'err'); name.focus(); return; }
         try {
             if (sel === 'OS') await api.post('/office/folders', { name: n, parent_id: parent.value || null });
-            else await api.post('/source/folders', { shelf: sel, name: n, parent_id: parent.value || null });
-            name.value = '';
+            else await api.post('/source/folders', { shelf: sel, name: n, parent_id: parent.value || null, category: cat.value });
+            name.value = ''; cat.value = '';
             toast('Folder created');
             if (sel !== 'OS') await loadShelfData();
             await draw();
@@ -411,10 +473,32 @@ export function openFolderSidebar({ shelf = 'WS' } = {}) {
         } catch (e) { fail(e); }
     }
 
-    async function rename(f) {
-        const n = await promptBox('New folder name', { value: f.name, ok: 'Rename' });
-        if (!n) return;
-        try { await api.patch('/source/folders/' + f.id, { name: n }); await loadShelfData(); await draw(); await refreshHook(); toast('Renamed'); } catch (e) { fail(e); }
+    // Name and category in one small popup. A new name moves the notes inside to the new storage path.
+    function editFolder(f) {
+        const nm = h('input', { class: 'field', type: 'text', maxlength: '60', value: f.name });
+        const ct = h('input', { class: 'field caps', type: 'text', maxlength: '5', value: f.category || '', placeholder: 'e.g. DASH', autocomplete: 'off' });
+        ct.addEventListener('input', () => { ct.value = cleanCategory(ct.value); });
+        const save = h('button', { class: 'btn primary', type: 'submit' }, 'Save');
+        const form = h('form', { novalidate: true },
+            h('label', { class: 'lbl' }, 'Folder name'), nm,
+            h('label', { class: 'lbl' }, 'Category on the spine (up to 5 capital letters, optional)'), ct,
+            h('div', { class: 'btn-row' },
+                h('button', { class: 'btn ghost', type: 'button', onclick: () => em.close() }, 'Cancel'), save));
+        form.addEventListener('submit', async e => {
+            e.preventDefault();
+            const n = nm.value.trim();
+            if (!n) { nm.focus(); return; }
+            if (n === f.name && ct.value === (f.category || '')) { em.close(); return; }
+            save.disabled = true;
+            try {
+                const res = await api.patch('/source/folders/' + f.id, { name: n, category: ct.value });
+                em.close();
+                await loadShelfData(); await draw(); await refreshHook();
+                toast(res && res.moved ? 'Saved · ' + res.moved + (res.moved === 1 ? ' note' : ' notes') + ' moved to the new folder name' : 'Saved');
+            } catch (err) { save.disabled = false; fail(err); }
+        });
+        const em = openModal({ title: 'Edit folder', cls: 'small', body: form });
+        setTimeout(() => { nm.focus(); nm.select(); }, 30);
     }
 
     async function remove(f) {
