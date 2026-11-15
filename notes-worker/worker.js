@@ -16,7 +16,9 @@
 //   Chef only: PUT /apps/<app>/data?base=<version> → saves if base matches, else 409; the replaced copy is kept as data-previous.json
 //
 // R2 LAYOUT (inside the bucket)
-//   Notes/source-notes/shelves/<record id>/<file name>
+//   Notes/source-notes/shelves/<WS|RS|AS>/<box folder path>/<file name>   (a repeated name becomes "name (2).ext")
+//   Notes/source-notes/shelves/<WS|RS|AS>/Bin/<name_date_time.ext>        (shelf Bin, can be restored)
+//   Older notes keep their old key (shelves/<record id>/<file name>) until saved again.
 //   Notes/source-notes/office/<folder path>/<file name>
 //   Notes/source-notes/office/Bin/<name_date_time.ext>
 //   Notes/source-notes/locked/<folder path>/<file name>   (contents encrypted in the browser)
@@ -211,6 +213,7 @@ async function route(request, env, auth) {
     if (seg[0] === 'source') {
         if (seg[1] === 'folders') return shelfFolders(ctx, seg);
         if (seg[1] === 'records') return shelfRecords(ctx, seg);
+        if (seg[1] === 'bin' && method === 'GET') return shelfBin(ctx);
         return refuse('Not found', 404);
     }
 
@@ -250,8 +253,8 @@ async function shelfFolders(ctx, seg) {
     if (method === 'GET' && !id) {
         const shelf = q.get('shelf');
         const { results } = shelf
-            ? await env.DB.prepare("SELECT id, shelf, parent_id, name, ord FROM folders WHERE side='shelves' AND shelf=? ORDER BY ord, created_at").bind(shelf).all()
-            : await env.DB.prepare("SELECT id, shelf, parent_id, name, ord FROM folders WHERE side='shelves' ORDER BY shelf, ord, created_at").all();
+            ? await env.DB.prepare("SELECT id, shelf, parent_id, name, ord, category FROM folders WHERE side='shelves' AND shelf=? ORDER BY ord, created_at").bind(shelf).all()
+            : await env.DB.prepare("SELECT id, shelf, parent_id, name, ord, category FROM folders WHERE side='shelves' ORDER BY shelf, ord, created_at").all();
         return json({ folders: results });
     }
 
@@ -261,7 +264,10 @@ async function shelfFolders(ctx, seg) {
         const name = cleanName(b.name, 60);
         if (!name) return refuse('Folder name is not valid', 400);
         if (!SHELVES.includes(b.shelf)) return refuse('Choose a shelf: WS, RS or AS', 400);
+        const category = cleanCategory(b.category);
+        if (category === null) return refuse('Category: up to 5 capital letters or numbers', 400);
         let parentId = b.parent_id || null;
+        if (!parentId && name.toLowerCase() === 'bin') return refuse('"Bin" is reserved', 400);
         if (parentId) {
             const p = await env.DB.prepare("SELECT id, shelf FROM folders WHERE id=? AND side='shelves'").bind(parentId).first();
             if (!p) return refuse('Parent folder not found', 404);
@@ -272,32 +278,43 @@ async function shelfFolders(ctx, seg) {
         ).bind(b.shelf, parentId || '', name).first();
         if (dup) return refuse('A folder with that name already exists here', 409);
         const max = await env.DB.prepare("SELECT IFNULL(MAX(ord),0) AS m FROM folders WHERE side='shelves' AND shelf=?").bind(b.shelf).first();
-        const row = { id: crypto.randomUUID(), side: 'shelves', shelf: b.shelf, parent_id: parentId, name, ord: (max.m || 0) + 1 };
-        await env.DB.prepare('INSERT INTO folders (id, side, shelf, parent_id, name, ord, created_at) VALUES (?,?,?,?,?,?,?)')
-            .bind(row.id, row.side, row.shelf, row.parent_id, row.name, row.ord, nowIso()).run();
+        const row = { id: crypto.randomUUID(), side: 'shelves', shelf: b.shelf, parent_id: parentId, name, ord: (max.m || 0) + 1, category };
+        await env.DB.prepare('INSERT INTO folders (id, side, shelf, parent_id, name, ord, category, created_at) VALUES (?,?,?,?,?,?,?,?)')
+            .bind(row.id, row.side, row.shelf, row.parent_id, row.name, row.ord, row.category, nowIso()).run();
         return json({ folder: row }, 201);
     }
 
     if (method === 'PATCH' && id) {
         const b = await bodyJson(ctx.request);
-        const name = b && cleanName(b.name, 60);
-        if (!name) return refuse('Folder name is not valid', 400);
+        if (!b) return refuse('Invalid request', 400);
         const f = await env.DB.prepare("SELECT * FROM folders WHERE id=? AND side='shelves'").bind(id).first();
         if (!f) return refuse('Folder not found', 404);
+        const name = b.name !== undefined ? cleanName(b.name, 60) : f.name;
+        if (!name) return refuse('Folder name is not valid', 400);
+        let category = f.category || '';
+        if (b.category !== undefined) {
+            category = cleanCategory(b.category);
+            if (category === null) return refuse('Category: up to 5 capital letters or numbers', 400);
+        }
+        if (!f.parent_id && name.toLowerCase() === 'bin') return refuse('"Bin" is reserved', 400);
         const dup = await env.DB.prepare(
             "SELECT id FROM folders WHERE side='shelves' AND shelf=? AND IFNULL(parent_id,'')=? AND lower(name)=lower(?) AND id<>?"
         ).bind(f.shelf, f.parent_id || '', name, id).first();
         if (dup) return refuse('A folder with that name already exists here', 409);
-        await env.DB.prepare('UPDATE folders SET name=? WHERE id=?').bind(name, id).run();
-        return json({ ok: true });
+        await env.DB.prepare('UPDATE folders SET name=?, category=? WHERE id=?').bind(name, category, id).run();
+        // A new name means a new storage path: the notes inside (and in its sub-folders) move with it.
+        const moved = name !== f.name ? await moveFolderContents(env, f.shelf, id) : 0;
+        return json({ ok: true, moved });
     }
 
     if (method === 'DELETE' && id) {
         const f = await env.DB.prepare("SELECT id FROM folders WHERE id=? AND side='shelves'").bind(id).first();
         if (!f) return refuse('Folder not found', 404);
         const kids = await env.DB.prepare('SELECT COUNT(*) AS n FROM folders WHERE parent_id=?').bind(id).first();
-        const recs = await env.DB.prepare('SELECT COUNT(*) AS n FROM records WHERE folder_id=?').bind(id).first();
+        const recs = await env.DB.prepare('SELECT COUNT(*) AS n FROM records WHERE folder_id=? AND bin=0').bind(id).first();
         if (kids.n || recs.n) return refuse('This folder is not empty', 409);
+        const binned = await env.DB.prepare('SELECT COUNT(*) AS n FROM records WHERE folder_id=? AND bin=1').bind(id).first();
+        if (binned.n) return refuse('This folder still has notes in the Bin. Restore them or delete them for good first.', 409);
         await env.DB.prepare('DELETE FROM folders WHERE id=?').bind(id).run();
         return json({ ok: true });
     }
@@ -321,12 +338,94 @@ function withFileIds(rows) {
 
 async function allRecords(env, shelf) {
     const { results } = shelf
-        ? await env.DB.prepare('SELECT * FROM records WHERE shelf=? ORDER BY ord, created_at, id').bind(shelf).all()
-        : await env.DB.prepare('SELECT * FROM records ORDER BY shelf, ord, created_at, id').all();
+        ? await env.DB.prepare('SELECT * FROM records WHERE shelf=? AND bin=0 ORDER BY ord, created_at, id').bind(shelf).all()
+        : await env.DB.prepare('SELECT * FROM records WHERE bin=0 ORDER BY shelf, ord, created_at, id').all();
     return withFileIds(results);
 }
 
-const recKey = (id, name) => BASE + 'shelves/' + id + '/' + name;
+// ── where a note's file lives in R2 ──────────────────────────────────────────
+// shelves/<shelf>/<box folder path>/<file name>
+const shelfDir = (shelf, folderPath) => BASE + 'shelves/' + shelf + '/' + (folderPath ? folderPath + '/' : '');
+
+async function loadShelfFolders(env, shelf) {
+    const { results } = await env.DB.prepare("SELECT id, parent_id, name FROM folders WHERE side='shelves' AND shelf=?").bind(shelf).all();
+    const byId = new Map(results.map(r => [r.id, r]));
+    const pathOf = id => {
+        const parts = []; let cur = byId.get(id); let guard = 0;
+        while (cur && guard++ < 50) { parts.unshift(cur.name); cur = cur.parent_id ? byId.get(cur.parent_id) : null; }
+        return parts.join('/');
+    };
+    return { rows: results, byId, pathOf };
+}
+
+// A name that is free in that directory: report.md, report (2).md, report (3).md ...
+function numberedName(name, n) {
+    const dot = name.lastIndexOf('.');
+    const stem = (dot > 0 ? name.slice(0, dot) : name).replace(/ \(\d+\)$/, '');
+    return stem + ' (' + n + ')' + (dot > 0 ? name.slice(dot) : '');
+}
+
+async function freeKey(env, dir, name, ownKey) {
+    let cand = name, n = 1;
+    for (;;) {
+        const key = dir + cand;
+        if (key === ownKey || !(await env.BUCKET.head(key))) return { key, name: cand };
+        n++; cand = numberedName(name, n);
+        if (n > 500) throw new Error('Too many files with the same name here');
+    }
+}
+
+// Copy then remove. Returns false when there was no stored file to move.
+async function moveObject(env, from, to, name) {
+    if (from === to) return true;
+    const obj = await env.BUCKET.get(from);
+    if (!obj) return false;
+    await env.BUCKET.put(to, await obj.arrayBuffer(), { httpMetadata: { contentType: typeFor(name) } });
+    await env.BUCKET.delete(from);
+    return true;
+}
+
+// Category on a box folder: up to 5 capital letters or numbers. '' is allowed (no category).
+function cleanCategory(raw) {
+    const s = String(raw == null ? '' : raw).trim().toUpperCase();
+    if (!s) return '';
+    return /^[A-Z0-9]{1,5}$/.test(s) ? s : null;
+}
+
+// After a folder is renamed: bring every note inside it (and its sub-folders) to the new path.
+async function moveFolderContents(env, shelf, folderId) {
+    const idx = await loadShelfFolders(env, shelf);
+    const ids = new Set([folderId]);
+    for (let grew = true; grew;) {
+        grew = false;
+        for (const r of idx.rows) {
+            if (r.parent_id && ids.has(r.parent_id) && !ids.has(r.id)) { ids.add(r.id); grew = true; }
+        }
+    }
+    const { results } = await env.DB.prepare('SELECT * FROM records WHERE shelf=? AND bin=0 ORDER BY ord, created_at, id').bind(shelf).all();
+    const mine = results.filter(r => ids.has(r.folder_id));
+    const taken = new Map();                      // directory → names already in use there
+    const usedIn = dir => { if (!taken.has(dir)) taken.set(dir, new Set()); return taken.get(dir); };
+    for (const r of mine) {                       // notes already sitting at their right key keep their name
+        const dir = shelfDir(shelf, idx.pathOf(r.folder_id));
+        if (r.storage_key === dir + r.file_name) usedIn(dir).add(r.file_name);
+    }
+    let moved = 0;
+    for (const r of mine) {
+        const dir = shelfDir(shelf, idx.pathOf(r.folder_id));
+        if (r.storage_key === dir + r.file_name) continue;
+        const used = usedIn(dir);
+        let name = r.file_name, n = 1;
+        while (used.has(name)) { n++; name = numberedName(r.file_name, n); }
+        used.add(name);
+        await moveObject(env, r.storage_key, dir + name, name);
+        await env.DB.prepare('UPDATE records SET storage_key=?, file_name=? WHERE id=?').bind(dir + name, name, r.id).run();
+        moved++;
+    }
+    return moved;
+}
+
+const IN_BIN = 'This note is in the Bin. Restore it first.';
 
 async function shelfRecords(ctx, seg) {
     const { env, method, q } = ctx;
@@ -350,21 +449,23 @@ async function shelfRecords(ctx, seg) {
         if (folder.shelf !== b.shelf) return refuse('That folder is on a different shelf', 400);
 
         const format = b.format === 'txt' ? 'txt' : 'md';
-        const fileName = cleanName(b.file_name) || (slugify(title) + '.' + format);
+        const wantedName = cleanName(b.file_name) || (slugify(title) + '.' + format);
         const id2 = crypto.randomUUID();
+        const idx = await loadShelfFolders(env, b.shelf);
+        const slot = await freeKey(env, shelfDir(b.shelf, idx.pathOf(b.folder_id)), wantedName, null);
         let size = 0;
         if (typeof b.content === 'string') {
             const bytes = enc.encode(b.content);
             if (bytes.byteLength > MAX_BYTES) return refuse('File is too large (25 MB limit)', 413);
             size = bytes.byteLength;
-            await env.BUCKET.put(recKey(id2, fileName), bytes, { httpMetadata: { contentType: typeFor(fileName) } });
+            await env.BUCKET.put(slot.key, bytes, { httpMetadata: { contentType: typeFor(slot.name) } });
         }
         const max = await env.DB.prepare('SELECT IFNULL(MAX(ord),0) AS m FROM records WHERE shelf=?').bind(b.shelf).first();
         const t = nowIso();
         await env.DB.prepare(
             'INSERT INTO records (id, shelf, folder_id, ord, title, about, why, look_again, file_name, file_type, storage_key, size, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)'
         ).bind(id2, b.shelf, b.folder_id, (max.m || 0) + 1, title, str(b.about), str(b.why), str(b.look_again),
-            fileName, extOf(fileName), recKey(id2, fileName), size, t, t).run();
+            slot.name, extOf(slot.name), slot.key, size, t, t).run();
         const list = await allRecords(env, b.shelf);
         return json({ record: list.find(r => r.id === id2) }, 201);
     }
@@ -373,11 +474,19 @@ async function shelfRecords(ctx, seg) {
     if (!rec) return refuse('Note not found', 404);
 
     if (method === 'GET' && !sub) {
+        if (rec.bin) {
+            return json({ record: {
+                id: rec.id, shelf: rec.shelf, folder_id: rec.folder_id, title: rec.title, about: rec.about, why: rec.why,
+                look_again: rec.look_again, file_name: rec.file_name, file_type: rec.file_type, size: rec.size,
+                created_at: rec.created_at, updated_at: rec.updated_at, bin: true, bin_at: rec.bin_at
+            } });
+        }
         const list = await allRecords(env, rec.shelf);
         return json({ record: list.find(r => r.id === id) });
     }
 
     if (method === 'PATCH' && !sub) {
+        if (rec.bin) return refuse(IN_BIN, 409);
         const b = await bodyJson(ctx.request);
         if (!b) return refuse('Invalid request', 400);
         const title = b.title !== undefined ? String(b.title).trim().slice(0, 140) : rec.title;
@@ -390,38 +499,76 @@ async function shelfRecords(ctx, seg) {
         if (folder.shelf !== newShelf) return refuse('That folder is on a different shelf', 400);
         let ord = rec.ord;
         if (newShelf !== rec.shelf) {
-            // Moving shelf: next number on the new shelf. The stored file stays where it is.
+            // Moving shelf: next number on the new shelf.
             const max = await env.DB.prepare('SELECT IFNULL(MAX(ord),0) AS m FROM records WHERE shelf=?').bind(newShelf).first();
             ord = (max.m || 0) + 1;
         }
+        // The stored file follows the note: new box folder, new shelf, or an older note saved again.
+        const idx = await loadShelfFolders(env, newShelf);
+        const dir = shelfDir(newShelf, idx.pathOf(newFolder));
+        let key = rec.storage_key, fileName = rec.file_name;
+        if (rec.storage_key !== dir + rec.file_name) {
+            const slot = await freeKey(env, dir, rec.file_name, rec.storage_key);
+            await moveObject(env, rec.storage_key, slot.key, slot.name);
+            key = slot.key; fileName = slot.name;
+        }
         await env.DB.prepare(
-            'UPDATE records SET shelf=?, folder_id=?, ord=?, title=?, about=?, why=?, look_again=?, updated_at=? WHERE id=?'
+            'UPDATE records SET shelf=?, folder_id=?, ord=?, title=?, about=?, why=?, look_again=?, file_name=?, file_type=?, storage_key=?, updated_at=? WHERE id=?'
         ).bind(newShelf, newFolder, ord, title,
             b.about !== undefined ? str(b.about) : rec.about,
             b.why !== undefined ? str(b.why) : rec.why,
             b.look_again !== undefined ? str(b.look_again) : rec.look_again,
-            nowIso(), id).run();
+            fileName, extOf(fileName), key, nowIso(), id).run();
         const list = await allRecords(env, newShelf);
         return json({ record: list.find(r => r.id === id) });
     }
 
+    // Permanent delete (the app uses this from inside the Bin).
     if (method === 'DELETE' && !sub) {
         await env.BUCKET.delete(rec.storage_key);
         await env.DB.prepare('DELETE FROM records WHERE id=?').bind(id).run();
         return json({ ok: true });
     }
 
+    // Move to the shelf Bin: the file goes to shelves/<shelf>/Bin/ and the note leaves the shelf numbering.
+    if (method === 'POST' && sub === 'bin') {
+        if (rec.bin) return refuse('This note is already in the Bin', 409);
+        const dir = shelfDir(rec.shelf, 'Bin');
+        const slot = await freeKey(env, dir, binName(rec.file_name), null);
+        const moved = await moveObject(env, rec.storage_key, slot.key, rec.file_name);
+        await env.DB.prepare('UPDATE records SET bin=1, bin_at=?, storage_key=? WHERE id=?')
+            .bind(nowIso(), moved ? slot.key : rec.storage_key, id).run();
+        return json({ ok: true });
+    }
+
+    // Restore from the Bin to its box folder, at the end of the shelf.
+    if (method === 'POST' && sub === 'restore') {
+        if (!rec.bin) return refuse('This note is not in the Bin', 409);
+        const folder = await env.DB.prepare("SELECT id FROM folders WHERE id=? AND side='shelves'").bind(rec.folder_id).first();
+        if (!folder) return refuse('Its box folder no longer exists', 409);
+        const idx = await loadShelfFolders(env, rec.shelf);
+        const slot = await freeKey(env, shelfDir(rec.shelf, idx.pathOf(rec.folder_id)), rec.file_name, null);
+        const moved = await moveObject(env, rec.storage_key, slot.key, slot.name);
+        const max = await env.DB.prepare('SELECT IFNULL(MAX(ord),0) AS m FROM records WHERE shelf=?').bind(rec.shelf).first();
+        await env.DB.prepare('UPDATE records SET bin=0, bin_at=?, ord=?, file_name=?, storage_key=?, updated_at=? WHERE id=?')
+            .bind('', (max.m || 0) + 1, slot.name, moved ? slot.key : rec.storage_key, nowIso(), id).run();
+        const list = await allRecords(env, rec.shelf);
+        return json({ record: list.find(r => r.id === id) });
+    }
+
     if (method === 'POST' && sub === 'duplicate') {
+        if (rec.bin) return refuse(IN_BIN, 409);
         const newId = crypto.randomUUID();
-        const key = recKey(newId, rec.file_name);
+        const idx = await loadShelfFolders(env, rec.shelf);
+        const slot = await freeKey(env, shelfDir(rec.shelf, idx.pathOf(rec.folder_id)), rec.file_name, null);
         const obj = await env.BUCKET.get(rec.storage_key);
-        if (obj) await env.BUCKET.put(key, await obj.arrayBuffer(), { httpMetadata: { contentType: typeFor(rec.file_name) } });
+        if (obj) await env.BUCKET.put(slot.key, await obj.arrayBuffer(), { httpMetadata: { contentType: typeFor(slot.name) } });
         const max = await env.DB.prepare('SELECT IFNULL(MAX(ord),0) AS m FROM records WHERE shelf=?').bind(rec.shelf).first();
         const t = nowIso();
         await env.DB.prepare(
             'INSERT INTO records (id, shelf, folder_id, ord, title, about, why, look_again, file_name, file_type, storage_key, size, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)'
         ).bind(newId, rec.shelf, rec.folder_id, (max.m || 0) + 1, (rec.title + ' (copy)').slice(0, 140),
-            rec.about, rec.why, rec.look_again, rec.file_name, rec.file_type, key, rec.size, t, t).run();
+            rec.about, rec.why, rec.look_again, slot.name, extOf(slot.name), slot.key, rec.size, t, t).run();
         const list = await allRecords(env, rec.shelf);
         return json({ record: list.find(r => r.id === newId) }, 201);
     }
@@ -433,6 +580,7 @@ async function shelfRecords(ctx, seg) {
             return fileResponse(obj, rec.file_name, ctx.q.get('download') === '1');
         }
         if (method === 'PUT') {
+            if (rec.bin) return refuse(IN_BIN, 409);
             const r = await readBody(ctx.request);
             if (r.error) return r.error;
             const hdrName = ctx.request.headers.get('X-File-Name');
@@ -442,15 +590,28 @@ async function shelfRecords(ctx, seg) {
                 if (!n) return refuse('File name is not valid', 400);
                 name = n;
             }
-            const key = recKey(rec.id, name);
-            await env.BUCKET.put(key, r.buf, { httpMetadata: { contentType: typeFor(name) } });
-            if (key !== rec.storage_key) await env.BUCKET.delete(rec.storage_key);
+            const idx = await loadShelfFolders(env, rec.shelf);
+            const slot = await freeKey(env, shelfDir(rec.shelf, idx.pathOf(rec.folder_id)), name, rec.storage_key);
+            await env.BUCKET.put(slot.key, r.buf, { httpMetadata: { contentType: typeFor(slot.name) } });
+            if (slot.key !== rec.storage_key) await env.BUCKET.delete(rec.storage_key);
             await env.DB.prepare('UPDATE records SET file_name=?, file_type=?, storage_key=?, size=?, updated_at=? WHERE id=?')
-                .bind(name, extOf(name), key, r.buf.byteLength, nowIso(), id).run();
-            return json({ ok: true, size: r.buf.byteLength, file_name: name });
+                .bind(slot.name, extOf(slot.name), slot.key, r.buf.byteLength, nowIso(), id).run();
+            return json({ ok: true, size: r.buf.byteLength, file_name: slot.name });
         }
     }
     return refuse('Not found', 404);
+}
+
+// The shelf Bin: notes put aside, newest first.
+async function shelfBin(ctx) {
+    const { env, q } = ctx;
+    const shelf = q.get('shelf');
+    if (shelf && !SHELVES.includes(shelf)) return refuse('Unknown shelf', 400);
+    const cols = 'SELECT id, shelf, folder_id, title, file_name, size, bin_at FROM records WHERE bin=1';
+    const { results } = shelf
+        ? await env.DB.prepare(cols + ' AND shelf=? ORDER BY bin_at DESC, id').bind(shelf).all()
+        : await env.DB.prepare(cols + ' ORDER BY bin_at DESC, id').all();
+    return json({ bin: results });
 }
 
 function str(v) { return v == null ? '' : String(v).slice(0, 2000); }
