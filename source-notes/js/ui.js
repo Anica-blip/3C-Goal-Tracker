@@ -209,16 +209,18 @@ export function openSidebar({ title = '', body = null } = {}) {
 }
 
 // ── box file graphic ─────────────────────────────────────────────────────────
-// A folder drawn as a small box file: shelf abbreviation up the spine (first letter at the
-// bottom, each letter upright), the folder name on mouse hover, and how many notes are inside.
+// A folder drawn as a small box file: the shelf code (WS / RS / AS) in the white label square,
+// the folder's category down the spine (up to 5 capitals, first letter at the top, each letter
+// upright), the folder name on mouse hover, and how many notes are inside.
 const BOX_COLOURS = ['#9fd0ff', '#a9e8b0', '#fff1a0', '#cdb4ff', '#ffc9a8', '#ffb3c7', '#9be7e1', '#d6e3a4'];
 export const boxColour = i => BOX_COLOURS[((Number(i) || 0) % BOX_COLOURS.length + BOX_COLOURS.length) % BOX_COLOURS.length];
 
-export function boxFile({ abbr = '', colour = BOX_COLOURS[0], name = '', count = '', onclick } = {}) {
-    return h('button', { class: 'boxfile', type: 'button', title: name, 'aria-label': name + ' (' + abbr + ' box file)', style: '--bf:' + colour, onclick },
+export function boxFile({ abbr = '', category = '', colour = BOX_COLOURS[0], name = '', count = '', onclick } = {}) {
+    const cat = [...String(category || '').toUpperCase()].slice(0, 5);
+    return h('button', { class: 'boxfile', type: 'button', title: name, 'aria-label': name + ' (' + abbr + ' box file' + (cat.length ? ', ' + cat.join('') : '') + ')', style: '--bf:' + colour, onclick },
         h('span', { class: 'bf-back' }),
-        h('span', { class: 'bf-spine' }, [...String(abbr)].map(ch => h('span', {}, ch))),
-        h('span', { class: 'bf-front' }, h('span', { class: 'bf-hole' }), h('span', { class: 'bf-label' })),
+        h('span', { class: 'bf-spine' }, cat.map(ch => h('span', {}, ch))),
+        h('span', { class: 'bf-front' }, h('span', { class: 'bf-hole' }), h('span', { class: 'bf-label' }, String(abbr))),
         count ? h('span', { class: 'bf-count' }, count) : null);
 }
 
