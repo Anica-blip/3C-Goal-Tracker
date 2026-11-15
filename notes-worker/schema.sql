@@ -8,7 +8,8 @@ CREATE TABLE IF NOT EXISTS folders (
     parent_id   TEXT,                   -- empty for a main folder
     name        TEXT NOT NULL,
     ord         INTEGER NOT NULL DEFAULT 0,
-    created_at  TEXT NOT NULL
+    created_at  TEXT NOT NULL,
+    category    TEXT NOT NULL DEFAULT ''  -- short label (max 5 capitals) on the box file's spine; shelves 1-3 only
 );
 CREATE INDEX IF NOT EXISTS idx_folders_side ON folders(side, shelf, ord);
 
@@ -26,7 +27,9 @@ CREATE TABLE IF NOT EXISTS records (
     storage_key TEXT NOT NULL,
     size        INTEGER NOT NULL DEFAULT 0,
     created_at  TEXT NOT NULL,
-    updated_at  TEXT NOT NULL
+    updated_at  TEXT NOT NULL,
+    bin         INTEGER NOT NULL DEFAULT 0,   -- 1 = in the shelf's Bin (not numbered, not listed in its box file)
+    bin_at      TEXT NOT NULL DEFAULT ''      -- when it went into the Bin
 );
 CREATE INDEX IF NOT EXISTS idx_records_shelf ON records(shelf, ord);
 CREATE INDEX IF NOT EXISTS idx_records_folder ON records(folder_id);
@@ -50,3 +53,15 @@ CREATE TABLE IF NOT EXISTS settings (
     key   TEXT PRIMARY KEY,
     value TEXT NOT NULL
 );
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- UPGRADING THE LIVE DATABASE (15 Nov 2026) — run ONCE, from the notes-worker folder.
+-- The CREATE TABLE lines above already contain these columns for a brand-new database,
+-- but they do not change a table that exists, so the live one needs these three lines
+-- (do not run this whole file for it; a second run of a line only says "duplicate column"):
+--
+--   npx wrangler d1 execute 3c-notes --remote --command "ALTER TABLE folders ADD COLUMN category TEXT NOT NULL DEFAULT ''"
+--   npx wrangler d1 execute 3c-notes --remote --command "ALTER TABLE records ADD COLUMN bin INTEGER NOT NULL DEFAULT 0"
+--   npx wrangler d1 execute 3c-notes --remote --command "ALTER TABLE records ADD COLUMN bin_at TEXT NOT NULL DEFAULT ''"
+--
+-- Every existing folder and note keeps working: folders start with no category, notes start outside the Bin.
