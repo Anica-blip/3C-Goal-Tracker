@@ -8,6 +8,7 @@ routes = [ { pattern = "notes.threadcommand.center", custom_domain = true } ]
 # ── CALLS ACCEPTED ONLY FROM THE APP'S OWN ADDRESS (CORS) ─────────────────────
 [vars]
 ALLOWED_ORIGINS = "https://anica-blip.github.io"
+SUPABASE_URL = "https://uqyqpwhkzlhqxcqajhkn.supabase.co"
 
 # ── R2 BUCKET (shared bucket, SOURCE Notes works inside Notes/source-notes/) ──
 [[r2_buckets]]
@@ -19,7 +20,7 @@ bucket_name = "3c-boardroom-hq"
 [[d1_databases]]
 binding       = "DB"
 database_name = "3c-notes"
-database_id   = "PASTE_DATABASE_ID_HERE"
+database_id   = "067636a3-c2b6-4123-a57e-e0285578b42c"
 
 # ── SECRETS (set with Wrangler — never put values here) ───────────────────────
 # wrangler secret put SUPABASE_URL
