@@ -683,10 +683,11 @@ async function spaceFolders(ctx, seg) {
         return json({ folder: { id: fid, parent_id: parentId, name, path: idx.pathOf(fid) } }, 201);
     }
 
-    // Rename a folder (Office shelf only). The files inside, and in its sub-folders, are moved to the new
-    // folder path in storage, so each storage_key stays  office/<folder path>/<file name>.
+    // Rename a folder (Office shelf and Locked folder alike; Locked needs the unlock token, checked before this).
+    // The files inside, and in its sub-folders, are moved to the new folder path in storage, so each
+    // storage_key stays  <space>/<folder path>/<file name>. Locked files are moved as they are (still
+    // encrypted, never opened); the agent can reach neither.
     if (method === 'PATCH' && id) {
-        if (space !== 'office') return refuse('Folders in the Locked folder cannot be renamed here', 403);
         const b = await bodyJson(ctx.request);
         const name = b && cleanName(b.name, 60);
         if (!name) return refuse('Folder name is not valid', 400);
