@@ -137,6 +137,8 @@ a.tool-btn svg { flex-shrink: 0; }
 .icon-btn:hover { color: var(--cyan); background: rgba(0,229,212,.08); border-color: rgba(0,229,212,.25); }
 .icon-btn.gold { color: var(--gold); border-color: rgba(251,191,36,.3); }
 .icon-btn.gold:hover { background: rgba(251,191,36,.1); color: var(--gold); }
+.icon-btn.danger { color: #fca5a5; border-color: rgba(239,68,68,.3); }
+.icon-btn.danger:hover { color: #fecaca; background: rgba(239,68,68,.15); border-color: rgba(239,68,68,.55); }
 
 /* ── forms ─────────────────────────────────────────────────── */
 .lbl { display: block; font-size: .72rem; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: var(--text-2); margin: 14px 0 6px; }
@@ -247,14 +249,18 @@ body[data-view="entry"] { background: radial-gradient(ellipse at 50% 0%, #1a0f3d
 }
 .bf-spine {
     position: absolute; left: 0; top: 0; bottom: 0; width: 22px;
-    display: flex; flex-direction: column-reverse; align-items: center; justify-content: flex-start; gap: 1px; padding-bottom: 7px;
+    display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 1px; padding-top: 7px;
     background: rgba(0,0,0,.2); border-radius: 6px 0 0 6px; border-right: 1px solid rgba(0,0,0,.18);
-    font-family: 'Alegreya Sans SC', serif; font-weight: 800; font-size: .86rem; line-height: 1; color: #1b1240;
+    font-family: 'Alegreya Sans SC', serif; font-weight: 800; font-size: .8rem; line-height: 1; color: #1b1240;
 }
-.bf-spine span { display: block; }                    /* each character upright, first letter at the bottom */
+.bf-spine span { display: block; }                    /* category: each character upright, first letter at the top (max 5) */
 .bf-front { position: absolute; left: 22px; right: 5px; top: 6px; bottom: 6px; border-radius: 4px; background: rgba(255,255,255,.5); }
 .bf-hole { position: absolute; top: 8px; left: 50%; width: 14px; height: 14px; margin-left: -7px; border-radius: 50%; background: rgba(20,10,50,.55); box-shadow: inset 0 1px 3px rgba(0,0,0,.5); }
-.bf-label { position: absolute; left: 6px; right: 6px; bottom: 9px; height: 24px; border-radius: 3px; background: #fff; opacity: .9; }
+.bf-label {
+    position: absolute; left: 6px; right: 6px; bottom: 9px; height: 24px; border-radius: 3px; background: #fff;
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Alegreya Sans SC', serif; font-weight: 800; font-size: .9rem; letter-spacing: .06em; line-height: 1; color: #1b1240;
+}
 .bf-count {
     position: absolute; top: -7px; right: -7px; min-width: 20px; height: 20px; padding: 0 5px; border-radius: 10px;
     background: #1b1240; color: #fff; font-size: .66rem; font-weight: 700; display: flex; align-items: center; justify-content: center;
@@ -272,6 +278,17 @@ body[data-view="entry"] { background: radial-gradient(ellipse at 50% 0%, #1a0f3d
 .note-title { flex: 1; font-size: .9rem; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .due { margin-left: 8px; font-size: .62rem; padding: 2px 7px; border-radius: 20px; background: rgba(251,191,36,.15); color: var(--gold); border: 1px solid rgba(251,191,36,.35); text-transform: uppercase; letter-spacing: .05em; white-space: nowrap; }
 .index-shelf { margin: 16px 0 8px; font-size: .72rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--accent); }
+
+/* ── shelf Bin (button count, rows) and folder category ───── */
+.bin-count {
+    display: inline-flex; align-items: center; justify-content: center; min-width: 18px; height: 18px; padding: 0 5px; margin-left: 2px;
+    border-radius: 9px; background: rgba(239,68,68,.25); color: #fecaca; border: 1px solid rgba(239,68,68,.45); font-size: .66rem; font-weight: 700;
+}
+.note-meta { display: block; font-size: .68rem; color: var(--text-3); margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bin-actions { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+.bin-hint { font-size: .8rem; color: var(--text-3); margin-bottom: 12px; line-height: 1.6; }
+.field.caps { text-transform: uppercase; letter-spacing: .22em; font-weight: 700; max-width: 9em; }
+.cat-tag { font-size: .6rem; font-weight: 800; letter-spacing: .14em; padding: 1px 6px; border-radius: 8px; background: rgba(255,255,255,.08); border: 1px solid var(--border-soft); color: var(--text-2); }
 
 /* ── Record Card (eye) ─────────────────────────────────────── */
 .index-card { border: 1px solid var(--border); border-left: 5px solid var(--accent); border-radius: var(--radius); padding: 16px 18px; background: rgba(255,255,255,.03); }
