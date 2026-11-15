@@ -34,6 +34,37 @@ function getNoteTypePlaceholder(type) {
   return (map[type] || map.text)();
 }
 
+// ── Send ALL saved notes to the Working shelf as one .md file (Chef only) ──────────────
+// A note box holds 2,000 characters, so a long piece gets broken into several notes. This gathers every
+// saved note (Note, Quote and Wish List), oldest first, into one markdown file, so it can be sorted,
+// joined or split in SOURCE Notes. A copy is sent; the notes stay in DASH Notes.
+const TYPE_NAMES = { text: 'Note', quote: 'Quote', wishlist: 'Wish List' };
+const stamp = iso => new Date(iso).toLocaleString('en-GB', {
+  timeZone: 'Europe/London', day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
+});
+
+function buildAllNotes(list, now = new Date()) {
+  const day = now.toLocaleDateString('en-GB', { timeZone: 'Europe/London', day: 'numeric', month: 'short', year: 'numeric' });
+  const parts = [
+    '# DASH Notes — all notes',
+    `Sent ${day} · ${list.length} ${list.length === 1 ? 'note' : 'notes'} · oldest first`
+  ];
+  list.forEach(n => {
+    const heading = String(n.subject || '').replace(/\s+/g, ' ').trim() || '(no subject)';
+    parts.push('---', `## ${heading}\n*${TYPE_NAMES[n.type] || 'Note'} · ${stamp(n.created)}*\n\n${n.text}`);
+  });
+  return { day, text: parts.join('\n\n') + '\n' };
+}
+
+async function sendAllNotes(toSource) {
+  const all  = await getNotes();
+  const list = all.filter(n => ['text', 'quote', 'wishlist'].includes(n.type))
+    .sort((a, b) => String(a.created || '').localeCompare(String(b.created || '')));
+  if (!list.length) { showToast('There are no saved notes to send', 'error'); return; }
+  const { day, text } = buildAllNotes(list);
+  toSource.sendNoteToSource({ subject: 'DASH Notes · all notes · ' + day, text });
+}
+
 // ── Save a note ────────────────────────────────────────────
 async function saveNewNote(text, subject = '', type = 'text') {
   if (!text.trim()) return null;
@@ -91,6 +122,21 @@ async function renderNotes(filterType = null) {
         </div>
       </div>`;
   }).join('');
+
+  // Chef only: one button above the list that sends every saved note as one file
+  if (toSource) {
+    const bar = document.createElement('div');
+    bar.style.cssText = 'display:flex; justify-content:flex-end; margin-bottom:10px;';
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.id = 'send-all-notes';
+    btn.className = 'btn btn--ghost';
+    btn.title = 'Send every saved note, oldest first, as one .md file';
+    btn.textContent = '→ WS · Send all notes as one file';
+    btn.addEventListener('click', () => sendAllNotes(toSource));
+    bar.append(btn);
+    container.prepend(bar);
+  }
 
   // Tap to reveal actions on mobile
   container.querySelectorAll('.note-item').forEach(item => {
