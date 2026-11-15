@@ -5,11 +5,10 @@
 
 import { api, enc, recoverPending, clearRecover, signInAgain, signOut } from './api.js';
 import {
-    h, icon, iconBtn, toast, fail, confirmBox, promptBox, openModal,
+    h, icon, iconBtn, toast, fail, confirmBox, promptBox, openModal, openSidebar,
     fmtSize, fmtDate, extOf, mimeFor, saveBlobAs, validName
 } from './ui.js';
 import { openViewer } from './viewer.js';
-import { openFolderSidebar } from './shelves.js';
 import * as vault from './vault.js';
 
 let lastRoot = null, lastParts = [], renderToken = 0;
@@ -65,17 +64,19 @@ export async function renderOffice(root, parts = []) {
     if (!inBin && !folder && folders.length) folder = folders.find(f => !f.parent_id) || folders[0];
 
     const hashFor = id => '#os/' + (lockedMode ? 'locked/' : '') + (id || '');
-    const main = h('div', { class: 'office-main' });
+    const tones = toneMap(folders);
+    const main = h('div', { class: 'office-main' + (folder && !inBin ? ' tone-' + (tones.get(folder.id) || 'blue') : '') });
     const page = h('section', { class: 'office-page' + (lockedMode ? ' locked' : '') },
-        head(sp, lockedMode, folder, folders),
-        h('div', { class: 'office-body' }, side(sp, folders, folder, inBin, lockedMode, hashFor), main));
+        head(sp, lockedMode, inBin ? null : folder),
+        tabBar(lockedMode, inBin, hashFor, () => openFolderPanel(sp, folder, lockedMode, hashFor)),
+        h('div', { class: 'office-body single' }, main));
     root.replaceChildren(page);
 
     if (inBin) await drawBin(main, sp);
     else await drawFiles(main, sp, folder, folders, lockedMode);
 }
 
-function head(sp, lockedMode, folder, folders) {
+function head(sp, lockedMode, folder) {
     return h('div', { class: 'office-head' },
         h('button', { class: 'btn ghost sm', type: 'button', onclick: () => { location.hash = lockedMode ? '#os' : ''; } },
             icon('back', 16), h('span', {}, lockedMode ? 'Office' : 'Shelves')),
@@ -87,56 +88,101 @@ function head(sp, lockedMode, folder, folders) {
                 ? h('button', { class: 'btn ghost', type: 'button', onclick: async () => {
                     await vault.lockDevice(); toast('Locked on this device'); location.hash = '#os';
                 } }, icon('lock', 16), h('span', {}, 'Lock this device'))
-                : h('button', { class: 'btn ghost', type: 'button', onclick: () => openFolderSidebar({ shelf: 'OS' }) },
-                    icon('folder', 16), h('span', {}, 'Add Folder')),
-            lockedMode
-                ? h('button', { class: 'btn ghost', type: 'button', onclick: () => addLockedFolder(sp, null) }, icon('folder', 16), h('span', {}, 'Add Folder'))
                 : null,
-            lockedMode && folder
-                ? h('button', { class: 'btn ghost', type: 'button', onclick: () => addLockedFolder(sp, folder.id) }, icon('folder', 16), h('span', {}, 'Add Sub-folder'))
+            h('button', { class: 'btn ghost', type: 'button', onclick: () => addFolder(sp, null) }, icon('folder', 16), h('span', {}, 'Add Folder')),
+            folder
+                ? h('button', { class: 'btn ghost', type: 'button', onclick: () => addFolder(sp, folder.id) }, icon('folder', 16), h('span', {}, 'Add Sub-folder'))
                 : null));
 }
 
-async function addLockedFolder(sp, parentId) {
+// Tab bar under the header: Folders opens the slide-out panel; Locked and Bin open their own page.
+function tabBar(lockedMode, inBin, hashFor, onFolders) {
+    const tab = (cls, ico, label, active, onclick) => h('button',
+        { class: 'otab' + (cls ? ' ' + cls : '') + (active ? ' active' : ''), type: 'button', 'aria-current': active ? 'page' : null, onclick },
+        icon(ico, 15), h('span', {}, label));
+    return h('nav', { class: 'office-tabs', 'aria-label': lockedMode ? 'Locked folder' : 'Office shelf' },
+        tab('', 'folder', 'Folders', !inBin, onFolders),
+        lockedMode ? null : tab('gold', 'lock', 'Locked', false, () => { location.hash = '#os/locked'; }),
+        tab('', 'bin', 'Bin', inBin, () => { location.hash = hashFor('bin'); }));
+}
+
+// Two folder colours, alternating: main folders blue, purple, blue…; a sub-folder starts with
+// the opposite colour to its parent. Worked out here from the folder order — nothing is stored.
+function toneMap(folders) {
+    const tones = new Map();
+    const walk = (pid, parentIdx) => {
+        folders.filter(f => (f.parent_id || '') === pid).forEach((f, i) => {
+            const idx = pid ? (parentIdx + 1 + i) % 2 : i % 2;
+            tones.set(f.id, idx ? 'purple' : 'blue');
+            walk(f.id, idx);
+        });
+    };
+    walk('', 0);
+    return tones;
+}
+
+async function addFolder(sp, parentId) {
     const n = await promptBox(parentId ? 'Sub-folder name' : 'Folder name', { ok: 'Create' });
     if (!n) return;
     try { await sp.createFolder(n, parentId); toast('Folder created'); await refreshOffice(); } catch (e) { fail(e); }
 }
 
-// ── left list: folders, Bin, (Locked) ────────────────────────────────────────
-function side(sp, folders, current, inBin, lockedMode, hashFor) {
-    const build = pid => {
-        const kids = folders.filter(f => (f.parent_id || '') === pid);
-        if (!kids.length) return null;
-        return h('ul', { class: 'ftree' }, ...kids.map(f => h('li', {},
-            h('div', { class: 'ftree-row' + (current && current.id === f.id && !inBin ? ' active' : '') },
-                h('button', { class: 'ftree-name', type: 'button', onclick: () => { location.hash = hashFor(f.id); } },
-                    icon('folder', 15), h('span', {}, f.name)),
-                iconBtn('trash', 'Delete folder', () => deleteFolder(sp, f))),
-            build(f.id))));
-    };
-    const tree = build('');
-    return h('aside', { class: 'office-side' },
-        h('div', { class: 'side-label' }, lockedMode ? 'Locked folders' : 'Folders'),
-        tree || h('p', { class: 'empty small' }, lockedMode ? 'No locked folders yet.' : 'The shelf starts empty. Use Add Folder to make your first folder.'),
-        h('div', { class: 'divider' }),
-        h('div', { class: 'ftree-row' + (inBin ? ' active' : '') },
-            h('button', { class: 'ftree-name', type: 'button', onclick: () => { location.hash = hashFor('bin'); } }, icon('bin', 15), h('span', {}, 'Bin'))),
-        lockedMode ? null : h('div', { class: 'ftree-row special' },
-            h('button', { class: 'ftree-name', type: 'button', onclick: () => { location.hash = '#os/locked'; } }, icon('lock', 15), h('span', {}, 'Locked Folder'))),
-        lockedMode ? h('div', { class: 'ftree-row' },
-            h('button', { class: 'ftree-name', type: 'button', onclick: () => { location.hash = '#os'; } }, icon('back', 15), h('span', {}, 'Office folders'))) : null);
+// ── slide-out folder panel (Folders tab) ─────────────────────────────────────
+// Main folders only at first. A folder with sub-folders has an arrow on the right; the arrow drops
+// the sub-folders down. A folder without sub-folders has no arrow. Clicking a name opens its files.
+function openFolderPanel(sp, current, lockedMode, hashFor) {
+    const open = new Set();                         // folders whose sub-folders are showing
+    const body = h('div', {});
+    const panel = openSidebar({ title: lockedMode ? 'Locked folders' : 'Folders', body });
+
+    async function draw(first) {
+        let data;
+        try { data = await sp.folders(); } catch (e) { fail(e); return; }
+        const tones = toneMap(data);
+        if (first && current) {                     // open the way down to the folder you are in
+            let c = data.find(f => f.id === current.id);
+            while (c && c.parent_id) { open.add(c.parent_id); c = data.find(f => f.id === c.parent_id); }
+        }
+        const build = pid => {
+            const kids = data.filter(f => (f.parent_id || '') === pid);
+            if (!kids.length) return null;
+            return h('ul', { class: pid ? 'fs-sub' : 'fs-list' }, ...kids.map(f => {
+                const sub = build(f.id);
+                const li = h('li', { class: 'fs-item' + (sub && open.has(f.id) ? ' open' : '') });
+                const arrow = sub ? h('button', {
+                    class: 'fs-arrow', type: 'button',
+                    title: 'Sub-folders of ' + f.name, 'aria-label': 'Sub-folders of ' + f.name,
+                    'aria-expanded': String(open.has(f.id)),
+                    onclick: () => {
+                        if (open.has(f.id)) open.delete(f.id); else open.add(f.id);
+                        li.classList.toggle('open', open.has(f.id));
+                        arrow.setAttribute('aria-expanded', String(open.has(f.id)));
+                    }
+                }) : null;
+                li.append(h('div', { class: 'fs-row tone-' + (tones.get(f.id) || 'blue') + (current && current.id === f.id ? ' active' : '') },
+                    h('button', { class: 'fs-name', type: 'button', onclick: () => { panel.close(); location.hash = hashFor(f.id); } },
+                        icon('folder', 15), h('span', {}, f.name)),
+                    iconBtn('trash', 'Delete folder', async () => { if (await deleteFolder(sp, f)) await draw(false); }),
+                    arrow));
+                if (sub) li.append(sub);
+                return li;
+            }));
+        };
+        body.replaceChildren(build('') || h('p', { class: 'empty small' }, lockedMode ? 'No locked folders yet. Use Add Folder to make one.' : 'The shelf starts empty. Use Add Folder to make your first folder.'));
+    }
+    draw(true);
+    return panel;
 }
 
 async function deleteFolder(sp, f) {
-    if (!(await confirmBox('Delete the folder “' + f.name + '”? It must be empty.', { ok: 'Delete', danger: true }))) return;
-    try { await sp.deleteFolder(f.id); toast('Folder deleted'); location.hash = lastParts[0] === 'locked' ? '#os/locked' : '#os'; await refreshOffice(); } catch (e) { fail(e); }
+    if (!(await confirmBox('Delete the folder “' + f.name + '”? It must be empty.', { ok: 'Delete', danger: true }))) return false;
+    try { await sp.deleteFolder(f.id); toast('Folder deleted'); location.hash = lastParts[0] === 'locked' ? '#os/locked' : '#os'; await refreshOffice(); return true; } catch (e) { fail(e); return false; }
 }
 
 // ── files in a folder ────────────────────────────────────────────────────────
 async function drawFiles(main, sp, folder, folders, lockedMode) {
     if (!folder) {
-        main.replaceChildren(h('p', { class: 'empty' }, folders.length ? 'Choose a folder on the left.' : 'No folders yet.'));
+        main.replaceChildren(h('p', { class: 'empty' }, folders.length ? 'Open the Folders tab to choose a folder.' : 'No folders yet. Use Add Folder to make your first one.'));
         return;
     }
     let files;
@@ -153,7 +199,7 @@ async function drawFiles(main, sp, folder, folders, lockedMode) {
 
     main.replaceChildren(
         h('div', { class: 'main-head' },
-            h('div', { class: 'crumb' }, icon('folder', 16), h('span', {}, folder.path.split('/').join(' / '))),
+            h('div', { class: 'crumb glass' }, icon('folder', 16), h('span', {}, folder.path.split('/').join(' / '))),
             h('div', { class: 'main-actions' },
                 h('button', { class: 'btn ghost', type: 'button', onclick: () => newNote(sp, folder, files) }, icon('plus', 16), h('span', {}, 'New .md note')),
                 h('button', { class: 'btn primary', type: 'button', onclick: () => fi.click() }, icon('upload', 16), h('span', {}, 'Upload')),
