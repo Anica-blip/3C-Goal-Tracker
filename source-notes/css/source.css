@@ -392,6 +392,76 @@ body[data-view="entry"] { background: radial-gradient(ellipse at 50% 0%, #1a0f3d
     .file-line.head { display: none; }
 }
 
+/* ── OFFICE SHELF: tab bar, folder panel, neon glass folders ─────────────────
+   Used by js/office.js. Tab bar under the header: Folders opens the slide-out
+   panel; Locked and Bin open their own page. Folders alternate two neon glass
+   colours (dark blue / dark purple) in the panel and on the open folder. */
+.office-body.single { display: block; }
+
+.office-tabs { display: flex; gap: 8px; flex-wrap: wrap; margin: 0 0 18px; }
+.otab {
+    display: inline-flex; align-items: center; gap: 8px; padding: 8px 16px;
+    background: var(--panel-2); border: 1px solid var(--border-soft); border-radius: 10px;
+    font-size: .76rem; font-weight: 700; letter-spacing: .07em; text-transform: uppercase;
+    color: var(--text-2); transition: all var(--tr);
+}
+.otab:hover { color: var(--text); border-color: var(--border); background: var(--glow); }
+.otab.active { color: var(--accent); border-color: var(--accent); background: var(--glow); box-shadow: 0 0 16px var(--glow); }
+.otab.gold { color: var(--gold); border-color: rgba(251, 191, 36, .3); }
+.otab.gold:hover, .otab.gold.active { color: var(--gold); border-color: var(--gold); background: rgba(251, 191, 36, .1); }
+
+/* the two folder colours — dark blue and dark purple, each with a neon edge */
+.tone-blue   { --fc: #1e40af; --fe: #4d8dff; }
+.tone-purple { --fc: #6b21a8; --fe: #b968ff; }
+
+/* glass: a see-through tint of the colour, a neon edge and a soft glow */
+.fs-row, .crumb.glass {
+    background: linear-gradient(150deg, color-mix(in srgb, var(--fc) 55%, transparent) 0%, color-mix(in srgb, var(--fc) 20%, transparent) 100%);
+    border: 1px solid color-mix(in srgb, var(--fe) 50%, transparent);
+    -webkit-backdrop-filter: blur(12px) saturate(1.5); backdrop-filter: blur(12px) saturate(1.5);
+    box-shadow: 0 0 16px color-mix(in srgb, var(--fc) 45%, transparent), inset 0 1px 0 rgba(255, 255, 255, .10);
+}
+
+/* slide-out folder panel (the panel itself is the shared .side-panel) */
+.fs-list, .fs-sub { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+.fs-sub { display: none; margin: 8px 0 0 12px; padding-left: 10px; border-left: 1px solid var(--border-soft); }
+.fs-item.open > .fs-sub { display: flex; }
+.fs-row {
+    display: flex; align-items: center; gap: 2px; padding: 2px 4px 2px 2px; border-radius: 12px;
+    transition: box-shadow .2s ease, border-color .2s ease;
+}
+.fs-row:hover { border-color: var(--fe); box-shadow: 0 0 24px color-mix(in srgb, var(--fc) 65%, transparent), inset 0 1px 0 rgba(255, 255, 255, .18); }
+.fs-row.active { border-color: var(--fe); box-shadow: 0 0 28px color-mix(in srgb, var(--fe) 55%, transparent), inset 0 1px 0 rgba(255, 255, 255, .22); }
+.fs-name {
+    flex: 1; min-width: 0; display: flex; align-items: center; gap: 9px; text-align: left; padding: 9px 10px;
+    background: none; border: 0; border-radius: 10px; font-size: .88rem; font-weight: 600;
+    color: color-mix(in srgb, var(--fe) 35%, #fff);
+    text-shadow: 0 0 10px color-mix(in srgb, var(--fe) 55%, transparent);
+}
+.fs-name span:not(.ico) { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fs-row .icon-btn { width: 28px; height: 28px; opacity: .55; }
+.fs-row:hover .icon-btn, .fs-row.active .icon-btn { opacity: 1; }
+
+/* the arrow on the right: only drawn for a folder that has sub-folders; points down when opened */
+.fs-arrow {
+    width: 30px; height: 30px; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center;
+    background: none; border: 0; border-radius: 8px; color: color-mix(in srgb, var(--fe) 40%, #fff);
+}
+.fs-arrow:hover { background: rgba(255, 255, 255, .08); }
+.fs-arrow::before {
+    content: ''; width: 8px; height: 8px; margin-right: 3px;
+    border-right: 2px solid currentColor; border-bottom: 2px solid currentColor;
+    transform: rotate(-45deg); transition: transform .18s ease;
+}
+.fs-item.open > .fs-row .fs-arrow::before { transform: rotate(45deg); margin: -4px 0 0; }
+
+/* the open folder: its title is a glass chip and the files card takes the same colour */
+.crumb.glass { padding: 7px 14px; border-radius: 12px; color: color-mix(in srgb, var(--fe) 35%, #fff); text-shadow: 0 0 10px color-mix(in srgb, var(--fe) 55%, transparent); }
+.office-main.tone-blue, .office-main.tone-purple {
+    border-color: color-mix(in srgb, var(--fe) 45%, transparent);
+    box-shadow: 0 0 28px color-mix(in srgb, var(--fc) 30%, transparent), inset 0 1px 0 rgba(255, 255, 255, .06);
+}
+
 /* Locked gate + no-access card */
 .gate { display: flex; justify-content: center; padding-top: 60px; }
 .gate-card {
