@@ -69,8 +69,8 @@ export function renderShelf(root, key) {
                 h('p', {}, meta.line),
                 h('p', { class: 'shelf-count' }, `${folders.length} ${folders.length === 1 ? 'folder' : 'folders'} · ${recs.length} ${recs.length === 1 ? 'note' : 'notes'}`)),
             h('div', { class: 'shelf-actions' },
-                h('button', { class: 'btn ghost', type: 'button', title: 'Notes put aside from this shelf', onclick: () => openBin(key) },
-                    icon('bin', 16), h('span', {}, 'Bin'), binned ? h('span', { class: 'bin-count' }, binned) : null),
+                h('button', { class: 'btn ghost', type: 'button', title: 'Deleted notes from this shelf (not for folders)', onclick: () => openBin(key) },
+                    icon('bin', 16), h('span', {}, 'Notes Bin'), binned ? h('span', { class: 'bin-count' }, binned) : null),
                 h('button', { class: 'btn ghost', type: 'button', onclick: () => openFolderSidebar({ shelf: key }) }, icon('folder', 16), h('span', {}, 'Add Folder')),
                 h('button', { class: 'btn primary', type: 'button', onclick: () => openCard({ mode: 'create', shelf: key }) }, icon('plus', 16), h('span', {}, 'Add Card')))),
         grid));
@@ -82,9 +82,14 @@ export const redrawOpenBox = () => { if (boxRedraw) boxRedraw(); };
 
 export function openBox(folder) {
     const m = openModal({ title: folderPath(folder.id), wide: true, body: h('div'), onClose: () => { boxRedraw = null; } });
+    const cur = () => data.folders.find(f => f.id === folder.id) || folder;
     const draw = () => {
         const recs = recordsIn(folder.id);
+        m.setTitle(folderPath(folder.id));
         m.setBody(h('div', { class: 'box-open', style: `--accent:${SHELF[folder.shelf].colour}` },
+            h('div', { class: 'btn-row', style: 'margin:0 0 14px;' },
+                h('button', { class: 'btn ghost sm', type: 'button', title: 'Change this folder\'s name or category', onclick: () => editFolderPopup({ f: cur() }) }, icon('edit', 16), h('span', {}, 'Edit folder')),
+                h('button', { class: 'btn danger sm', type: 'button', title: 'Delete this folder (it must be empty). The shelf is not affected.', onclick: async () => { if (await binFolder(cur())) m.close(); } }, icon('trash', 16), h('span', {}, 'Bin folder'))),
             recs.length ? h('ul', { class: 'note-list' }, ...recs.map(noteRow)) : h('p', { class: 'empty' }, 'Nothing filed in this box file yet.'),
             h('div', { class: 'btn-row' },
                 h('button', { class: 'btn primary', type: 'button', onclick: () => { m.close(); openCard({ mode: 'create', shelf: folder.shelf, folderId: folder.id }); } },
@@ -329,7 +334,7 @@ function drawForm(m, { mode, record, shelf, folderId }) {
 export function openBin(shelfKey) {
     const meta = SHELF[shelfKey];
     const list = h('div');
-    const m = openModal({ title: 'Bin · ' + meta.title, wide: true, body: list });
+    const m = openModal({ title: 'Notes Bin · ' + meta.title, wide: true, body: list });
 
     const draw = () => {
         const items = data.bin.filter(r => r.shelf === shelfKey);
@@ -360,6 +365,54 @@ export function openBin(shelfKey) {
 
     draw();
     return m;
+}
+
+// ── folder edit and delete (shared by the box folder popup and the Add Folder list) ──
+// Edit: name and category in one small popup. A new name moves the notes inside to the new storage path.
+// office:true is the Office shelf, which has a name only (no category).
+export function editFolderPopup({ f, office = false }) {
+    return new Promise(resolve => {
+        let done = false;
+        const finish = v => { if (!done) { done = true; resolve(v); } };
+        const nm = h('input', { class: 'field', type: 'text', maxlength: '60', value: f.name });
+        const ct = h('input', { class: 'field caps', type: 'text', maxlength: '5', value: f.category || '', placeholder: 'e.g. DASH', autocomplete: 'off' });
+        ct.addEventListener('input', () => { ct.value = cleanCategory(ct.value); });
+        const save = h('button', { class: 'btn primary', type: 'submit' }, 'Save');
+        const form = h('form', { novalidate: true },
+            h('label', { class: 'lbl' }, 'Folder name'), nm,
+            office ? null : h('label', { class: 'lbl' }, 'Category on the spine (up to 5 capital letters, optional)'),
+            office ? null : ct,
+            h('div', { class: 'btn-row' },
+                h('button', { class: 'btn ghost', type: 'button', onclick: () => em.close() }, 'Cancel'), save));
+        form.addEventListener('submit', async e => {
+            e.preventDefault();
+            const n = nm.value.trim();
+            if (!n) { nm.focus(); return; }
+            if (n === f.name && (office || ct.value === (f.category || ''))) { em.close(); return; }
+            save.disabled = true;
+            try {
+                const res = office
+                    ? await api.patch('/office/folders/' + f.id, { name: n })
+                    : await api.patch('/source/folders/' + f.id, { name: n, category: ct.value });
+                finish(true); em.close();
+                await refreshHook();
+                toast(res && res.moved ? 'Saved · ' + res.moved + (res.moved === 1 ? ' note' : ' notes') + ' moved to the new folder name' : 'Saved');
+            } catch (err) { save.disabled = false; fail(err); }
+        });
+        const em = openModal({ title: 'Edit folder', cls: 'small', body: form, onClose: () => finish(false) });
+        setTimeout(() => { nm.focus(); nm.select(); }, 30);
+    });
+}
+
+// Bin folder: only an empty folder (no notes, no sub-folders, nothing left in its Bin) can go. The shelf is never touched.
+export async function binFolder(f, { office = false } = {}) {
+    if (!(await confirmBox('Bin the folder “' + f.name + '”? It must be empty (no notes, no sub-folders). This cannot be undone.', { ok: 'Bin folder', danger: true, title: 'Bin folder' }))) return false;
+    try {
+        await api.del((office ? '/office/folders/' : '/source/folders/') + f.id);
+        toast('Folder deleted');
+        await refreshHook();
+        return true;
+    } catch (e) { fail(e); return false; }
 }
 
 // ── Index sidebar: File IDs and titles ───────────────────────────────────────
@@ -445,8 +498,9 @@ export function openFolderSidebar({ shelf = 'WS' } = {}) {
             const rowEl = h('div', { class: 'ftree-row' },
                 h('button', { class: 'ftree-name', type: 'button', onclick: toggle },
                     icon('folder', 15), h('span', {}, f.name), f.category ? h('span', { class: 'cat-tag' }, f.category) : null, sub ? h('span', { class: 'chev' }, '▾') : null),
-                sel !== 'OS' ? iconBtn('edit', 'Rename or change category', () => editFolder(f)) : null,
-                iconBtn('trash', 'Delete folder', () => remove(f)));
+                iconBtn('edit', sel === 'OS' ? 'Edit folder name' : 'Rename or change category', async () => {
+                    if (await editFolderPopup({ f, office: sel === 'OS' })) { if (sel !== 'OS') await loadShelfData(); await draw(); }
+                }));
             return h('li', {}, rowEl, sub);
         }));
     }
@@ -470,43 +524,6 @@ export function openFolderSidebar({ shelf = 'WS' } = {}) {
             if (sel !== 'OS') await loadShelfData();
             await draw();
             await refreshHook();
-        } catch (e) { fail(e); }
-    }
-
-    // Name and category in one small popup. A new name moves the notes inside to the new storage path.
-    function editFolder(f) {
-        const nm = h('input', { class: 'field', type: 'text', maxlength: '60', value: f.name });
-        const ct = h('input', { class: 'field caps', type: 'text', maxlength: '5', value: f.category || '', placeholder: 'e.g. DASH', autocomplete: 'off' });
-        ct.addEventListener('input', () => { ct.value = cleanCategory(ct.value); });
-        const save = h('button', { class: 'btn primary', type: 'submit' }, 'Save');
-        const form = h('form', { novalidate: true },
-            h('label', { class: 'lbl' }, 'Folder name'), nm,
-            h('label', { class: 'lbl' }, 'Category on the spine (up to 5 capital letters, optional)'), ct,
-            h('div', { class: 'btn-row' },
-                h('button', { class: 'btn ghost', type: 'button', onclick: () => em.close() }, 'Cancel'), save));
-        form.addEventListener('submit', async e => {
-            e.preventDefault();
-            const n = nm.value.trim();
-            if (!n) { nm.focus(); return; }
-            if (n === f.name && ct.value === (f.category || '')) { em.close(); return; }
-            save.disabled = true;
-            try {
-                const res = await api.patch('/source/folders/' + f.id, { name: n, category: ct.value });
-                em.close();
-                await loadShelfData(); await draw(); await refreshHook();
-                toast(res && res.moved ? 'Saved · ' + res.moved + (res.moved === 1 ? ' note' : ' notes') + ' moved to the new folder name' : 'Saved');
-            } catch (err) { save.disabled = false; fail(err); }
-        });
-        const em = openModal({ title: 'Edit folder', cls: 'small', body: form });
-        setTimeout(() => { nm.focus(); nm.select(); }, 30);
-    }
-
-    async function remove(f) {
-        if (!(await confirmBox('Delete the folder “' + f.name + '”? It must be empty.', { ok: 'Delete', danger: true }))) return;
-        try {
-            if (sel === 'OS') await api.del('/office/folders/' + f.id); else await api.del('/source/folders/' + f.id);
-            if (sel !== 'OS') await loadShelfData();
-            await draw(); await refreshHook(); toast('Folder deleted');
         } catch (e) { fail(e); }
     }
 
