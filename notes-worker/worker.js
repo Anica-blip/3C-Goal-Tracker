@@ -683,6 +683,48 @@ async function spaceFolders(ctx, seg) {
         return json({ folder: { id: fid, parent_id: parentId, name, path: idx.pathOf(fid) } }, 201);
     }
 
+    // Rename a folder (Office shelf only). The files inside, and in its sub-folders, are moved to the new
+    // folder path in storage, so each storage_key stays  office/<folder path>/<file name>.
+    if (method === 'PATCH' && id) {
+        if (space !== 'office') return refuse('Folders in the Locked folder cannot be renamed here', 403);
+        const b = await bodyJson(ctx.request);
+        const name = b && cleanName(b.name, 60);
+        if (!name) return refuse('Folder name is not valid', 400);
+        const f = await env.DB.prepare('SELECT * FROM folders WHERE id=? AND side=?').bind(id, space).first();
+        if (!f) return refuse('Folder not found', 404);
+        if (!f.parent_id && name.toLowerCase() === 'bin') return refuse('"Bin" is reserved', 400);
+        const dup = await env.DB.prepare(
+            "SELECT id FROM folders WHERE side=? AND IFNULL(parent_id,'')=? AND lower(name)=lower(?) AND id<>?"
+        ).bind(space, f.parent_id || '', name, id).first();
+        if (dup) return refuse('A folder with that name already exists here', 409);
+        if (name === f.name) return json({ ok: true, moved: 0 });
+
+        await env.DB.prepare('UPDATE folders SET name=? WHERE id=?').bind(name, id).run();
+        const idx = await loadFolders(env, space);
+        const ids = new Set([id]);
+        for (let grew = true; grew;) {
+            grew = false;
+            for (const r of idx.rows) {
+                if (r.parent_id && ids.has(r.parent_id) && !ids.has(r.id)) { ids.add(r.id); grew = true; }
+            }
+        }
+        const { results } = await env.DB.prepare('SELECT id, folder_id, name, storage_key FROM office_files WHERE space=? AND bin=0').bind(space).all();
+        let moved = 0;
+        for (const r of results) {
+            if (!ids.has(r.folder_id)) continue;
+            const newKey = spaceKey(space, idx.pathOf(r.folder_id) + '/' + r.name);
+            if (newKey === r.storage_key) continue;
+            const obj = await env.BUCKET.get(r.storage_key);
+            if (obj) {
+                await env.BUCKET.put(newKey, await obj.arrayBuffer(), { httpMetadata: { contentType: obj.httpMetadata && obj.httpMetadata.contentType } });
+                await env.BUCKET.delete(r.storage_key);
+            }
+            await env.DB.prepare('UPDATE office_files SET storage_key=? WHERE id=?').bind(newKey, r.id).run();
+            moved++;
+        }
+        return json({ ok: true, moved });
+    }
+
     if (method === 'DELETE' && id) {
         const f = await env.DB.prepare('SELECT id FROM folders WHERE id=? AND side=?').bind(id, space).first();
         if (!f) return refuse('Folder not found', 404);
