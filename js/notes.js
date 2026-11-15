@@ -4,6 +4,16 @@
 import { saveNote, getNotes, deleteNote, genId } from './storage.js';
 import { t, getLocale } from './i18n.js';
 
+// ── Send to the Working shelf (Chef only) ──────────────────
+// When Chef is signed in, a note's Store button sends it to the Working shelf of SOURCE Notes.
+// For anyone else — or if the helper file is not there — it stays the normal device share menu.
+async function loadSourceSend() {
+  try {
+    const m = await import('../cloud/send-to-source.js');
+    return m.canSendToSource() ? m : null;
+  } catch { return null; }
+}
+
 // ── Note type label lookup ─────────────────────────────────
 function getNoteTypeLabel(type) {
   const map = {
@@ -54,6 +64,8 @@ async function renderNotes(filterType = null) {
     return;
   }
 
+  const toSource = await loadSourceSend();
+
   container.innerHTML = notes.map(n => {
     const label   = getNoteTypeLabel(n.type);
     const subject = n.subject
@@ -63,7 +75,7 @@ async function renderNotes(filterType = null) {
       <div class="note-item" id="note-${n.id}" style="cursor:default;">
         <div class="item-actions">
           <button class="item-action-btn" data-edit-note="${n.id}" title="Edit">&#x270E;</button>
-          <button class="item-action-btn" data-share-note="${n.id}" title="Store">${t('notes.storeBtn')}</button>
+          <button class="item-action-btn" data-share-note="${n.id}" title="${toSource ? 'Send to the Working shelf' : 'Store'}">${toSource ? '&#x2192; WS' : t('notes.storeBtn')}</button>
           <button class="item-action-btn delete" data-del-note="${n.id}" title="Delete">&#x2715;</button>
         </div>
         <div style="flex:1; min-width:0; padding-right:8px;">
@@ -136,7 +148,8 @@ async function renderNotes(filterType = null) {
       const all  = await getNotes();
       const note = all.find(n => n.id === btn.dataset.shareNote);
       if (!note) return;
-      shareText(note.subject ? `${note.subject}\n\n${note.text}` : note.text);
+      if (toSource) toSource.sendNoteToSource({ subject: note.subject, text: note.text });
+      else shareText(note.subject ? `${note.subject}\n\n${note.text}` : note.text);
     });
   });
 }
