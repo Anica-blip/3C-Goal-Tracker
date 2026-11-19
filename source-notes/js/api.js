@@ -31,9 +31,11 @@ export async function signInAgain() {
     if (error) throw new ApiError(0, error.message);
 }
 
+// After signing out, go back to the cover page (index.html), not straight to the sign-in screen.
+// Pressing Enter on the cover then asks for the GitHub sign-in again.
 export async function signOut() {
     await sb.auth.signOut();
-    window.location.href = LOGIN_URL;
+    window.location.href = 'index.html';
 }
 
 export class ApiError extends Error {
