@@ -143,6 +143,10 @@ function openFolderPanel(sp, current, lockedMode, hashFor) {
         let data;
         try { data = await sp.folders(); } catch (e) { fail(e); return; }
         const tones = toneMap(data);
+        // File count per folder (files directly inside it). One call returns every file; if it fails the panel still works, just without circles.
+        const counts = new Map();
+        let haveCounts = false;
+        try { (await sp.files('')).forEach(f => counts.set(f.folder_id, (counts.get(f.folder_id) || 0) + 1)); haveCounts = true; } catch (e) { /* no circles */ }
         if (first && current) {                     // open the way down to the folder you are in
             let c = data.find(f => f.id === current.id);
             while (c && c.parent_id) { open.add(c.parent_id); c = data.find(f => f.id === c.parent_id); }
@@ -166,6 +170,7 @@ function openFolderPanel(sp, current, lockedMode, hashFor) {
                 li.append(h('div', { class: 'fs-row tone-' + (tones.get(f.id) || 'blue') + (current && current.id === f.id ? ' active' : '') },
                     h('button', { class: 'fs-name', type: 'button', onclick: () => { panel.close(); location.hash = hashFor(f.id); } },
                         icon('folder', 15), h('span', {}, f.name)),
+                    haveCounts ? h('span', { class: 'fs-count', title: (counts.get(f.id) || 0) + ' file(s) in this folder', 'aria-label': (counts.get(f.id) || 0) + ' files' }, String(counts.get(f.id) || 0)) : null,
                     iconBtn('edit', 'Edit folder name', async () => { if (await editFolder(sp, f)) await draw(false); }),
                     arrow));
                 if (sub) li.append(sub);
@@ -206,6 +211,8 @@ async function drawFiles(main, sp, folder, folders, lockedMode) {
     let files;
     try { files = await sp.files(folder.id); } catch (e) { if (e.status !== 423) main.replaceChildren(h('p', { class: 'empty err' }, e.message)); return; }
 
+    const subs = folders.filter(f => f.parent_id === folder.id).length;     // sub-folders directly inside this folder
+
     const fi = h('input', { type: 'file', multiple: true, style: 'display:none' });
     fi.addEventListener('change', async () => { const list = [...fi.files]; fi.value = ''; for (const f of list) await uploadOne(sp, folder, files, f); await refreshOffice(); });
 
@@ -217,7 +224,8 @@ async function drawFiles(main, sp, folder, folders, lockedMode) {
 
     main.replaceChildren(
         h('div', { class: 'main-head' },
-            h('div', { class: 'crumb glass' }, icon('folder', 16), h('span', {}, folder.path.split('/').join(' / '))),
+            h('div', { class: 'crumb glass' }, icon('folder', 16), h('span', {}, folder.path.split('/').join(' / ')),
+                h('span', { class: 'crumb-sub' }, subs + (subs === 1 ? ' sub-folder' : ' sub-folders'))),
             h('div', { class: 'main-actions' },
                 h('button', { class: 'btn ghost', type: 'button', onclick: () => newNote(sp, folder, files) }, icon('plus', 16), h('span', {}, 'New .md note')),
                 h('button', { class: 'btn primary', type: 'button', onclick: () => fi.click() }, icon('upload', 16), h('span', {}, 'Upload')),
