@@ -44,6 +44,9 @@ function route() {
     const first = (parts[0] || '').toLowerCase();
     const key = first.toUpperCase();
     document.body.dataset.view = ['ws', 'rs', 'as', 'os'].includes(first) ? first : 'entry';
+    // The toolbar Index lists notes from shelves 1–3, so it is hidden on the Office Shelf (OS has its own Folders list)
+    const indexBtn = document.getElementById('btnIndex');
+    if (indexBtn) indexBtn.style.display = first === 'os' ? 'none' : '';
     window.scrollTo(0, 0);
     if (['WS', 'RS', 'AS'].includes(key)) renderShelf(root, key);
     else if (key === 'OS') renderOffice(root, parts.slice(1));
