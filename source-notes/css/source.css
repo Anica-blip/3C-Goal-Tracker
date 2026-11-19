@@ -472,6 +472,23 @@ body[data-view="entry"] { background: radial-gradient(ellipse at 50% 0%, #1a0f3d
 }
 .fs-item.open > .fs-row .fs-arrow::before { transform: rotate(45deg); margin: -4px 0 0; }
 
+/* file count circle on each folder row (files directly inside that folder) */
+.fs-count {
+    flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center;
+    min-width: 22px; height: 22px; padding: 0 6px; margin: 0 4px; border-radius: 11px; box-sizing: border-box;
+    font-size: .7rem; font-weight: 800; line-height: 1; color: #fff;
+    background: color-mix(in srgb, var(--fe) 32%, rgba(8, 11, 26, .6));
+    border: 1px solid color-mix(in srgb, var(--fe) 75%, transparent);
+    box-shadow: 0 0 8px color-mix(in srgb, var(--fe) 45%, transparent);
+}
+
+/* sub-folder count inside the bar of the open folder */
+.crumb-sub {
+    flex-shrink: 0; margin-left: 6px; padding: 2px 9px; border-radius: 10px; white-space: nowrap;
+    font-size: .68rem; font-weight: 700; letter-spacing: .02em; color: var(--text-2); text-shadow: none;
+    background: rgba(255, 255, 255, .08); border: 1px solid var(--border-soft);
+}
+
 /* the open folder: its title is a glass chip and the files card takes the same colour */
 .crumb.glass { padding: 7px 14px; border-radius: 12px; color: color-mix(in srgb, var(--fe) 35%, #fff); text-shadow: 0 0 10px color-mix(in srgb, var(--fe) 55%, transparent); }
 .office-main.tone-blue, .office-main.tone-purple {
